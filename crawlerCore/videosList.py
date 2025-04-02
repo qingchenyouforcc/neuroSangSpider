@@ -33,6 +33,7 @@ def get_video_list(user_id):
         video_url = title_element.get_attribute('href')
         video_list.append({
             'url': video_url,
+            'title': "",
         })
 
     driver.quit()
@@ -50,14 +51,16 @@ def show_video_list(user_id, words_set):
     for video in videos:
         # print(video['url'])
         video_url = video['url']
-        videos.append({'title': (resolve_url_to_title(video_url, words_set))})
+        video['title'] = resolve_url_to_title(video_url, words_set)
 
     for video in videos:
         video_title = video['title']
         if video_title is None:
             videos.remove(video)
-        else:
-            print(video_title)
+        # else:
+        #     print(video_title)
+
+    return videos
 
 
 
