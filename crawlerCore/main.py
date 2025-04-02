@@ -4,7 +4,13 @@ from crawlerCore.videosList import show_video_list
 up_list = [351692111, 1880487363, 22535350, 3546612622166788, 5971855, 483178955]
 words_set = ["合唱", "歌回"]
 
+videos_list = []
+
 for up in up_list:
-    show_video_list(up, words_set)
+    videos = show_video_list(up, words_set)
+    videos_list.append(videos)
+
+for video in videos_list:
+    print(video)
 
 print("爬取完成")
