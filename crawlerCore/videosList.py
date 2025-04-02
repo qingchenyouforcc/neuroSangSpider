@@ -1,3 +1,6 @@
+from time import sleep
+from urllib.parse import urlencode
+
 # noinspection PyUnresolvedReferences
 from selenium import webdriver
 # noinspection PyUnresolvedReferences
@@ -6,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 import time
+import math
 import requests
 from bs4 import BeautifulSoup
 
@@ -27,10 +31,8 @@ def get_video_list(user_id):
 
     for title_element in title_elements:
         video_url = title_element.get_attribute('href')
-        video_title = title_element.text
         video_list.append({
             'url': video_url,
-            'title': video_title
         })
 
     driver.quit()
@@ -43,13 +45,19 @@ def show_video_list(user_id, words_set):
     video_title = []
 
     videos.remove(videos[0])
+    for i in range(0, int(len(videos)/2)):
+        videos.remove(videos[0])
+
     for video in videos:
         print(video['url'])
         video_url = video['url']
         video_title.append(resolve_url_to_title(video_url, words_set))
 
     for title in video_title:
-        print(title)
+        if title is None:
+            video_title.remove(title)
+        else:
+            print(title)
 
 
 
@@ -69,5 +77,5 @@ def resolve_url_to_title(url, words_set):
 def contain_text(words_set, text):
     for word in words_set:
         if word in text:
-            return True  # 找到一个就返回 True
-    return False  # 循环结束都没找到
+            return True
+    return False
