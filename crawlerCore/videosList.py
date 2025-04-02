@@ -42,22 +42,22 @@ def get_video_list(user_id):
 
 def show_video_list(user_id, words_set):
     videos = get_video_list(user_id)
-    video_title = []
 
     videos.remove(videos[0])
     for i in range(0, int(len(videos)/2)):
         videos.remove(videos[0])
 
     for video in videos:
-        print(video['url'])
+        # print(video['url'])
         video_url = video['url']
-        video_title.append(resolve_url_to_title(video_url, words_set))
+        videos.append({'title': (resolve_url_to_title(video_url, words_set))})
 
-    for title in video_title:
-        if title is None:
-            video_title.remove(title)
+    for video in videos:
+        video_title = video['title']
+        if video_title is None:
+            videos.remove(video)
         else:
-            print(title)
+            print(video_title)
 
 
 
