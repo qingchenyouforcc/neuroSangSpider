@@ -41,26 +41,41 @@ def get_video_list(user_id):
     return video_list
 
 
-def show_video_list(user_id, words_set):
-    videos = get_video_list(user_id)
+def w_video_list(user_id, words_set):
+    file_path = f"data/{user_id}_data.txt"
 
-    videos.remove(videos[0])
-    for i in range(0, int(len(videos)/2)):
-        videos.remove(videos[0])
+    videos = []
+    temp_videos = get_video_list(user_id)
 
-    for video in videos:
+    temp_videos.remove(temp_videos[0])
+    for i in range(0, int(len(temp_videos)/2)):
+        temp_videos.remove(temp_videos[0])
+
+    print("origin:")
+    for video in temp_videos:
         # print(video['url'])
         video_url = video['url']
         video['title'] = resolve_url_to_title(video_url, words_set)
+        print(video)
+
+    for video in temp_videos:
+        video_title = video['title']
+        if video_title is not None:
+            videos.append(video)
+
+
+    print("---------------------")
 
     for video in videos:
-        video_title = video['title']
-        if video_title is None:
-            videos.remove(video)
-        # else:
-        #     print(video_title)
+        print(video)
 
-    return videos
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            for item in videos:
+                f.write(f"{item['title']}:{item['url']}" + "\n")
+        print(f"列表数据已写入到: {file_path}")
+    except IOError as e:
+        print(f"写入文件时发生错误: {e}")
 
 
 
