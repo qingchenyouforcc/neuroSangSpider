@@ -26,7 +26,11 @@
 
 ## 安装步骤
 
-下载压缩包解压后打开NeuroSongSpider.exe既可
+下载压缩包解压后将目录中的ffmpeg.zip解压到ffmpeg文件夹
+
+打开NeuroSongSpider.exe既可
+
+第一次运行一定要点击“获取视频列表”!!!
 
 ## 构建步骤
 
