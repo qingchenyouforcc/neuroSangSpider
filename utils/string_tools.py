@@ -16,7 +16,7 @@ def remove_text_after_char(text, after_char):
 
 def fileName_process(filename):
     """文件名处理，防止文件名导致的各种问题"""
-    chars_to_remove = ['【', '！', '】', '[', ']', '\\', '/']
+    chars_to_remove = ['>', '<', '\\', '/', '*', '|', '?', '\"', '&', ';']
     for char in filename:
         if char in chars_to_remove: filename = filename.replace(char, '_')
     return filename
