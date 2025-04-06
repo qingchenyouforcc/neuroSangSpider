@@ -1,4 +1,5 @@
 import json
+import os
 
 # noinspection PyUnresolvedReferences
 from selenium import webdriver
@@ -14,6 +15,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 # noinspection PyUnresolvedReferences
 from selenium.webdriver.common.action_chains import ActionChains
+
+from fileManager import MAIN_PATH
 from utils.string_tools import contain_text
 
 import time
@@ -79,92 +82,105 @@ def get_video_url(user_id):
 
         except (TimeoutException, NoSuchElementException):
             # 如果在等待时间内找不到按钮，或者按钮不存在，就认为没有弹窗或已关闭
-            # print("未找到弹窗关闭按钮，或弹窗未出现/已关闭。")
-            try:
-                screenshot_path = f"null_btw_page.png"
-                driver.save_screenshot(screenshot_path)
-                # print(f"已保存截图: {screenshot_path}")
-            except Exception as img_e:
-                print(f"保存截图失败: {img_e}")
+            print("未找到弹窗关闭按钮，或弹窗未出现/已关闭。")
+            path = os.path.join(MAIN_PATH, "crawlerCore")
+            # try:
+            #     screenshot_path = os.path.join(path, "error.png")
+            #     driver.save_screenshot(screenshot_path)
+            #     print(f"已保存截图: {screenshot_path}")
+            # except Exception as img_e:
+            #     print(f"保存截图失败: {img_e}")
     except Exception as e:
         print(f"处理弹窗时发生错误: {e}")
 
-    # 自动翻页
-    while page_count <= max_pages:
+    time.sleep(3)
 
-        # 爬取页面
-        print(f"\n--- 正在处理第 {page_count} 页 ---")
+    title_elements = driver.find_elements(By.CLASS_NAME, 'title')
 
-        time.sleep(3)
+    # 单页爬取
+    for title_element in title_elements:
+        video_url = title_element.get_attribute('href')
+        video_list.append({
+            'url': video_url,
+            'title': "",
+        })
 
-        title_elements = driver.find_elements(By.CLASS_NAME, 'title')
-
-        for title_element in title_elements:
-            video_url = title_element.get_attribute('href')
-            video_list.append({
-                'url': video_url,
-                'title': "",
-            })
-            # print(video_url)
-        print(f"\n--- 第 {page_count} 页爬取完成 ---")
-
-        # 查找下一项
-        try:
-            wait = WebDriverWait(driver, 15)  # 使用之前的等待时间
-
-            # # 首先检查是否有任何匹配的元素（不用:not筛选）
-            # all_buttons = driver.find_elements(By.CLASS_NAME,"vui_button.vui_pagenation--btn.vui_pagenation--btn-side")
-            # print(f"找到 {len(all_buttons)} 个可能的按钮")
-
-            # # 检查这些按钮是否可见和可点击
-            # for i, btn in enumerate(all_buttons):
-            #     print(f"按钮 {i}:")
-            #     print(f"  文本: {btn.text}")
-            #     print(f"  可见: {btn.is_displayed()}")
-            #     print(f"  启用: {not ('disabled' in btn.get_attribute('class'))}")
-            #     print(f"  类名: {btn.get_attribute('class')}")
-
-            # # 检查拼写是否有问题
-            # alternative_buttons = driver.find_elements(By.CSS_SELECTOR,"button.vui_button.vui_pagination--btn.vui_pagination--btn-side")
-            # print(f"使用正确拼写找到 {len(alternative_buttons)} 个可能的按钮")
-
-            print("等待 '下一页' 按钮变为可点击...")
-            next_button = wait.until(EC.element_to_be_clickable(all_buttons))
-            print("按钮可点击。")
-
-            # 步骤 4: 点击按钮 (滚动到视图可能不再严格需要，但保留无害)
-            # driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", next_button)
-            # time.sleep(0.5)
-            print("尝试点击按钮...")
-            next_button.click()
-            print("已点击“下一页”。")
-            page_count += 1
-
-            # **关键步骤 5: 等待新页面/内容加载**
-            time.sleep(3)  # 等待加载
-
-
-        except TimeoutException:
-            print("\n找不到“下一页”按钮或按钮不可点击 (超时)。可能已到达最后一页。")
-            try:
-                screenshot_path = f"timeout_page_{page_count}.png"
-                driver.save_screenshot(screenshot_path)
-                # print(f"已保存截图: {screenshot_path}")
-            except Exception as img_e:
-                print(f"保存截图失败: {img_e}")
-            break
-        except NoSuchElementException:
-            print("\n找不到“下一页”按钮元素。可能已到达最后一页。")
-            break
-        except Exception as e:
-            print(f"\n点击“下一页”时发生错误: {e}")
-            break
-
-        if page_count > max_pages:
-            print(f"\n已达到最大翻页次数 ({max_pages})。")
+    # # 自动翻页
+    # while page_count <= max_pages:
+    #
+    #     # 爬取页面
+    #     print(f"\n--- 正在处理第 {page_count} 页 ---")
+    #
+    #     time.sleep(3)
+    #
+    #     title_elements = driver.find_elements(By.CLASS_NAME, 'title')
+    #
+    #     for title_element in title_elements:
+    #         video_url = title_element.get_attribute('href')
+    #         video_list.append({
+    #             'url': video_url,
+    #             'title': "",
+    #         })
+    #         # print(video_url)
+    #     print(f"\n--- 第 {page_count} 页爬取完成 ---")
+    #
+    #     # 查找下一项
+    #     try:
+    #         wait = WebDriverWait(driver, 15)  # 使用之前的等待时间
+    #
+    #         # # 首先检查是否有任何匹配的元素（不用:not筛选）
+    #         # all_buttons = driver.find_elements(By.CLASS_NAME,"vui_button.vui_pagenation--btn.vui_pagenation--btn-side")
+    #         # print(f"找到 {len(all_buttons)} 个可能的按钮")
+    #
+    #         # # 检查这些按钮是否可见和可点击
+    #         # for i, btn in enumerate(all_buttons):
+    #         #     print(f"按钮 {i}:")
+    #         #     print(f"  文本: {btn.text}")
+    #         #     print(f"  可见: {btn.is_displayed()}")
+    #         #     print(f"  启用: {not ('disabled' in btn.get_attribute('class'))}")
+    #         #     print(f"  类名: {btn.get_attribute('class')}")
+    #
+    #         # # 检查拼写是否有问题
+    #         # alternative_buttons = driver.find_elements(By.CSS_SELECTOR,"button.vui_button.vui_pagination--btn.vui_pagination--btn-side")
+    #         # print(f"使用正确拼写找到 {len(alternative_buttons)} 个可能的按钮")
+    #
+    #         print("等待 '下一页' 按钮变为可点击...")
+    #         next_button = wait.until(EC.element_to_be_clickable(all_buttons))
+    #         print("按钮可点击。")
+    #
+    #         # 步骤 4: 点击按钮 (滚动到视图可能不再严格需要，但保留无害)
+    #         # driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", next_button)
+    #         # time.sleep(0.5)
+    #         print("尝试点击按钮...")
+    #         next_button.click()
+    #         print("已点击“下一页”。")
+    #         page_count += 1
+    #
+    #         # **关键步骤 5: 等待新页面/内容加载**
+    #         time.sleep(3)  # 等待加载
+    #
+    #
+    #     except TimeoutException:
+    #         print("\n找不到“下一页”按钮或按钮不可点击 (超时)。可能已到达最后一页。")
+    #         try:
+    #             screenshot_path = f"timeout_page_{page_count}.png"
+    #             driver.save_screenshot(screenshot_path)
+    #             # print(f"已保存截图: {screenshot_path}")
+    #         except Exception as img_e:
+    #             print(f"保存截图失败: {img_e}")
+    #         break
+    #     except NoSuchElementException:
+    #         print("\n找不到“下一页”按钮元素。可能已到达最后一页。")
+    #         break
+    #     except Exception as e:
+    #         print(f"\n点击“下一页”时发生错误: {e}")
+    #         break
+    #
+    #     if page_count > max_pages:
+    #         print(f"\n已达到最大翻页次数 ({max_pages})。")
 
     # --- 清理 ---
-    print("\n爬取（或尝试）完成，关闭浏览器。")
+    # print("\n爬取（或尝试）完成，关闭浏览器。")
     driver.quit()
 
     return video_list
@@ -194,6 +210,7 @@ def get_video_list(user_id, words_set):
             videos.append(video)
 
     print("---------------------")
+    os.chdir(MAIN_PATH)
 
     for video in videos:
         print(video)

@@ -4,6 +4,8 @@ import asyncio
 from bilibili_api import video, Credential, HEADERS, get_client
 import os
 
+from fileManager import MAIN_PATH
+
 SESSDATA = ""
 BILI_JCT = ""
 BUVID3 = ""
