@@ -32,6 +32,18 @@
 
 第一次运行一定要点击“获取视频列表”!!!
 
+## 扩展包
+
+(扩展包是用来扩展一些二创视频的，文本格式是`up主_extend.txt`)
+
+安装方法：下载扩展包后，解压到data文件夹中
+
+## 数据包
+
+(数据包中是发行版本时的视频列表，文本格式是`time_videos_list.txt`)
+
+安装方法：下载数据包后，解压到data文件夹中
+
 ## 构建步骤
 
 首先你需要将目录中的ffmpeg.zip解压到ffmpeg文件夹，因为这个软件需要ffmpeg
@@ -64,5 +76,6 @@ python main.py
 - 西街Westreet https://space.bilibili.com/5971855
 - BulletFX https://space.bilibili.com/483178955
 - ASDFHGV https://space.bilibili.com/690857494
+- 意念艾特感叹号 https://space.bilibili.com/390418501
 
 
