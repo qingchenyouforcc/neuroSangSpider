@@ -19,10 +19,7 @@ def bv2av(x):
 def url2bv(url):
     """bv to url"""
     i = 0
-    for char in url:
-        url = url.replace(char, "", 1)
-        if char == '/': i += 1
-        if i == 4: break
+    url = url[::-1][:14][::-1]
     url = url.replace('/', "")
     url = url.replace('\n', "", 1)
     return url

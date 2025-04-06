@@ -26,18 +26,28 @@
 
 
 ## 安装步骤
+
+首先你需要将目录中的ffmpeg.zip解压到ffmpeg文件夹，因为这个软件需要ffmpeg
+
 ```bash
 # 克隆仓库
 git clone https://github.com/qingchenyouforcc/neuroSangSpider
 
+# 进入目录
+cd neuroSangSpider
+
 # 初始化虚拟环境（推荐）
 python3.13 -m venv venv
-source venv/bin/activate    # Linux/macOS 或 venv\Scripts\activate (Windows)
+venv\\Scripts\\activate
 
 # 安装依赖
 pip install -r requirements.txt
+pip install bilibili-api-python
+
+# 运行
+python main.py
 ```
 
-同时你还需要将目录中的ffmpeg.zip解压，因为这个软件需要ffmpeg
+
 
 
