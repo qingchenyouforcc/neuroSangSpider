@@ -11,10 +11,11 @@ BILI_JCT = ""
 BUVID3 = ""
 
 # FFMPEG 路径，查看：http://ffmpeg.org/
-FFMPEG_PATH = "ffmpeg"
+FFMPEG_PATH = f"{MAIN_PATH}" + "\\ffmpeg\\bin\\ffmpeg.exe"
 
 
 async def download(url: str, out: str, intro: str):
+    print(FFMPEG_PATH)
     dwn_id = await get_client().download_create(url, HEADERS)
     bts = 0
     tot = get_client().download_content_length(dwn_id)
