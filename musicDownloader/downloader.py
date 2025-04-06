@@ -40,14 +40,14 @@ async def download_music(bvid, title):
         # FLV 流下载
         await download(streams[0].url, "flv_temp.flv", "下载 FLV 音视频流")
         # 转换文件格式
-        os.system(f"{FFMPEG_PATH} -i flv_temp.flv {title}.mp4")
+        os.system(f"{FFMPEG_PATH} -i flv_temp.flv {title}.mp3")
         # 删除临时文件
         os.remove("flv_temp.flv")
     else:
         # MP4 流下载
         await download(streams[1].url, "audio_temp.m4s", "下载音频流")
-        os.system(f"{FFMPEG_PATH} -i audio_temp.m4s {title}.mp4")
+        os.system(f"{FFMPEG_PATH} -i audio_temp.m4s {title}.mp3")
         # 删除临时文件
         os.remove("audio_temp.m4s")
 
-    print(f"已下载为：{title}.mp4")
+    print(f"已下载为：{title}.mp3")

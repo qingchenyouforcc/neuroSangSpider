@@ -48,6 +48,14 @@ pip install bilibili-api-python
 python main.py
 ```
 
-
+## 感谢名单
+### 感谢以下up主对neuro/evil歌回的贡献，没有你们就不会有这个项目的出现
+- _环戊烷多氢菲_ https://space.bilibili.com/351692111
+- Neuro21烤肉组 https://space.bilibili.com/1880487363
+- 绅士羊OuO https://space.bilibili.com/22535350
+- NSC987 https://space.bilibili.com/3546612622166788
+- 西街Westreet https://space.bilibili.com/5971855
+- BulletFX https://space.bilibili.com/483178955
+- ASDFHGV https://space.bilibili.com/690857494
 
 
