@@ -14,6 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 # noinspection PyUnresolvedReferences
 from selenium.webdriver.common.action_chains import ActionChains
+from utils.string_tools import contain_text
 
 import time
 import requests
@@ -218,11 +219,3 @@ def resolve_url_to_title(url, words_set):
 
     if contain_text(words_set, video_title):
         return video_title
-
-
-def contain_text(words_set, text):
-    """检测是否包含内容"""
-    for word in words_set:
-        if word in text:
-            return True
-    return False
