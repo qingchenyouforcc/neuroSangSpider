@@ -1,2 +1,1 @@
-*.cs linguist-language=Python
-*.ico linguist-language=Python
+*.py linguist-language=Python
