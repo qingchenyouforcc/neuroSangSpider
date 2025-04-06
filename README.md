@@ -36,3 +36,8 @@ source venv/bin/activate    # Linux/macOS 或 venv\Scripts\activate (Windows)
 
 # 安装依赖
 pip install -r requirements.txt
+```
+
+同时你还需要将目录中的ffmpeg.zip解压，因为这个软件需要ffmpeg
+
+

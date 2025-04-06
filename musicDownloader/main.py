@@ -7,24 +7,14 @@ from utils.bili_tools import url2bv
 from utils.fileManager import create_dir
 from utils.string_tools import contain_text, remove_text_after_char, fileName_process
 
-find_flag = False
 create_dir("music")
 search_result = []
 
-def download_main(bv, output_fileName):
+
+def download_main():
     """下载器主进程"""
-    print(f"你选择了第{index + 1}个，开始下载歌曲")
-    print(f"BVID:{bv}")
-    print(f"title:{output_fileName}")
-
-    # 运行下载器(异步函数)
-    os.chdir("musicDownloader/music")
-    asyncio.run(download_music(bv, output_fileName))
-
-
-if __name__ == '__main__':
-    os.chdir("..")
-    file_name = 'crawlerCore/data/videos_list.txt'
+    find_flag = False
+    file_name = 'data/videos_list.txt'
 
     print("请输入你要查找的视频:")
     search_content = input()
@@ -49,6 +39,19 @@ if __name__ == '__main__':
         bvid = url2bv(search_result[int(index)])
         title = fileName_process(remove_text_after_char(search_result[int(index)], ':')).replace(' ', '').replace('_',
                                                                                                                   '', 1)
-        download_main(bvid, title)
+        run_download(bvid, title, index)
+
+
     else:
         print(f"没有找到包含{search_content}的歌曲")
+
+
+def run_download(bv, output_fileName, index):
+    """运行下载器"""
+    print(f"你选择了第{index + 1}个，开始下载歌曲")
+    print(f"BVID:{bv}")
+    print(f"title:{output_fileName}")
+
+    # 运行下载器(异步函数)
+    os.chdir("music")
+    asyncio.run(download_music(bv, output_fileName))

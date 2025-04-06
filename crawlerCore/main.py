@@ -28,11 +28,3 @@ def create_video_list_file():
     # 合成完整的视频列表
     part2all("data", "videos_list.txt")
 
-if __name__ == '__main__':
-    create_video_list_file()
-
-    print(f"爬取完成")
-
-# for video in videos_list:
-#     print(video)
-#     videos_num += 1
