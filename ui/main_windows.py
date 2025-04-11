@@ -14,6 +14,7 @@ class Ui_NeuroSongSpider(object):
         NeuroSongSpider.setObjectName("NeuroSongSpider")
         NeuroSongSpider.resize(680, 544)
         NeuroSongSpider.setWindowTitle("NeuroSongSpider")
+        NeuroSongSpider.setIconSize(QtCore.QSize(32, 32))
         self.centralwidget = QtWidgets.QWidget(parent=NeuroSongSpider)
         self.centralwidget.setObjectName("centralwidget")
         self.DownloadBtn = QtWidgets.QPushButton(parent=self.centralwidget)

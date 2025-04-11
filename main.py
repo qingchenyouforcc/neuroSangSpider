@@ -1,6 +1,6 @@
 from math import expm1
 
-from PyQt6 import QtWidgets
+from PyQt6 import QtWidgets, QtGui
 
 from crawlerCore.main import create_video_list_file
 from fileManager import MAIN_PATH
@@ -21,7 +21,10 @@ from ui.main_windows import Ui_NeuroSongSpider
 class mainWindow(QMainWindow, Ui_NeuroSongSpider):
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent=parent)
+        icon = QtGui.QIcon("res\\main.ico")
+
         self.setupUi(self)
+        self.setWindowIcon(icon)
         self.setFixedSize(680, 530)
         self.GetVideoBtn.clicked.connect(lambda: create_video_list_file())
         self.SearchBtn.clicked.connect(lambda: self.search_btn())
