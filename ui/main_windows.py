@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_NeuroSongSpider(object):
     def setupUi(self, NeuroSongSpider):
         NeuroSongSpider.setObjectName("NeuroSongSpider")
-        NeuroSongSpider.resize(682, 545)
+        NeuroSongSpider.resize(680, 544)
         NeuroSongSpider.setWindowTitle("NeuroSongSpider")
         self.centralwidget = QtWidgets.QWidget(parent=NeuroSongSpider)
         self.centralwidget.setObjectName("centralwidget")
@@ -31,14 +31,14 @@ class Ui_NeuroSongSpider(object):
         self.listWidget = QtWidgets.QListWidget(parent=self.centralwidget)
         self.listWidget.setGeometry(QtCore.QRect(10, 40, 661, 471))
         self.listWidget.setObjectName("listWidget")
+        self.openPlayerBTN = QtWidgets.QPushButton(parent=self.centralwidget)
+        self.openPlayerBTN.setGeometry(QtCore.QRect(430, 10, 131, 24))
+        self.openPlayerBTN.setObjectName("openPlayerBTN")
         NeuroSongSpider.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=NeuroSongSpider)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 682, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 680, 22))
         self.menubar.setObjectName("menubar")
         NeuroSongSpider.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(parent=NeuroSongSpider)
-        self.statusbar.setObjectName("statusbar")
-        NeuroSongSpider.setStatusBar(self.statusbar)
 
         self.retranslateUi(NeuroSongSpider)
         QtCore.QMetaObject.connectSlotsByName(NeuroSongSpider)
@@ -48,3 +48,4 @@ class Ui_NeuroSongSpider(object):
         self.DownloadBtn.setText(_translate("NeuroSongSpider", "下载"))
         self.GetVideoBtn.setText(_translate("NeuroSongSpider", "获取视频列表"))
         self.SearchBtn.setText(_translate("NeuroSongSpider", "搜索"))
+        self.openPlayerBTN.setText(_translate("NeuroSongSpider", "打开内置播放器"))

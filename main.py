@@ -22,6 +22,7 @@ class mainWindow(QMainWindow, Ui_NeuroSongSpider):
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent=parent)
         self.setupUi(self)
+        self.setFixedSize(680, 530)
         self.GetVideoBtn.clicked.connect(lambda: create_video_list_file())
         self.SearchBtn.clicked.connect(lambda: self.search_btn())
         self.DownloadBtn.clicked.connect(lambda: self.Download_btn())
