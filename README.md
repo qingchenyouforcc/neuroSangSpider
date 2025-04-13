@@ -38,6 +38,8 @@
 
 安装方法：下载扩展包(extend.zip)后，解压到data文件夹中
 
+**一定记得要加扩展包口牙**
+
 ## 数据包
 
 (数据包中是发行版本时的视频列表，文本格式是`time_videos_list.txt`)
@@ -77,14 +79,17 @@ txt文件里面的格式是一行一个 `title:url`
 
 也就是 `视频/文件名:标准Bilibili_BV_URL`
 
-按照这个格式编写xxx_extend.txt文件即可
+标准Bilibili_BV_URL:`https://www.bilibili.com/video/BV号/`
+
+按照这个格式编写xxx_extend.txt文件即可(最好不要有中文)
 
 (实在看不懂可以去data文件里面看看)
 
 ---
 
 ## 感谢名单
-### 感谢以下up主对neuro/evil歌回的贡献，没有你们就不会有这个项目的出现
+### 感谢以下up主对Neuro/Evil歌回的贡献，没有你们就不会有这个项目的出现
+
 - _环戊烷多氢菲_ https://space.bilibili.com/351692111
 - Neuro21烤肉组 https://space.bilibili.com/1880487363
 - 绅士羊OuO https://space.bilibili.com/22535350
@@ -94,4 +99,5 @@ txt文件里面的格式是一行一个 `title:url`
 - ASDFHGV https://space.bilibili.com/690857494
 - 意念艾特感叹号 https://space.bilibili.com/390418501
 
+以及感谢所有切Neuro/Evil歌回和做二创的UP主
 
