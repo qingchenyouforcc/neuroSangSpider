@@ -47,7 +47,13 @@ class mainWindow(QMainWindow, Ui_NeuroSongSpider):
 
     def Download_btn(self):
         index = self.listWidget.currentRow()
-        run_download(index)
+        try:
+            run_download(index)
+        except IndexError:
+            messageBox = QMessageBox()
+            QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
+        except Exception as e:
+            print(f"错误:{e}")
 
 
 if __name__ == '__main__':
