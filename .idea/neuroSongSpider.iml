@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crawlerCore" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/musicDownloader" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ExtendPack" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/data" />
       <excludeFolder url="file://$MODULE_DIR$/ffmpeg" />

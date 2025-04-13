@@ -34,7 +34,7 @@
 
 ## 扩展包
 
-(扩展包是用来扩展一些二创视频的，文本格式是`up主_extend.txt`)
+(扩展包是用来扩展一些二创视频的，文本格式是`name_extend.txt`)
 
 安装方法：下载扩展包(extend.zip)后，解压到data文件夹中
 
@@ -66,6 +66,22 @@ pip install bilibili-api-python
 # 运行
 python main.py
 ```
+
+---
+
+## 开发扩展包
+
+扩展包实际上是由多个txt文件组成的
+
+txt文件里面的格式是一行一个 `title:url` 
+
+也就是 `视频/文件名:标准Bilibili_BV_URL`
+
+按照这个格式编写xxx_extend.txt文件即可
+
+(实在看不懂可以去data文件里面看看)
+
+---
 
 ## 感谢名单
 ### 感谢以下up主对neuro/evil歌回的贡献，没有你们就不会有这个项目的出现
