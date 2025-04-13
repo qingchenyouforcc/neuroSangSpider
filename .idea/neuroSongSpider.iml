@@ -11,6 +11,7 @@
       <excludeFolder url="file://$MODULE_DIR$/ffmpeg" />
       <excludeFolder url="file://$MODULE_DIR$/music" />
     </content>
+    <content url="file://$MODULE_DIR$/../neuroSongSpider扩展包" />
     <orderEntry type="jdk" jdkName="Python 3.13 (neuroSongSpider)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>

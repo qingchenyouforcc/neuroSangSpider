@@ -9,6 +9,13 @@
           </resourceRoots>
         </entryData>
       </entry>
+      <entry url="file://$PROJECT_DIR$/../neuroSongSpider扩展包">
+        <entryData>
+          <resourceRoots>
+            <path value="file://$PROJECT_DIR$/../neuroSongSpider扩展包" />
+          </resourceRoots>
+        </entryData>
+      </entry>
     </contentEntries>
   </component>
 </project>
