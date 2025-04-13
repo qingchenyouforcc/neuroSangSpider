@@ -29,6 +29,7 @@ class mainWindow(QMainWindow, Ui_NeuroSongSpider):
         self.GetVideoBtn.clicked.connect(lambda: create_video_list_file())
         self.SearchBtn.clicked.connect(lambda: self.search_btn())
         self.DownloadBtn.clicked.connect(lambda: self.Download_btn())
+        self.DownloadBtn_ogg.clicked.connect(lambda: self.Download_ogg_btn())
 
 
     def search_btn(self):
@@ -43,7 +44,7 @@ class mainWindow(QMainWindow, Ui_NeuroSongSpider):
             messageBox = QMessageBox()
             QMessageBox.about(messageBox, "提示","没有找到该歌曲！")
         except Exception as e:
-            print(f"错误:{e}")
+            print(f"错误:{e};" + type(e).__name__)
 
     def Download_btn(self):
         index = self.listWidget.currentRow()
@@ -53,7 +54,17 @@ class mainWindow(QMainWindow, Ui_NeuroSongSpider):
             messageBox = QMessageBox()
             QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
         except Exception as e:
-            print(f"错误:{e}")
+            print(f"错误:{e};" + type(e).__name__)
+
+    def Download_ogg_btn(self):
+        index = self.listWidget.currentRow()
+        try:
+            run_download(index, "ogg")
+        except IndexError:
+            messageBox = QMessageBox()
+            QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
+        except Exception as e:
+            print(f"错误:{e};" + type(e).__name__)
 
 
 if __name__ == '__main__':
