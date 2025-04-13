@@ -1,16 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
-a = Analysis(
-    ['main.py', 
+py_files = [
+    'main.py', 
     'crawlerCore\\main.py', 'crawlerCore\\videosList.py', 
     'musicDownloader\\main.py', 'musicDownloader\\downloader.py', 
     'utils\\bili_tools.py', 'utils\\fileManager.py', 'utils\\string_tools.py', 'utils\\textbroswer_tools.py', 
-    'ui\\main_windows.py'],
+    'ui\\main_windows.py'
+]
+
+
+a = Analysis(
+    py_files,
     pathex=['C:\\我的python\\neuroSongSpider\\neuroSongSpider'],
     binaries=[],
-    datas=[],
-    hiddenimports=['socket', 
+    datas=[
+        ('res\\main.ico', 'images'),
+    ],
+    hiddenimports=[
+        'socket', 
         'ssl', 
         'idna', 
         'urllib3', 
@@ -37,6 +44,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name='NeuroSongSpider',
+    icon='C:\\我的python\\neuroSongSpider\\neuroSongSpider\\res\\main.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -48,6 +56,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
 coll = COLLECT(
     exe,
     a.binaries,
