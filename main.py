@@ -34,7 +34,7 @@ class mainWindow(QMainWindow, Ui_NeuroSongSpider):
 
     def search_btn(self):
         self.listWidget.clear()
-        search_content = self.search_line.text()
+        search_content = self.search_line.text().lower()
         try:
             main_search_list = search_song(search_content)
             for item in main_search_list:
