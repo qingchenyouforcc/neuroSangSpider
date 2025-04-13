@@ -3,7 +3,7 @@ import os
 
 from musicDownloader.downloader import download_music, download_music_ogg
 from utils.bili_tools import url2bv
-from utils.fileManager import create_dir, MAIN_PATH
+from utils.fileManager import create_dir, MAIN_PATH, part2all
 from utils.string_tools import remove_text_after_char, fileName_process
 
 create_dir("music")
@@ -21,6 +21,11 @@ def search_song(search_content):
     # 查找内容
     global search_result
     search_result = []
+
+    # 重置videos_list.txt
+    os.remove(file_name)
+    part2all("data", "videos_list.txt")
+
     with open(file_name, 'r', encoding='utf-8') as file:
         for line in file:
             find_line = line.lower()
@@ -50,7 +55,7 @@ def search_song(search_content):
         print(f"没有找到包含{search_content}的歌曲")
 
 
-def run_download(index, type = ""):
+def run_download(index, fileType =""):
     """运行下载器"""
     bv = url2bv(search_result[int(index)])
     output_fileName = fileName_process(remove_text_after_char(search_result[int(index)], ':')).replace(' ', '').replace(
@@ -62,7 +67,7 @@ def run_download(index, type = ""):
     # 运行下载器(异步函数)
     os.chdir(MAIN_PATH)
     os.chdir("music")
-    if type == "ogg":
+    if fileType == "ogg":
         asyncio.run(download_music_ogg(bv, output_fileName))
     else:
         asyncio.run(download_music(bv, output_fileName))
