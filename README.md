@@ -1,4 +1,4 @@
-# neuroSongSpider
+# NeuroSongSpider
 
 ## 项目简介
 
