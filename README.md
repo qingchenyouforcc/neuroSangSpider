@@ -26,8 +26,6 @@
 
 ## 安装步骤
 
-下载压缩包解压后将目录中的ffmpeg.zip解压到ffmpeg文件夹
-
 打开NeuroSongSpider.exe既可
 
 第一次运行一定要点击“获取视频列表”!!!
@@ -106,5 +104,5 @@ txt文件里面的格式是一行一个 `title:url`
 - ASDFHGV https://space.bilibili.com/690857494
 - 意念艾特感叹号 https://space.bilibili.com/390418501
 
-以及感谢所有切Neuro/Evil歌回和做二创的UP主
+以及感谢所有切Neuro/Evil歌回和做二创的UP主们
 
