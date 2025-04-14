@@ -46,7 +46,7 @@ class LoadingWindow(QWidget):
     def initUI(self):
         # 设置窗口基础类型
         self.resize(250, 250)
-        self.move(self.m_winX + 340 - 125, self.m_winY + 265 - 125)
+        self.move(self.m_winX + 340 - 125, self.m_winY + 265 - 100)
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.Dialog
