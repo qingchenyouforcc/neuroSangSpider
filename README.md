@@ -36,6 +36,8 @@
 
 (扩展包是用来扩展一些二创视频的，文本格式是`name_extend.txt`)
 
+项目中的扩展包全都在`ExtendPack`文件夹下
+
 安装方法：下载扩展包(extend.zip)后，解压到data文件夹中
 
 **一定记得要加扩展包口牙**
@@ -88,6 +90,11 @@ txt文件里面的格式是一行一个 `title:url`
 ---
 
 ## 感谢名单
+
+### 感谢Stazer提供的加载动画授权
+
+- 稳定器stz https://space.bilibili.com/125198191
+
 ### 感谢以下up主对Neuro/Evil歌回的贡献，没有你们就不会有这个项目的出现
 
 - _环戊烷多氢菲_ https://space.bilibili.com/351692111
