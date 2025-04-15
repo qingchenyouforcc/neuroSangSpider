@@ -7,6 +7,7 @@ from PyQt6.QtGui import QMovie
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QWidget
 
 from crawlerCore.main import create_video_list_file
+from crawlerCore.searchCore import search_song_online
 from utils.fileManager import MAIN_PATH
 from musicDownloader.main import search_song, run_download
 from ui.main_windows import Ui_NeuroSongSpider
@@ -102,8 +103,18 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
             for item in main_search_list:
                 self.listWidget.addItem(item)
         except TypeError:
-            messageBox = QMessageBox()
-            QMessageBox.about(messageBox, "提示", "没有找到该歌曲！")
+            # 本地查找失败时，尝试使用bilibili搜索查找
+            print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
+            try:
+                search_song_online(search_content)
+                main_search_list = search_song(search_content)
+                for item in main_search_list:
+                    self.listWidget.addItem(item)
+            # except TypeError:
+            #     messageBox = QMessageBox()
+            #     QMessageBox.about(messageBox, "提示", "没有找到该歌曲！")
+            except Exception as e:
+                print(f"错误:{e};" + type(e).__name__)
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
 
@@ -127,6 +138,7 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
 
+    # 当爬虫任务结束时
     def on_c_task_finished(self):
         self.loading.close()
         self.GetVideoBtn.setEnabled(True)
