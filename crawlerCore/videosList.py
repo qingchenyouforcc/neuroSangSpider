@@ -1,3 +1,4 @@
+import json
 import os
 
 # noinspection PyUnresolvedReferences
@@ -15,7 +16,7 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 # noinspection PyUnresolvedReferences
 from selenium.webdriver.common.action_chains import ActionChains
 
-from utils.fileManager import MAIN_PATH
+from fileManager import MAIN_PATH
 from utils.string_tools import contain_text
 
 import time
