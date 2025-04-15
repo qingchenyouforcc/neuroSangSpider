@@ -1,17 +1,14 @@
 import os
+import sys
 
 from PyQt6 import QtWidgets, QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread
 from PyQt6.QtGui import QMovie
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QWidget
 
 from crawlerCore.main import create_video_list_file
 from utils.fileManager import MAIN_PATH
-
 from musicDownloader.main import search_song, run_download
-
-import sys
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QWidget
-
 from ui.main_windows import Ui_NeuroSongSpider
 
 
@@ -24,6 +21,7 @@ from ui.main_windows import Ui_NeuroSongSpider
 # 将爬虫线程分离
 class CrawlerWorkerThread(QThread):
     # 定义一个信号，用于通知主线程任务完成
+    # noinspection PyArgumentList
     task_finished = pyqtSignal(str)
 
     def run(self):
@@ -89,6 +87,7 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
             self.loading.show()
 
             # 创建并启动工作线程
+            # noinspection PyArgumentList
             self.thread = CrawlerWorkerThread()
             self.thread.task_finished.connect(self.on_c_task_finished)
             self.thread.start()

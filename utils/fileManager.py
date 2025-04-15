@@ -3,6 +3,7 @@ from pathlib import Path
 
 MAIN_PATH = Path.cwd()
 
+
 def create_dir(dir_name):
     """创建目录"""
     try:
@@ -44,5 +45,3 @@ def part2all(input_folder, output_file):
                 print(f"处理文件 {filename} 时出错: {str(e)}")
 
     print(f"所有文件内容已合并到 {output_file_path}")
-
-

@@ -8,6 +8,7 @@ def av2bv(x):
         r[v] = alphabet[d]
     return ''.join(r)
 
+
 def bv2av(x):
     """bv to av"""
     alphabet = 'fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF'
@@ -16,11 +17,10 @@ def bv2av(x):
         r += alphabet.find(x[v]) * 58 ** i
     return (r - 0x2_0840_07c0) ^ 0x0a93_b324
 
+
 def url2bv(url):
     """bv to url"""
-    i = 0
     url = url[::-1][:14][::-1]
     url = url.replace('/', "")
     url = url.replace('\n', "", 1)
     return url
-

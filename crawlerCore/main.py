@@ -1,9 +1,6 @@
-import os
-
-from crawlerCore.videosList import get_video_list
-
 import threading
 
+from crawlerCore.videosList import get_video_list
 from utils.fileManager import create_dir, part2all
 
 # UP主列表 和 爬取视频需包含词

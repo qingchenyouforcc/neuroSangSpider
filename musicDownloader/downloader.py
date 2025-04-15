@@ -1,10 +1,9 @@
-import asyncio
+import os
 
 # noinspection PyUnresolvedReferences
 from bilibili_api import video, Credential, HEADERS, get_client
-import os
 
-from fileManager import MAIN_PATH
+from utils.fileManager import MAIN_PATH
 
 SESSDATA = ""
 BILI_JCT = ""

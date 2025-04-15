@@ -55,7 +55,7 @@ def search_song(search_content):
         print(f"没有找到包含{search_content}的歌曲")
 
 
-def run_download(index, fileType =""):
+def run_download(index, fileType=""):
     """运行下载器"""
     bv = url2bv(search_result[int(index)])
     output_fileName = fileName_process(remove_text_after_char(search_result[int(index)], ':')).replace(' ', '').replace(

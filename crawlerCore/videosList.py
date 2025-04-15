@@ -1,5 +1,6 @@
-import json
 import os
+import time
+import requests
 
 # noinspection PyUnresolvedReferences
 from selenium import webdriver
@@ -18,9 +19,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 from utils.fileManager import MAIN_PATH
 from utils.string_tools import contain_text
-
-import time
-import requests
 from bs4 import BeautifulSoup
 
 remove_urls_index = []
