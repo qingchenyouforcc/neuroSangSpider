@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread
 from PyQt6.QtGui import QMovie
 
 from crawlerCore.main import create_video_list_file
-from fileManager import MAIN_PATH
+from utils.fileManager import MAIN_PATH
 
 from musicDownloader.main import search_song, run_download
 
