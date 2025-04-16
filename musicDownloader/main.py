@@ -6,6 +6,7 @@ from utils.bili_tools import url2bv
 from utils.fileManager import create_dir, MAIN_PATH, part2all
 from utils.string_tools import remove_text_after_char, fileName_process
 
+
 create_dir("music")
 search_result = []
 bvid = ""

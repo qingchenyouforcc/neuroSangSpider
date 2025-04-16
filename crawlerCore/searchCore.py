@@ -3,12 +3,7 @@ from bs4 import BeautifulSoup
 
 
 def get_target(keyword):
-    """
-    爬取B站视频信息
-
-    参数:
-        keyword: 搜索关键词
-    """
+    """爬取B站视频信息"""
     seen_videos = set()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.92 Safari/537.36'
@@ -49,7 +44,8 @@ def get_target(keyword):
             return False
         return True
 
-    def scrape_page(url):
+    def crawler_page(url):
+        """爬取页面"""
         try:
             html = requests.get(url, headers=headers, timeout=10)
             html.raise_for_status()  # 检查请求是否成功
@@ -110,7 +106,7 @@ def get_target(keyword):
 
     # 爬取
     first_page_url = f'https://search.bilibili.com/all?keyword={keyword}'
-    videos = scrape_page(first_page_url)
+    videos = crawler_page(first_page_url)
     print('已经完成b站搜索视频爬取')
     print(f"总计获取 {len(videos)} 个有效视频数据")
 

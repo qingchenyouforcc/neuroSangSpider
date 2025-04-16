@@ -2,7 +2,7 @@
 
 py_files = [
     'main.py', 
-    'crawlerCore\\main.py', 'crawlerCore\\videosList.py', 
+    'crawlerCore\\main.py', 'crawlerCore\\videosList.py', 'crawlerCore\\searchCore.py',
     'musicDownloader\\main.py', 'musicDownloader\\downloader.py', 
     'utils\\bili_tools.py', 'utils\\fileManager.py', 'utils\\string_tools.py', 'utils\\textbroswer_tools.py', 
     'ui\\main_windows.py'

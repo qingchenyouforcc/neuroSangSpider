@@ -81,7 +81,7 @@ def get_video_url(user_id):
         except (TimeoutException, NoSuchElementException):
             # 如果在等待时间内找不到按钮，或者按钮不存在，就认为没有弹窗或已关闭
             print("未找到弹窗关闭按钮，或弹窗未出现/已关闭。")
-            path = os.path.join(MAIN_PATH, "crawlerCore")
+            # path = os.path.join(MAIN_PATH, "crawlerCore")
             # try:
             #     screenshot_path = os.path.join(path, "error.png")
             #     driver.save_screenshot(screenshot_path)
