@@ -1,6 +1,6 @@
-/venv
-/ffmpeg
-/music
+/venv/
+/ffmpeg/
+/music/
 *.zip
-/data
+/data/
 /ExtendPark
