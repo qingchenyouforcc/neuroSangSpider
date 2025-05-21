@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+
+from infoManager.songList import songList
 from utils.bili_tools import url2bv
 
 
@@ -154,5 +156,8 @@ def get_target(keyword):
 
 
 def search_song_online(search_content):
-    """调用联网搜索"""
-    return get_target("[neuro]歌回" + search_content)
+    """调用联网搜索,返回songList"""
+    result_list=songList()
+    result_list.dictInfo={"data":get_target("[neuro]歌回" + search_content)}
+    result_list.syncJson()
+    return result_list

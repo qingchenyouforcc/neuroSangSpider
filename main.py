@@ -103,7 +103,7 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         search_content = self.search_line.text().lower()
         try:
             main_search_list = search_songList(search_content)
-            if type(main_search_list) == "NoneType":
+            if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
                 print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
@@ -114,6 +114,7 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                     temp_list.syncJson()
                     temp_list.uniqueByBV()
                     temp_list.saveList(r"data\search_data.json")
+
                     main_search_list = search_songList(search_content)
                     '''插入的item是字符串类型'''
                     for item in main_search_list:
@@ -129,8 +130,9 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                         # 将搜索结果写入json
                         result_info=search_song_online(search_content)
                         temp_list=songList()
-                        temp_list.dictInfo={"data":result_info}
+                        temp_list.appendList(result_info)
                         temp_list.syncJson()
+                        temp_list.uniqueByBV()
                         temp_list.saveList(r"data\search_data.json")
 
                         more_search_list = search_songList(search_content)
@@ -149,9 +151,9 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                     for item in main_search_list:
                         self.listWidget.addItem(item)
 
-
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
+
 
     def Download_btn(self):
         index = self.listWidget.currentRow()
