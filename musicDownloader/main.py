@@ -58,24 +58,14 @@ def search_song(search_content):
         print(f"没有找到包含{search_content}的歌曲")
 
 def search_songList(search_content):
-    """重写的搜索方法,读取json文件搜索,存储search_result并返回标题列表,尝试支持多词搜索"""
+    """重写的搜索方法,读取json文件搜索,存储search_result并返回标题列表"""
     total_data=loadFromAllJson("data")
     global search_result
     search_result = []
-    search_resultlist=songList()
     str_result = []
-    if " " in search_content:
-        # 多词搜索
-        search_content = search_content.split(" ")
-        for content in search_content:
-            tmp_list=total_data
-            tmp_list.searchByTitle(content)
-            search_resultlist.appendList(tmp_list)
 
-    else:
-        # 单个词搜索
-        search_resultlist=total_data
-        search_resultlist.searchByTitle(search_content)
+    search_resultlist=total_data
+    search_resultlist.searchByTitle(search_content)
 
     if len(search_resultlist.getData()) == 0:
         return None
