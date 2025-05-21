@@ -8,9 +8,12 @@ from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QWidget
 
 from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
+
 from utils.fileManager import MAIN_PATH
-from musicDownloader.main import search_song, run_download
+from musicDownloader.main import search_song, run_download,search_songList
 from ui.main_windows import Ui_NeuroSongSpider
+
+from infoManager.songList import songList
 
 
 # if __name__ == '__main__':
@@ -99,22 +102,54 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         self.listWidget.clear()
         search_content = self.search_line.text().lower()
         try:
-            main_search_list = search_song(search_content)
-            for item in main_search_list:
-                self.listWidget.addItem(item)
-        except TypeError:
-            # 本地查找失败时，尝试使用bilibili搜索查找
-            print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
-            try:
-                search_song_online(search_content)
-                main_search_list = search_song(search_content)
-                for item in main_search_list:
-                    self.listWidget.addItem(item)
-            # except TypeError:
-            #     messageBox = QMessageBox()
-            #     QMessageBox.about(messageBox, "提示", "没有找到该歌曲！")
-            except Exception as e:
-                print(f"错误:{e};" + type(e).__name__)
+            main_search_list = search_songList(search_content)
+            if type(main_search_list) == "NoneType":
+                # 本地查找失败时，尝试使用bilibili搜索查找
+                print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
+                try:
+                    # 将搜索结果写入json
+                    result_info=search_song_online(search_content)
+                    temp_list=songList()
+                    temp_list.appendList(result_info)
+                    temp_list.syncJson()
+                    temp_list.uniqueByBV()
+                    temp_list.saveList(r"data\search_data.json")
+                    main_search_list = search_songList(search_content)
+                    '''插入的item是字符串类型'''
+                    for item in main_search_list:
+                        self.listWidget.addItem(item)
+                except Exception as e:
+                    print(f"错误:{e};" + type(e).__name__)
+            else:
+                if True:
+                    # 本地查找成功，追加使用bilibili搜索查找
+                    # 或许可以做一个设置项进行配置?
+                    print("在本地列表找到该歌曲，仍然尝试bilibili搜索")
+                    try:
+                        # 将搜索结果写入json
+                        result_info=search_song_online(search_content)
+                        temp_list=songList()
+                        temp_list.dictInfo={"data":result_info}
+                        temp_list.syncJson()
+                        temp_list.saveList(r"data\search_data.json")
+
+                        more_search_list = search_songList(search_content)
+                        for item in more_search_list:
+                            self.listWidget.addItem(item)
+                    except Exception as e:
+                        print(f"错误:{e};" + type(e).__name__)
+                        if type(main_search_list) != "NoneType":
+                            print("bilibili搜索失败,返回本地列表项")
+                            main_search_list = search_songList(search_content)
+                            for item in main_search_list:
+                                self.listWidget.addItem(item)
+                else:
+                    #暂时不可到达
+                    #直接写入列表
+                    for item in main_search_list:
+                        self.listWidget.addItem(item)
+
+
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
 

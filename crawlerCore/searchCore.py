@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from utils.bili_tools import url2bv
 
 
 def get_target(keyword):
@@ -37,6 +38,33 @@ def get_target(keyword):
         except Exception as search_e:
             print(f"提取标题时出错: {search_e}")
             return "标题提取失败"
+
+    def getdate(video_item):
+        """模仿着写的获取日期函数"""
+        # print(video_item)
+        try:
+            date_elem=video_item.find('span', class_='bili-video-card__info--date')
+
+            if date_elem:
+                date = date_elem.get_text(strip=True)
+                return date
+        except Exception as search_e:
+            print(f"提取日期时出错: {search_e}")
+            return ""
+
+    def getauthor(video_item):
+        """模仿着写的获取作者函数"""
+        # print(video_item)
+        try:
+            author_elem = video_item.find('span', class_='bili-video-card__info--author')
+
+            if author_elem:
+                author = author_elem.get_text(strip=True)
+                return author
+        except Exception as search_e:
+            print(f"提取up主名称时出错: {search_e}")
+            return ""
+
 
     def is_valid_title(title):
         """检查标题是否有效"""
@@ -77,6 +105,14 @@ def get_target(keyword):
                         continue
 
                     title = get_title(v_item)
+                    date=getdate(v_item)
+                    author=getauthor(v_item)
+
+                    # print(title)
+                    # print(date)
+                    # print(video_url)
+                    # print(author)
+
                     if not is_valid_title(title):
                         invalid_count += 1
                         continue
@@ -86,6 +122,9 @@ def get_target(keyword):
                     video_info = {
                         'url': video_url,
                         'title': title,
+                        'date': date,
+                        "author": author,
+                        "bv": url2bv(video_url)
                     }
                     page_data.append(video_info)
 
@@ -110,17 +149,10 @@ def get_target(keyword):
     print('已经完成b站搜索视频爬取')
     print(f"总计获取 {len(videos)} 个有效视频数据")
 
-    # 保存结果
-    file_path = f"data\\search_data.txt"
-    try:
-        with open(file_path, 'w', encoding='utf-8') as f:
-            for item in videos:
-                f.write(f"{item['title']}:{item['url']}" + "\n")
-        print(f"列表数据已写入到: {file_path}")
-    except IOError as e:
-        print(f"写入文件时发生错误: {e}")
+    # 返回结果
+    return videos
 
 
 def search_song_online(search_content):
     """调用联网搜索"""
-    get_target("[neuro]歌回" + search_content)
+    return get_target("[neuro]歌回" + search_content)

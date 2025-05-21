@@ -1,0 +1,2 @@
+[console_scripts]
+qrcode-terminal-py = qrcode_terminal.qrcode_terminal:draw_cmd

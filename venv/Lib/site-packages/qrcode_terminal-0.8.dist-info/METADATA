@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: qrcode-terminal
+Version: 0.8
+Summary: Python QRCode Terminal
+Home-page: https://github.com/alishtory/qrcode-terminal
+Author-email: 840652591@qq.com
+License: MIT
+Platform: any
+Requires-Dist: Pillow
+Requires-Dist: qrcode
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: license
+Dynamic: platform
+Dynamic: requires-dist
+Dynamic: summary
