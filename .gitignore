@@ -1,0 +1,6 @@
+venv/
+ffmpeg/
+music/
+*.zip
+data/
+ExtendPark/

@@ -1,7 +1,7 @@
 import threading
 
 from crawlerCore.videosList import get_video_list
-from utils.fileManager import create_dir, part2all
+from utils.fileManager import create_dir, part2all,loadFromAllJson
 
 
 def create_video_list_file():
@@ -22,4 +22,4 @@ def create_video_list_file():
         t.join()
 
     # 合成完整的视频列表
-    part2all("data", "videos_list.txt")
+    loadFromAllJson("data",["videoList.json"]).saveList("data/videoList.json")

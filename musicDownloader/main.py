@@ -3,8 +3,10 @@ import os
 
 from musicDownloader.downloader import download_music, download_music_ogg
 from utils.bili_tools import url2bv
-from utils.fileManager import create_dir, MAIN_PATH, part2all
+from utils.fileManager import create_dir, MAIN_PATH, part2all,loadFromAllJson
 from utils.string_tools import remove_text_after_char, fileName_process
+
+from infoManager.songList import songList
 
 
 create_dir("music")
@@ -14,7 +16,7 @@ title = ""
 
 
 def search_song(search_content):
-    """搜索歌曲"""
+    '''从文件中搜索歌曲'''
     os.chdir(MAIN_PATH)
     find_flag = False
     file_name = 'data/videos_list.txt'
@@ -55,11 +57,34 @@ def search_song(search_content):
     else:
         print(f"没有找到包含{search_content}的歌曲")
 
+def search_songList(search_content):
+    """重写的搜索方法,读取json文件搜索,存储search_result并返回标题列表"""
+    total_data=loadFromAllJson("data")
+    global search_result
+    search_result = []
+    str_result = []
+
+    search_resultlist=total_data
+    search_resultlist.searchByTitle(search_content)
+
+    if len(search_resultlist.getData()) == 0:
+        return None
+
+    search_resultlist.uniqueByBV()
+    search_result=search_resultlist.getData()
+    for item in search_result:
+        tmp_str=f"{item['title']}\n\tup:{item['author']:<30}{item['bv']:^20}{item['date']:>20}"
+        str_result.append(tmp_str)
+
+    return str_result
+
+
+
 
 def run_download(index, fileType=""):
     """运行下载器"""
-    bv = url2bv(search_result[int(index)])
-    output_fileName = fileName_process(remove_text_after_char(search_result[int(index)], ':')).replace(' ', '').replace(
+    bv = search_result[int(index)]["bv"]
+    output_fileName = fileName_process(search_result[int(index)]["title"]).replace(' ', '').replace(
         '_', '', 1)
     print(f"你选择了第{index + 1}个，开始下载歌曲")
     print(f"BVID:{bv}")

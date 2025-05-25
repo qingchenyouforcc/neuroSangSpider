@@ -13,9 +13,11 @@
       <excludeFolder url="file://$MODULE_DIR$/music" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/musicDownloader/music" />
+      <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
     <content url="file://$MODULE_DIR$/../neuroSongSpider扩展包" />
-    <orderEntry type="jdk" jdkName="Python 3.13 (neuroSongSpider)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.11 virtualenv at D:\himou\NeuroSongSpider_res\neuroSangSpider\venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">

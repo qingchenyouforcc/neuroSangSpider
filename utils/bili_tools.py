@@ -20,6 +20,8 @@ def bv2av(x):
 
 def url2bv(url):
     """bv to url"""
+    if '?' in url:
+        url = url.split('?')[0]
     url = url[::-1][:14][::-1]
     url = url.replace('/', "")
     url = url.replace('\n', "", 1)
