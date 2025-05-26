@@ -5,7 +5,7 @@
 不过我不太会写python项目,希望能轻点喷
 '''
 
-from songList import songList
+from SongList import SongList
 
 if __name__ == '__main__':
     print("Testing")

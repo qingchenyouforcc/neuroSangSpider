@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from infoManager.songList import songList
+from infoManager.SongList import SongList
 
 MAIN_PATH = Path.cwd()
 
@@ -48,10 +48,10 @@ def part2all(input_folder, output_file):
     print(f"所有文件内容已合并到 {output_file_path}")
 
 
-def loadFromAllJson(input_folder,excludeDir=[]):
+def load_from_all_json(input_folder, excludeDir=[]):
     """读取所有的json文件,并在去重后返回"""
 
-    totalList = songList()
+    totalList = SongList()
 
     for filename in os.listdir(input_folder):
         # 跳过非json文件
@@ -60,11 +60,11 @@ def loadFromAllJson(input_folder,excludeDir=[]):
         # 构建文件路径
         file_path = os.path.join(input_folder, filename)
         try:
-            thisList=songList(file_path)
-            totalList.appendList(thisList)
+            thisList=SongList(file_path)
+            totalList.append_list(thisList)
         except Exception as e:
             print(f"处理文件 {filename} 时出错: {str(e)}")
             return None
-    totalList.uniqueByBV()
+    totalList.unique_by_bv()
     return totalList
 
