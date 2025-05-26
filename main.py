@@ -13,7 +13,7 @@ from utils.fileManager import MAIN_PATH
 from musicDownloader.main import search_song, run_download,search_songList
 from ui.main_windows import Ui_NeuroSongSpider
 
-from infoManager.songList import songList
+from infoManager.SongList import SongList
 
 
 # if __name__ == '__main__':
@@ -109,11 +109,11 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                 try:
                     # 将搜索结果写入json
                     result_info=search_song_online(search_content)
-                    temp_list=songList()
-                    temp_list.appendList(result_info)
-                    temp_list.syncJson()
-                    temp_list.uniqueByBV()
-                    temp_list.saveList(r"data\search_data.json")
+                    temp_list=SongList()
+                    temp_list.append_list(result_info)
+                    temp_list.sync_json()
+                    temp_list.unique_by_bv()
+                    temp_list.save_list(r"data\search_data.json")
 
                     main_search_list = search_songList(search_content)
                     '''插入的item是字符串类型'''
@@ -129,11 +129,11 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                     try:
                         # 将搜索结果写入json
                         result_info=search_song_online(search_content)
-                        temp_list=songList()
-                        temp_list.appendList(result_info)
-                        temp_list.syncJson()
-                        temp_list.uniqueByBV()
-                        temp_list.saveList(r"data\search_data.json")
+                        temp_list=SongList()
+                        temp_list.append_list(result_info)
+                        temp_list.sync_json()
+                        temp_list.unique_by_bv()
+                        temp_list.save_list(r"data\search_data.json")
 
                         more_search_list = search_songList(search_content)
                         for item in more_search_list:

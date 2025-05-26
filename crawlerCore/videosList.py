@@ -22,7 +22,7 @@ from utils.string_tools import contain_text
 from utils.bili_tools import url2bv
 from bs4 import BeautifulSoup
 
-from infoManager.songList import songList
+from infoManager.SongList import SongList
 
 remove_urls_index = []
 
@@ -58,7 +58,7 @@ def get_video_list(user_id, words_set):
     """处理url返回视频列表"""
     file_path = f"data/{user_id}_data.json"
 
-    videos = songList()
+    videos = SongList()
     temp_videos = get_video_url(user_id)
 
     temp_videos.remove(temp_videos[0])
@@ -74,12 +74,12 @@ def get_video_list(user_id, words_set):
             video_dict=video_info
             video_dict['url']=video_url
             video_dict["bv"]=url2bv(video_url)
-            videos.appendInfo(video_dict)
+            videos.append_info(video_dict)
 
     print("---------------------")
     os.chdir(MAIN_PATH)
 
-    videos.saveList(file_path)
+    videos.save_list(file_path)
 
 
 

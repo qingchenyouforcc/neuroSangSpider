@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-from infoManager.songList import songList
+from infoManager.SongList import SongList
 from utils.bili_tools import url2bv
 
 
@@ -41,7 +41,7 @@ def get_target(keyword):
             print(f"提取标题时出错: {search_e}")
             return "标题提取失败"
 
-    def getdate(video_item):
+    def get_date(video_item):
         """模仿着写的获取日期函数"""
         # print(video_item)
         try:
@@ -54,7 +54,7 @@ def get_target(keyword):
             print(f"提取日期时出错: {search_e}")
             return ""
 
-    def getauthor(video_item):
+    def get_author(video_item):
         """模仿着写的获取作者函数"""
         # print(video_item)
         try:
@@ -107,8 +107,8 @@ def get_target(keyword):
                         continue
 
                     title = get_title(v_item)
-                    date=getdate(v_item)
-                    author=getauthor(v_item)
+                    date=get_date(v_item)
+                    author=get_author(v_item)
 
                     # print(title)
                     # print(date)
@@ -157,7 +157,7 @@ def get_target(keyword):
 
 def search_song_online(search_content):
     """调用联网搜索,返回songList"""
-    result_list=songList()
+    result_list=SongList()
     result_list.dictInfo={"data":get_target("[neuro]歌回" + search_content)}
-    result_list.syncJson()
+    result_list.sync_json()
     return result_list

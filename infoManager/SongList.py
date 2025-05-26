@@ -1,31 +1,31 @@
 import json
 
 """用于保存歌曲列表"""
-class songList(object):
+class SongList(object):
     def __init__(self,dirPath:str=""):
         """创建空列表"""
         self.jsonInfo = json.dumps({})
         self.dictInfo ={"data":[]}
         if dirPath != "":
-            self.loadList(dirPath)
+            self.load_list(dirPath)
 
-    def syncJson(self):
+    def sync_json(self):
         """将map的手动更改同步到json变量"""
         self.jsonInfo = json.dumps(self.dictInfo)
 
-    def appendInfo(self, songInfo:dict):
+    def append_info(self, songInfo:dict):
         """插入一条歌曲dict信息"""
         self.dictInfo["data"].append(songInfo)
-        self.syncJson()
+        self.sync_json()
 
-    def appendList(self, slist):
+    def append_list(self, slist):
         """插入一组songList信息"""
         tmplist=slist.getData()
         for songInfo in tmplist:
-            self.appendInfo(songInfo)
+            self.append_info(songInfo)
 
 
-    def selectInfo(self,index:int):
+    def select_info(self, index:int):
         """
         选择index对应的歌曲信息
         """
@@ -35,7 +35,7 @@ class songList(object):
         else:
             return None
 
-    def saveList(self,dirPath:str):
+    def save_list(self, dirPath:str):
         """保存文件到指定的路径和文件名下"""
         try:
             with open(dirPath,'w',encoding='utf-8') as f:
@@ -43,7 +43,7 @@ class songList(object):
         except Exception as e:
             print(e)
 
-    def loadList(self,dirPath:str):
+    def load_list(self, dirPath:str):
         """从指定的路径和文件名下载入文件"""
         try:
             with open(dirPath,'r',encoding='utf-8') as f:
@@ -52,7 +52,7 @@ class songList(object):
         except Exception as e:
             print("json文件读取错误:",e)
 
-    def uniqueByBV(self):
+    def unique_by_bv(self):
         """对内容根据bv号进行去重"""
         try:
             resultlist=[]
@@ -62,18 +62,18 @@ class songList(object):
                     bvChecker.append(songInfo["bv"])
                     resultlist.append(songInfo)
             self.dictInfo={"data":resultlist}
-            self.syncJson()
+            self.sync_json()
         except Exception as e:
             print("去重模块错误:",e)
 
-    def searchByTitle(self,title:str):
+    def search_by_title(self, title:str):
         """仅保留包含关键字的video项"""
         resultList=[]
         for songInfo in self.dictInfo["data"]:
             if songInfo["title"].lower().find(title) != -1:
                 resultList.append(songInfo)
         self.dictInfo={"data":resultList}
-        self.syncJson()
+        self.sync_json()
 
     def getData(self):
         """获取歌曲信息dict的列表"""
