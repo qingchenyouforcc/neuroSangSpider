@@ -111,4 +111,6 @@ python main.py
 
 以及感谢所有切Neuro/Evil歌回和做二创的UP主们
 
+还有对本项目做出贡献的所有开发者
+
 ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/681dcdd42da7fc5484c1dd3a9875b54a_324.png)
