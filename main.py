@@ -23,7 +23,7 @@ from ui.main_windows import Ui_NeuroSongSpider
 class CrawlerWorkerThread(QThread):
     # 定义一个信号，用于通知主线程任务完成
     # noinspection PyArgumentList
-    task_finished = pyqtSignal(str)
+    task_finished: pyqtSignal | pyqtSignal = pyqtSignal(str)
 
     def run(self):
         # 模拟一个耗时任务
@@ -110,9 +110,9 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                 main_search_list = search_song(search_content)
                 for item in main_search_list:
                     self.listWidget.addItem(item)
-            # except TypeError:
-            #     messageBox = QMessageBox()
-            #     QMessageBox.about(messageBox, "提示", "没有找到该歌曲！")
+            except TypeError:
+                messageBox = QMessageBox()
+                QMessageBox.about(messageBox, "提示", "没有找到该歌曲！")
             except Exception as e:
                 print(f"错误:{e};" + type(e).__name__)
         except Exception as e:
