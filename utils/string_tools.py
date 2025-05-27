@@ -21,3 +21,9 @@ def fileName_process(filename):
         if char in chars_to_remove: filename = filename.replace(char, '_')
     return filename
 
+def count_cn_char(text):
+    count = 0
+    for ch in text:
+        if '\u4e00'<text<'\u9fa5' in ch:
+            count += 1
+    return count
