@@ -2,5 +2,8 @@ venv/
 ffmpeg/
 music/
 *.zip
-data/
 ExtendPark/
+upx-3.96-win64/
+dist/
+build/
+__pycache__/
