@@ -3,7 +3,7 @@ import os
 
 from musicDownloader.downloader import download_music, download_music_ogg
 from utils.bili_tools import url2bv
-from utils.fileManager import create_dir, MAIN_PATH, part2all,load_from_all_json
+from utils.fileManager import create_dir, MAIN_PATH, part2all,load_from_all_data
 from utils.string_tools import remove_text_after_char, fileName_process
 
 from infoManager.SongList import SongList
@@ -59,7 +59,7 @@ def search_song(search_content):
 
 def search_songList(search_content):
     """重写的搜索方法,读取json文件搜索,存储search_result并返回标题列表"""
-    total_data=load_from_all_json("data")
+    total_data=load_from_all_data("data")
     global search_result
     search_result = []
     str_result = []
@@ -73,7 +73,8 @@ def search_songList(search_content):
     search_resultlist.unique_by_bv()
     search_result=search_resultlist.getData()
     for item in search_result:
-        tmp_str=f"{item['title']}\n\tup:{item['author']:<30}{item['bv']:^20}{item['date']:>20}"
+        #作者名中文对齐
+        tmp_str=f"{item['title']}\n\tup:{item['author']:{chr(12288)}<15}{item['bv']:<15}{item['date']:<20}"
         str_result.append(tmp_str)
 
     return str_result

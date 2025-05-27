@@ -41,7 +41,7 @@ class SongList(object):
             with open(dirPath,'w',encoding='utf-8') as f:
                 f.write(json.dumps(self.dictInfo, ensure_ascii=False, indent=4))
         except Exception as e:
-            print(e)
+            print("json文件保存错误:",e)
 
     def load_list(self, dirPath:str):
         """从指定的路径和文件名下载入文件"""
@@ -70,11 +70,11 @@ class SongList(object):
         """仅保留包含关键字的video项"""
         resultList=[]
         for songInfo in self.dictInfo["data"]:
-            if songInfo["title"].lower().find(title) != -1:
+            if songInfo["title"].lower().find(title.lower()) != -1:
                 resultList.append(songInfo)
         self.dictInfo={"data":resultList}
         self.sync_json()
 
     def getData(self):
-        """获取歌曲信息dict的列表"""
+        """获取歌曲信息dict的列表,包含url,bv,date,"""
         return self.dictInfo["data"]

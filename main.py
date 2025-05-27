@@ -111,7 +111,6 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                     result_info=search_song_online(search_content)
                     temp_list=SongList()
                     temp_list.append_list(result_info)
-                    temp_list.sync_json()
                     temp_list.unique_by_bv()
                     temp_list.save_list(r"data\search_data.json")
 
@@ -125,13 +124,12 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                 if True:
                     # 本地查找成功，追加使用bilibili搜索查找
                     # 或许可以做一个设置项进行配置?
-                    print("在本地列表找到该歌曲，仍然尝试bilibili搜索")
+                    print("在本地列表找到该歌曲，继续尝试bilibili搜索")
                     try:
                         # 将搜索结果写入json
                         result_info=search_song_online(search_content)
                         temp_list=SongList()
                         temp_list.append_list(result_info)
-                        temp_list.sync_json()
                         temp_list.unique_by_bv()
                         temp_list.save_list(r"data\search_data.json")
 
