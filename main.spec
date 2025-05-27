@@ -5,13 +5,14 @@ py_files = [
     'crawlerCore\\main.py', 'crawlerCore\\videosList.py', 'crawlerCore\\searchCore.py',
     'musicDownloader\\main.py', 'musicDownloader\\downloader.py', 
     'utils\\bili_tools.py', 'utils\\fileManager.py', 'utils\\string_tools.py', 'utils\\textbroswer_tools.py', 
-    'ui\\main_windows.py'
+    'ui\\main_windows.py',
+    'infoManager\\main.py','infoManager\\SongList.py'
 ]
 
 
 a = Analysis(
     py_files,
-    pathex=['C:\\我的python\\neuroSongSpider\\neuroSongSpider'],
+    pathex=['.'],
     binaries=[],
     datas=[
         ('res\\main.ico', 'images'),
@@ -34,7 +35,6 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
-    optimize=0,
 )
 pyz = PYZ(a.pure)
 
@@ -44,7 +44,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name='NeuroSongSpider',
-    icon='C:\\我的python\\neuroSongSpider\\neuroSongSpider\\res\\main.ico',
+    icon='.\\res\\main.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
