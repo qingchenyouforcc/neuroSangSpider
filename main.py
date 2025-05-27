@@ -26,7 +26,7 @@ from infoManager.SongList import SongList
 class CrawlerWorkerThread(QThread):
     # 定义一个信号，用于通知主线程任务完成
     # noinspection PyArgumentList
-    task_finished = pyqtSignal(str)
+    task_finished: pyqtSignal | pyqtSignal = pyqtSignal(str)
 
     def run(self):
         # 模拟一个耗时任务
@@ -102,6 +102,7 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         self.listWidget.clear()
         search_content = self.search_line.text().lower()
         try:
+
             main_search_list = search_songList(search_content)
             if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
@@ -148,7 +149,6 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                     #直接写入列表
                     for item in main_search_list:
                         self.listWidget.addItem(item)
-
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
 
