@@ -24,7 +24,7 @@ def part2all(input_folder, output_file):
     # 构建输出文件路径
     output_file_path = os.path.join(input_folder, output_file)
     try:
-        with open(output_file_path, 'w', encoding='utf-8') as f:
+        with open(output_file_path, 'w', encoding='utf-8'):
             # 只是创建/清空文件
             pass
     except IOError as e:
@@ -64,7 +64,7 @@ def load_from_all_data(input_folder, exclude_file=None):
         # 构建文件路径
         file_path = os.path.join(input_folder, filename)
         try:
-            this_list=SongList(file_path)
+            this_list = SongList(file_path)
             total_list.append_list(this_list)
         except Exception as e:
             print(f"处理文件 {filename} 时出错: {str(e)}")
@@ -72,10 +72,10 @@ def load_from_all_data(input_folder, exclude_file=None):
     total_list.unique_by_bv()
     return total_list
 
+
 def load_extend(input_folder):
     """读取所有的扩展包,返回bv号列表和up主id列表"""
-    up_list=[]
-    bv_list=[]
+    bv_list = []
     for filename in os.listdir(input_folder):
         # 跳过非extend.json和已排除的文件
         if not filename.endswith("extend.json"):
@@ -83,7 +83,7 @@ def load_extend(input_folder):
         # 构建文件路径
         file_path = os.path.join(input_folder, filename)
         try:
-            with open(file_path,'r',encoding='utf-8') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 dict_info = json.load(f)
                 for video in dict_info["video"]:
                     bv_list.append(video["bv"])
@@ -92,32 +92,35 @@ def load_extend(input_folder):
             return None
     return {"bv": bv_list}
 
+
 def convert_old2new(input_folder):
     """将input_folder文件夹下的 所有 以extend.txt旧扩展包转换为新格式"""
-    now_video={"title":[],"bv":[]}
     for filename in os.listdir(input_folder):
-        dict={"video":[]}
+        json_dict = {"video": []}
         # 跳过非extend.txt和已排除的文件
         if not filename.endswith("extend.txt"):
             continue
         # 构建文件路径
         file_path = os.path.join(input_folder, filename)
-        new_filename=filename.replace(".txt",".json")
+        new_filename = filename.replace(".txt", ".json")
         new_path = os.path.join(input_folder, new_filename)
         try:
-            with open(file_path,'r',encoding='utf-8') as fr:
-                data=fr.readline()
+            with open(file_path, 'r', encoding='utf-8') as fr:
+                data = fr.readline()
                 while data:
-                    dict["video"].append({"title": data.split(':')[0],
-                                          "bv": url2bv(data[data.find(":") + 1:])})
-                    data=fr.readline()
+                    json_dict["video"].append({"title": data.split(':')[0],
+                                               "bv": url2bv(data[data.find(":") + 1:])})
+                    data = fr.readline()
 
-            with open(new_path,'w',encoding='utf-8') as fw:
-                fw.write(json.dumps(dict,ensure_ascii=False,indent=4))
+            with open(new_path, 'w', encoding='utf-8') as fw:
+                fw.write(json.dumps(json_dict, ensure_ascii=False, indent=4))
+                return None
 
         except Exception as e:
             print(f"处理文件 {filename} 时出错: {str(e)}")
             return None
+    return None
+
 
 if __name__ == "__main__":
     # """将data文件夹内的txt扩展包转换为新格式"""

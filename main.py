@@ -10,7 +10,7 @@ from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
 
 from utils.fileManager import MAIN_PATH
-from musicDownloader.main import search_song, run_download,search_songList
+from musicDownloader.main import run_download, search_songList
 from ui.main_windows import Ui_NeuroSongSpider
 
 from infoManager.SongList import SongList
@@ -109,8 +109,8 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                 print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
                     # 将搜索结果写入json
-                    result_info=search_song_online(search_content)
-                    temp_list=SongList()
+                    result_info = search_song_online(search_content)
+                    temp_list = SongList()
                     temp_list.append_list(result_info)
                     temp_list.unique_by_bv()
                     temp_list.save_list(r"data\search_data.json")
@@ -128,8 +128,8 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                     print("在本地列表找到该歌曲，继续尝试bilibili搜索")
                     try:
                         # 将搜索结果写入json
-                        result_info=search_song_online(search_content)
-                        temp_list=SongList()
+                        result_info = search_song_online(search_content)
+                        temp_list = SongList()
                         temp_list.append_list(result_info)
                         temp_list.unique_by_bv()
                         temp_list.save_list(r"data\search_data.json")
@@ -145,13 +145,12 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
                             for item in main_search_list:
                                 self.listWidget.addItem(item)
                 else:
-                    #暂时不可到达
-                    #直接写入列表
+                    # 暂时不可到达
+                    # 直接写入列表
                     for item in main_search_list:
                         self.listWidget.addItem(item)
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
-
 
     def Download_btn(self):
         index = self.listWidget.currentRow()
