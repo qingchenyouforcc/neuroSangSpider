@@ -6,3 +6,4 @@ ExtendPark/
 upx-3.96-win64/
 dist/
 build/
+__pycache__/
