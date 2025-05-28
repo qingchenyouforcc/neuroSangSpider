@@ -79,6 +79,8 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         self.SearchBtn.clicked.connect(lambda: self.search_btn())
         self.DownloadBtn.clicked.connect(lambda: self.Download_btn())
         self.DownloadBtn_ogg.clicked.connect(lambda: self.Download_ogg_btn())
+        # 将 Enter 键绑定到搜索按钮
+        self.search_line.returnPressed.connect(self.search_btn)
 
     def getVideo_btn(self):
         try:
