@@ -87,7 +87,7 @@ python main.py
 
 每个对象需要至少包含一个`bv`属性，内容为视频的BV号，用于程序获取视频，其他属性不会被读入程序
 
-(如果实在看不懂的话，可以参考`data`文件夹下的`example_extend.json`，里面有更详细的说明和例子)
+(如果实在看不懂的话，可以参考`ExtendPack/extend`文件夹下的`example_extend.json`，里面有更详细的说明和例子)
 
 ---
 
