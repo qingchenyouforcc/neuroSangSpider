@@ -18,6 +18,7 @@ async def download(url: str, out: str, intro: str):
     dwn_id = await get_client().download_create(url, HEADERS)
     bts = 0
     tot = get_client().download_content_length(dwn_id)
+    # 自动覆盖文件，无需用户确认
     with open(out, "wb") as file:
         while True:
             bts += file.write(await get_client().download_chunk(dwn_id))
@@ -43,13 +44,13 @@ async def download_music(bvid, title):
         # FLV 流下载
         await download(streams[0].url, "flv_temp.flv", "下载 FLV 音视频流")
         # 转换文件格式
-        os.system(f"{FFMPEG_PATH} -i flv_temp.flv {title}.mp3")
+        os.system(f"{FFMPEG_PATH} -y -i flv_temp.flv {title}.mp3")
         # 删除临时文件
         os.remove("flv_temp.flv")
     else:
         # MP4 流下载
         await download(streams[1].url, "audio_temp.m4s", "下载音频流")
-        os.system(f"{FFMPEG_PATH} -i audio_temp.m4s {title}.mp3")
+        os.system(f"{FFMPEG_PATH} -y -i audio_temp.m4s {title}.mp3")
         # 删除临时文件
         os.remove("audio_temp.m4s")
 
@@ -72,13 +73,13 @@ async def download_music_ogg(bvid, title):
         # FLV 流下载
         await download(streams[0].url, "flv_temp.flv", "下载 FLV 音视频流")
         # 转换文件格式
-        os.system(f"{FFMPEG_PATH} -i flv_temp.flv {title}.ogg")
+        os.system(f"{FFMPEG_PATH} -y -i flv_temp.flv {title}.ogg")
         # 删除临时文件
         os.remove("flv_temp.flv")
     else:
         # MP4 流下载
         await download(streams[1].url, "audio_temp.m4s", "下载音频流")
-        os.system(f"{FFMPEG_PATH} -i audio_temp.m4s {title}.ogg")
+        os.system(f"{FFMPEG_PATH} -y -i audio_temp.m4s {title}.ogg")
         # 删除临时文件
         os.remove("audio_temp.m4s")
 

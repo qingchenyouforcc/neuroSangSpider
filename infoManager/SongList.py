@@ -11,11 +11,17 @@ class SongList(object):
 
     def sync_json(self):
         """将map的手动更改同步到json变量"""
-        self.jsonInfo = json.dumps(self.dictInfo)
+        # 过滤掉值为方法的条目
+        clean_dict = {k: v for k, v in self.dictInfo.items() if not callable(v)}
+        # 创建一个新的字典，仅包含可序列化的项
+        serializable_dict = {k: v for k, v in clean_dict.items() if isinstance(v, (str, int, float, bool, type(None)))}
+        self.jsonInfo = json.dumps(serializable_dict)
 
-    def append_info(self, songInfo:dict):
+    def append_info(self, songInfo: dict):
         """插入一条歌曲dict信息"""
-        self.dictInfo["data"].append(songInfo)
+        # 过滤掉值为方法的条目
+        clean_song_info = {k: v for k, v in songInfo.items() if not callable(v)}
+        self.dictInfo["data"].append(clean_song_info)
         self.sync_json()
 
     def append_list(self, slist):

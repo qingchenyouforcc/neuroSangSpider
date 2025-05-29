@@ -97,6 +97,7 @@ def resolve_url_to_title(url, words_set):
     return None
 
 
+# noinspection PyCallingNonCallable
 def resolve_url_to_info(url, words_set=None):
     """解析视频url并转换为详细信息(title,author,date)"""
     try:
@@ -110,14 +111,14 @@ def resolve_url_to_info(url, words_set=None):
         # 获取作者(联合投稿可能失败)
         video_author = soup.find('a', class_='up-name')
         if video_author is not None:
-            video_author = video_author.getText
+            video_author = video_author.getText()  # 调用 getText 方法获取实际文本
         else:
             # print("未找到作者名:",url)
             video_author = "Unknown"
         # 获取发布时间
         video_date = soup.find('div', class_='pubdate-ip-text')
         if video_date is not None:
-            video_date = video_date.getText
+            video_date = video_date.getText()  # 调用 getText 方法获取实际文本
         else:
             # print("未找到发布日期:",url)
             video_date = "Unknown"

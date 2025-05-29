@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+from PyQt6.QtWidgets import QMessageBox
 from musicDownloader.downloader import download_music, download_music_ogg
 from utils.fileManager import create_dir, MAIN_PATH, part2all, load_from_all_data
 from utils.string_tools import fileName_process, count_cn_char
@@ -94,6 +95,26 @@ def run_download(index, fileType=""):
     # 运行下载器(异步函数)
     os.chdir(MAIN_PATH)
     os.chdir("music")
+    
+    # 检查文件是否已经存在
+    file_exists = False
+    if fileType == "ogg":
+        file_exists = os.path.exists(f"{output_fileName}.ogg")
+    else:
+        file_exists = os.path.exists(f"{output_fileName}.mp3")
+    
+    # 如果文件存在，弹出提示窗口
+    if file_exists:
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("文件已存在")
+        msg_box.setText(f"文件 '{output_fileName}.{fileType or 'mp3'}' 已存在。是否覆盖？")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.No)
+        reply = msg_box.exec()
+        if reply == QMessageBox.StandardButton.No:
+            print("用户取消下载。")
+            return
+    
     if fileType == "ogg":
         asyncio.run(download_music_ogg(bv, output_fileName))
     else:
