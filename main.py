@@ -4,7 +4,8 @@ import sys
 from PyQt6 import QtWidgets, QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
 from PyQt6.QtGui import QMovie
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QWidget, QVBoxLayout, QApplication
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QWidget, QVBoxLayout, QApplication, QHBoxLayout
+from nulltype import NullType
 
 from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
@@ -18,7 +19,8 @@ from infoManager.SongList import SongList
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, PrimaryPushButton, LineEdit, SwitchButton,
-                            InfoBar, InfoBarPosition, Flyout, FlyoutView, BodyLabel)
+                            InfoBar, InfoBarPosition, Flyout, FlyoutView, BodyLabel, TitleLabel, PushButton, ComboBox,
+                            SearchLineEdit, IconWidget, InfoBarIcon, FluentIcon, GroupHeaderCardWidget)
 from qfluentwidgets import FluentIcon as FIF
 
 
@@ -43,12 +45,25 @@ class CrawlerWorkerThread(QThread):
 
 # 加载动画的窗口
 class LoadingWindow(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, main_window_ref, parent=None):
         super(LoadingWindow, self).__init__(parent)
         self.loading_label = None
         self.loading_gif = None
-        self.m_winX = parent.x()
-        self.m_winY = parent.y()
+        self.main_window = main_window_ref
+        if self.main_window:
+            # 现在可以使用保存的引用来调用主窗口的方法
+            main_pos = self.main_window.frameGeometry().topLeft()
+            main_size = self.main_window.frameGeometry().size()
+            print(f"从辅助窗口获取到主窗口位置: {main_pos.x()}, {main_pos.y()}")
+            print(f"从辅助窗口获取到主窗口大小: {main_size.width()}x{main_size.height()}")
+            # 你也可以在这里显示一个消息框等
+            QMessageBox.information(self, "主窗口信息",
+                                    f"主窗口位置: ({main_pos.x()}, {main_pos.y()})\n"
+                                    f"主窗口大小: {main_size.width()}x{main_size.height()}")
+        else:
+            print("错误: 未找到主窗口引用。")
+        self.m_winX = self.main_window.frameGeometry().topLeft().x()
+        self.m_winY = self.main_window.frameGeometry().topLeft().y()
         self.initUI()
 
     def initUI(self):
@@ -69,7 +84,7 @@ class LoadingWindow(QWidget):
         self.loading_gif.start()
 
 
-# 主窗口
+# 旧版GUI
 class MainWindow(QMainWindow, Ui_NeuroSongSpider):
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent=parent)
@@ -188,8 +203,110 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         print("获取歌曲列表完成！")
 
 
+class SettinsCard(GroupHeaderCardWidget):
+    """设置卡片"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setTitle("基本设置")
+        # self.setBorderRadius(8)
+
+        self.bottomLayout = QVBoxLayout()
+        self.setFixedHeight(120)
+
+        # 切换主题按钮
+        self.themeSwitch = SwitchButton(self)
+        self.themeSwitch.setOffText(self.tr("浅色"))
+        self.themeSwitch.setOnText(self.tr("深色"))
+        # 根据当前主题设置初始状态 (确保 app 实例已存在)
+        # 在 __main__ 中设置初始主题，这里可以先读取
+        current_theme_is_dark = QApplication.instance().property("darkMode")
+        self.themeSwitch.setChecked(
+            current_theme_is_dark if current_theme_is_dark is not None else (Theme.DARK == Theme.DARK))  # 默认为深色
+        self.themeSwitch.checkedChanged.connect(on_theme_switched)
+
+        self.bottomLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # 添加组件到分组中
+        self.addGroup(FluentIcon.BRIGHTNESS,"主题", "切换深色/浅色模式", self.themeSwitch)
+
+        # 添加底部工具栏
+        self.vBoxLayout.addLayout(self.bottomLayout)
+
+
+def on_theme_switched(checked):
+    """切换主题"""
+    if checked:
+        setTheme(Theme.DARK)
+    else:
+        setTheme(Theme.LIGHT)
+
+
+class SettingInterface(QWidget):
+    """ 设置GUI """
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setObjectName("settingInterface")
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(30, 30, 30, 30)
+        self.layout.setSpacing(15)
+
+
+        self.layout.addWidget(SettinsCard(), Qt.AlignmentFlag.AlignTop)
+        self.layout.addStretch(1)
+
+
+class SearchInterface(QWidget):
+    """ 搜索GUI """
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setObjectName("searchInterface")
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(30, 30, 30, 30)
+        self.layout.setSpacing(15)
+
+        self.GetVideoBtn = PushButton('获取歌曲列表', self)
+        self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
+        self.lineEdit = SearchLineEdit(self)
+        self.lineEdit.setClearButtonEnabled(True)
+
+        self.titleLabel = TitleLabel("搜索歌回", self)
+
+        self.layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
+        self.layout.addWidget(self.GetVideoBtn)
+        self.layout.addWidget(self.lineEdit, Qt.AlignmentFlag.AlignBottom)
+
+    def getVideo_btn(self):
+        try:
+            print("获取歌曲列表中...")
+            self.GetVideoBtn.setEnabled(False)
+
+            # 显示加载动画
+            self.setWindowModality(Qt.WindowModality.ApplicationModal)  # 设置主窗口不可操作
+            self.loading = LoadingWindow(main_window_ref=self, parent=self)
+            self.loading.show()
+
+            # 创建并启动工作线程
+            # noinspection PyArgumentList
+            self.thread = CrawlerWorkerThread()
+            self.thread.task_finished.connect(self.on_c_task_finished)
+            self.thread.start()
+        except Exception as e:
+            print(f"错误:{e};" + type(e).__name__)
+
+    # 当爬虫任务结束时
+    def on_c_task_finished(self):
+        self.loading.close()
+        self.GetVideoBtn.setEnabled(True)
+        self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
+        print("获取歌曲列表完成！")
+
+
 class HomeInterface(QWidget):
-    """ 全新GUI开发 """
+    """ 主页GUI """
+
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setObjectName("homeInterface")
@@ -198,48 +315,39 @@ class HomeInterface(QWidget):
         self.layout.setContentsMargins(30, 30, 30, 30)
         self.layout.setSpacing(15)
 
-        self.titleLabel = SubtitleLabel("这是全新的NeuroSangSpider GUI", self)
+        # 实现主页文字
+        self.titleLabel = TitleLabel("NeuroSangSpider 1.1", self)
+        self.subTitleLabel = SubtitleLabel("全新的NeuroSangSpider", self)
         self.infoLabel = BodyLabel(
-            "这是一个简单的 PyQt6 示例，展示了一些基本的组件。\n"
-            "全新的NeuroSangSpiderGUI正在开发中，将会带来全新的体验。 \n"
-            "尝试点击按钮或与下面的控件交互。",
+            "- 更加智能的搜索机制 \n"
+            "- 更多的参数设定 \n"
+            "- 更现代化的GUI \n"
+            "- 更丰富的功能 \n",
             self
         )
 
-        self.lineEdit = LineEdit(self)
-        self.lineEdit.setPlaceholderText("在这里输入一些文本...")
-
-        self.button = PrimaryPushButton("点击我", self)
-        self.button.clicked.connect(self.on_button_clicked)
-
-        self.themeSwitch = SwitchButton("切换主题 (深色/浅色)", self)
-        # 根据当前主题设置初始状态 (确保 app 实例已存在)
-        # 在 __main__ 中设置初始主题，这里可以先读取
-        current_theme_is_dark = QApplication.instance().property("darkMode")
-        self.themeSwitch.setChecked(
-            current_theme_is_dark if current_theme_is_dark is not None else (Theme.DARK == Theme.DARK))  # 默认为深色
-        self.themeSwitch.checkedChanged.connect(self.on_theme_switched)
+        self.readmeLabel = SubtitleLabel("介绍", self)
+        self.readmeInfoLabel = BodyLabel(
+            "这是一个基于 Python 3.13 开发的程序，\n"
+            "用于从 Bilibili（哔哩哔哩）爬取 Neuro/Evil 的歌曲的视频内容。\n"
+            "(当然未来也支持通过自定义UP 主列表和关键词，灵活调整爬取目标) \n"
+            "\nLicense:   AGPL-3.0",
+            self
+        )
 
         self.layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
+        self.layout.addWidget(self.subTitleLabel)
         self.layout.addWidget(self.infoLabel)
         self.layout.addSpacing(10)
-        self.layout.addWidget(self.lineEdit)
-        self.layout.addWidget(self.button)
-        self.layout.addSpacing(10)
-        self.layout.addWidget(self.themeSwitch, 0, Qt.AlignmentFlag.AlignBottom)
+        self.layout.addWidget(self.readmeLabel)
+        self.layout.addWidget(self.readmeInfoLabel)
+
         self.layout.addStretch(1)
 
-    def on_theme_switched(self, checked):
-        if checked:
-            setTheme(Theme.DARK)
-        else:
-            setTheme(Theme.LIGHT)
 
-
-# ----------------------------------------------------------------------
-#   主演示窗口
-# ----------------------------------------------------------------------
 class DemoWindow(FluentWindow):
+    """全新GUI"""
+
     def __init__(self):
         super().__init__()
         self.setObjectName("demoWindow")
@@ -247,12 +355,28 @@ class DemoWindow(FluentWindow):
 
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
-        self.addSubInterface(  # <--- 注意这里，直接调用 self.addSubInterface
+
+        # 添加子界面
+        self.addSubInterface(
             interface=self.homeInterface,
             icon=FIF.HOME,
             text="主页",
             position=NavigationItemPosition.TOP
         )
+        self.addSubInterface(
+            interface=SearchInterface(self),
+            icon=FIF.SEARCH,
+            text="搜索",
+            position=NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
+            interface=SettingInterface(self),
+            icon=FIF.SETTING,
+            text="设置",
+            position=NavigationItemPosition.BOTTOM
+        )
+
+
         self.setWindowTitle("NeuroSangSpider")
 
         # 设置初始窗口大小
@@ -267,9 +391,6 @@ class DemoWindow(FluentWindow):
 if __name__ == '__main__':
     # 新版GUI开发中
     # --- 启用高 DPI 支持 ---
-    # 在 PyQt6 中，这些通常是默认启用的，或者通过平台插件处理得更好。
-    # 但显式设置通常无害，并且可以确保行为一致性。
-    # Qt6 使用更明确的枚举路径
     if hasattr(Qt.ApplicationAttribute, 'AA_EnableHighDpiScaling'):
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
     if hasattr(Qt.ApplicationAttribute, 'AA_UseHighDpiPixmaps'):
@@ -280,9 +401,8 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
 
-    # --- 设置初始主题 ---
-    # setTheme(Theme.LIGHT) # 或者 Theme.DARK
-    setTheme(Theme.DARK) # 默认启动为深色主题
+    # 设置初始主题
+    setTheme(Theme.AUTO)
 
     window = DemoWindow()
     window.show()
