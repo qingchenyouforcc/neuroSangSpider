@@ -4,14 +4,16 @@ import sys
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout
-from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar
+from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBoxSettingCard, \
+    SettingCardGroup, ComboBox
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
                             BodyLabel, TitleLabel, PushButton, SearchLineEdit, FluentIcon, GroupHeaderCardWidget,
-                            MessageBoxBase,
-                            ImageLabel, TeachingTip, TeachingTipView)
+                            TeachingTip, TeachingTipView)
+from qfluentwidgets.multimedia import StandardMediaPlayBar
 
+from config import cfg
 from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
 from infoManager.SongList import SongList
@@ -38,35 +40,58 @@ class CrawlerWorkerThread(QThread):
         self.task_finished.emit("获取歌曲列表完成！")
 
 
+def changeDownloadType(index):
+    """修改下载歌曲格式"""
+    file_types = ['mp3', 'ogg', 'wav']
+    selected_type = file_types[index]
+    cfg.downloadType = selected_type
+    InfoBar.success(
+        "设置成功",
+        f"已将下载格式设为 {selected_type}",
+        orient=Qt.Orientation.Horizontal,
+        position=InfoBarPosition.BOTTOM_RIGHT,
+        duration=1500,
+        parent=window
+    )
+
+
 class SettinsCard(GroupHeaderCardWidget):
     """设置卡片"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("基本设置")
-        # self.setBorderRadius(8)
+        self.scrollWidget = QWidget()
+        self.setTitle("设置")
 
-        self.bottomLayout = QVBoxLayout()
-        self.setFixedHeight(120)
+        # self.setBorderRadius(8)
+        self.setFixedHeight(240)
+
+        self.mainGroup = SettingCardGroup(
+            self.tr('基本设置'), self.scrollWidget)
+
+        # 修改下载歌曲格式
+        self.comboBox = ComboBox(self)
+        items = ['mp3', 'ogg', 'wav']
+        self.comboBox.addItems(items)
+
+        current_index = items.index(cfg.downloadType.value)
+        self.comboBox.setCurrentIndex(current_index)
+        self.comboBox.currentIndexChanged.connect(changeDownloadType)
+
 
         # 切换主题按钮
         self.themeSwitch = SwitchButton(self)
         self.themeSwitch.setOffText(self.tr("浅色"))
         self.themeSwitch.setOnText(self.tr("深色"))
-        # 根据当前主题设置初始状态 (确保 app 实例已存在)
-        # 在 __main__ 中设置初始主题，这里可以先读取
         current_theme_is_dark = QApplication.instance().property("darkMode")
         self.themeSwitch.setChecked(
             current_theme_is_dark if current_theme_is_dark is not None else (Theme.DARK == Theme.DARK))  # 默认为深色
         self.themeSwitch.checkedChanged.connect(on_theme_switched)
 
-        self.bottomLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # 添加组件到分组中
         self.addGroup(FluentIcon.BRIGHTNESS, "主题", "切换深色/浅色模式", self.themeSwitch)
-
-        # 添加底部工具栏
-        self.vBoxLayout.addLayout(self.bottomLayout)
+        self.addGroup(FluentIcon.DOWNLOAD, "下载格式", "选择默认音乐格式", self.comboBox)
 
 
 def on_theme_switched(checked):
@@ -94,19 +119,6 @@ def showLoading(self):
     return w
 
 
-# noinspection PyTypeChecker
-class loadingCard(MessageBoxBase):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.resize(250, 250)
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.loading_gif = ImageLabel(os.path.join(MAIN_PATH, "res", "loading.gif"))
-
-        self.viewLayout.addWidget(self.loading_gif)
-
-
 class SettingInterface(QWidget):
     """ 设置GUI """
 
@@ -120,6 +132,32 @@ class SettingInterface(QWidget):
 
         self.layout.addWidget(SettinsCard(), Qt.AlignmentFlag.AlignTop)
         self.layout.addStretch(1)
+
+
+class LocPlayerInterface(QWidget):
+    """ 本地播放器GUI """
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setObjectName("locPlayerInterface")
+
+        self.layout = QVBoxLayout(self)
+        self.tableView = TableWidget(self)
+
+        self.layout.setContentsMargins(30, 30, 30, 30)
+        self.layout.setSpacing(15)
+
+        # enable border
+        self.tableView.setBorderVisible(True)
+        self.tableView.setBorderRadius(8)
+
+        self.bar = StandardMediaPlayBar()
+
+        self.titleLabel = TitleLabel("本地播放器", self)
+
+        self.layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
+        self.layout.addWidget(self.tableView)
+        self.layout.addWidget(self.bar)
+
 
 
 def searchOnBili(search_content):
@@ -162,13 +200,13 @@ class SearchInterface(QWidget):
         btnGroup = QWidget()
         btnLayout = QHBoxLayout(btnGroup)
 
-        GetVideoBtn = PushButton('获取歌曲列表', self)
-        GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
+        self.GetVideoBtn = PushButton('获取歌曲列表', self)
+        self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
 
         DownloadBtn = PushButton('下载歌曲', self)
         DownloadBtn.clicked.connect(lambda: self.Download_btn())
 
-        btnLayout.addWidget(GetVideoBtn)
+        btnLayout.addWidget(self.GetVideoBtn)
         btnLayout.addWidget(DownloadBtn)
         btnLayout.setSpacing(15)
 
@@ -322,7 +360,8 @@ class SearchInterface(QWidget):
     def Download_btn(self):
         index = self.tableView.currentRow()
         try:
-            run_download(index)
+            fileType = cfg.downloadType
+            run_download(index, fileType)
         except IndexError:
             messageBox = QMessageBox()
             QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
@@ -397,6 +436,12 @@ class DemoWindow(FluentWindow):
             position=NavigationItemPosition.TOP
         )
         self.addSubInterface(
+            interface=LocPlayerInterface(self),
+            icon=FIF.PLAY,
+            text="本地播放",
+            position=NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
             interface=SettingInterface(self),
             icon=FIF.SETTING,
             text="设置",
@@ -412,6 +457,9 @@ class DemoWindow(FluentWindow):
             # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
         else:  # 如果获取不到主屏幕信息，给一个默认大小
             self.resize(QSize(680, 530))
+
+        # 设置默认音频格式
+        cfg.downloadType = "mp3"
 
 
 if __name__ == '__main__':

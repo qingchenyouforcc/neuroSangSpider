@@ -54,5 +54,5 @@ async def download_music(bvid, title, fileType):
         # 删除临时文件
         os.remove("audio_temp.m4s")
 
-    print(f"已下载为：{title}.mp3")
+    print(f"已下载为：{title}.{fileType}")
 
