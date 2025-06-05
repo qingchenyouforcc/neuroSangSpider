@@ -2,9 +2,9 @@ import asyncio
 import os
 
 from PyQt6.QtWidgets import QMessageBox
-from musicDownloader.downloader import download_music, download_music_ogg
+from musicDownloader.downloader import download_music
 from utils.fileManager import create_dir, MAIN_PATH, part2all, load_from_all_data
-from utils.string_tools import fileName_process, count_cn_char
+from utils.string_tools import fileName_process
 
 create_dir("music")
 search_result = []
@@ -119,7 +119,7 @@ def run_download(index, fileType=""):
             print("用户取消下载。")
             return
     
-    if fileType == "ogg":
-        asyncio.run(download_music_ogg(bv, output_fileName))
+    if fileType:
+        asyncio.run(download_music(bv, output_fileName, fileType))
     else:
-        asyncio.run(download_music(bv, output_fileName))
+        asyncio.run(download_music(bv, output_fileName, "mp3"))
