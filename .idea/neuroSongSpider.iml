@@ -7,6 +7,8 @@
       <sourceFolder url="file://$MODULE_DIR$/musicDownloader" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ExtendPack" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/infoManager" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/common" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/data" />
       <excludeFolder url="file://$MODULE_DIR$/ffmpeg" />
@@ -17,19 +19,10 @@
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
     <content url="file://$MODULE_DIR$/../neuroSongSpider扩展包" />
-    <orderEntry type="jdk" jdkName="Python 3.11 virtualenv at D:\himou\NeuroSongSpider_res\neuroSangSpider\venv" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.13 (neuroSongSpider)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">
     <option name="versionSpecifier" value="大于或等于 (&gt;=x.y.z)" />
-  </component>
-  <component name="PyNamespacePackagesService">
-    <option name="namespacePackageFolders">
-      <list>
-        <option value="$MODULE_DIR$/crawlerCore" />
-        <option value="$MODULE_DIR$/musicDownloader" />
-        <option value="$MODULE_DIR$/utils" />
-      </list>
-    </option>
   </component>
 </module>

@@ -45,11 +45,12 @@ def get_target(keyword):
         """模仿着写的获取日期函数"""
         # print(video_item)
         try:
-            date_elem=video_item.find('span', class_='bili-video-card__info--date')
+            date_elem = video_item.find('span', class_='bili-video-card__info--date')
 
             if date_elem:
                 date = date_elem.get_text(strip=True)
                 return date
+            return None
         except Exception as search_e:
             print(f"提取日期时出错: {search_e}")
             return ""
@@ -63,10 +64,10 @@ def get_target(keyword):
             if author_elem:
                 author = author_elem.get_text(strip=True)
                 return author
+            return None
         except Exception as search_e:
             print(f"提取up主名称时出错: {search_e}")
             return ""
-
 
     def is_valid_title(title):
         """检查标题是否有效"""
@@ -107,8 +108,8 @@ def get_target(keyword):
                         continue
 
                     title = get_title(v_item)
-                    date=get_date(v_item)
-                    author=get_author(v_item)
+                    date = get_date(v_item)
+                    author = get_author(v_item)
 
                     # print(title)
                     # print(date)
@@ -144,12 +145,12 @@ def get_target(keyword):
 
         except Exception as search_e:
             print(f"爬取页面时发生错误: {search_e}")
+            return None
 
     # 爬取
     first_page_url = f'https://search.bilibili.com/all?keyword={keyword}'
     videos = crawler_page(first_page_url)
     print('已经完成b站搜索视频爬取')
-    print(f"总计获取 {len(videos)} 个有效视频数据")
 
     # 返回结果
     return videos
@@ -157,7 +158,12 @@ def get_target(keyword):
 
 def search_song_online(search_content):
     """调用联网搜索,返回songList"""
-    result_list=SongList()
-    result_list.dictInfo={"data":get_target("[neuro]歌回" + search_content)}
+    result_list = SongList()
+    result_list.dictInfo = {"data": get_target("neuro " + search_content)}
+    # result_list.dictInfo = {"data": get_target("evil" + search_content)}
+
+    # debug
+    print(f"搜索结果:{result_list.dictInfo}")
+
     result_list.sync_json()
     return result_list

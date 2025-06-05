@@ -1,13 +1,10 @@
 import asyncio
 import os
 
-from musicDownloader.downloader import download_music, download_music_ogg
-from utils.bili_tools import url2bv
-from utils.fileManager import create_dir, MAIN_PATH, part2all,load_from_all_data
-from utils.string_tools import remove_text_after_char, fileName_process,count_cn_char
-
-from infoManager.SongList import SongList
-
+from PyQt6.QtWidgets import QMessageBox
+from musicDownloader.downloader import download_music
+from utils.fileManager import create_dir, MAIN_PATH, part2all, load_from_all_data
+from utils.string_tools import fileName_process
 
 create_dir("music")
 search_result = []
@@ -16,7 +13,7 @@ title = ""
 
 
 def search_song(search_content):
-    '''从文件中搜索歌曲'''
+    """从文件中搜索歌曲"""
     os.chdir(MAIN_PATH)
     find_flag = False
     file_name = 'data/videos_list.txt'
@@ -56,27 +53,36 @@ def search_song(search_content):
 
     else:
         print(f"没有找到包含{search_content}的歌曲")
+        return None
+
 
 def search_songList(search_content):
     """重写的搜索方法,读取json文件搜索,存储search_result并返回标题列表"""
-    total_data=load_from_all_data("data")
+    # 切换路径
+    os.chdir(MAIN_PATH)
+
+    total_data = load_from_all_data("data")
     global search_result
     search_result = []
     str_result = []
+    filter_list = ["neuro", "歌", "手书", "切片", "熟肉", "[evil", "社区", "21"]
+    black_list = ["李19"]
 
-    search_resultlist=total_data
+    search_resultlist = total_data
     search_resultlist.search_by_title(search_content)
 
     if len(search_resultlist.getData()) == 0:
         return None
 
     search_resultlist.unique_by_bv()
-    search_result=search_resultlist.getData()
+    search_result = search_resultlist.getData()
     for item in search_result:
-        #试图中文对齐,但是还是对不齐..只能等gui适配了
-        author_width=20-count_cn_char(item['author'])
-        tmp_str=f"{item['title']}\nup:{item['author']:<{author_width}}{item['bv']:<15}{item['date']:<20}"
-        str_result.append(tmp_str)
+        if any(blackWord in item['author'].lower() for blackWord in black_list):
+            continue
+        else:
+            if any(filterWord in item['title'].lower() for filterWord in filter_list):
+                tmp_str = [item['title'], item['author'].replace('\n', ''), item['date'], item['bv']]
+                str_result.append(tmp_str)
 
     return str_result
 
@@ -93,7 +99,27 @@ def run_download(index, fileType=""):
     # 运行下载器(异步函数)
     os.chdir(MAIN_PATH)
     os.chdir("music")
-    if fileType == "ogg":
-        asyncio.run(download_music_ogg(bv, output_fileName))
+    
+    # 检查文件是否已经存在
+    file_exists = False
+    if fileType:
+        file_exists = os.path.exists(f"{output_fileName}.{fileType}")
     else:
-        asyncio.run(download_music(bv, output_fileName))
+        file_exists = os.path.exists(f"{output_fileName}.mp3")
+    
+    # 如果文件存在，弹出提示窗口
+    if file_exists:
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("文件已存在")
+        msg_box.setText(f"文件 '{output_fileName}.{fileType or 'mp3'}' 已存在。是否覆盖？")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.No)
+        reply = msg_box.exec()
+        if reply == QMessageBox.StandardButton.No:
+            print("用户取消下载。")
+            return
+    
+    if fileType:
+        asyncio.run(download_music(bv, output_fileName, fileType))
+    else:
+        asyncio.run(download_music(bv, output_fileName, "mp3"))

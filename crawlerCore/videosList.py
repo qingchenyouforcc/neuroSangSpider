@@ -69,18 +69,17 @@ def get_video_list(user_id, words_set):
     for video in temp_videos:
         # print(video['url'])
         video_url = video['url']
-        video_info=resolve_url_to_info(video_url, words_set)
+        video_info = resolve_url_to_info(video_url, words_set)
         if video_info is not None:
-            video_dict=video_info
-            video_dict['url']=video_url
-            video_dict["bv"]=url2bv(video_url)
+            video_dict = video_info
+            video_dict['url'] = video_url
+            video_dict["bv"] = url2bv(video_url)
             videos.append_info(video_dict)
 
     print("---------------------")
     os.chdir(MAIN_PATH)
 
     videos.save_list(file_path)
-
 
 
 def resolve_url_to_title(url, words_set):
@@ -95,7 +94,10 @@ def resolve_url_to_title(url, words_set):
 
     if contain_text(words_set, video_title):
         return video_title
+    return None
 
+
+# noinspection PyCallingNonCallable
 def resolve_url_to_info(url, words_set=None):
     """解析视频url并转换为详细信息(title,author,date)"""
     try:
@@ -109,14 +111,14 @@ def resolve_url_to_info(url, words_set=None):
         # 获取作者(联合投稿可能失败)
         video_author = soup.find('a', class_='up-name')
         if video_author is not None:
-            video_author = video_author.getText(strip=True)
+            video_author = video_author.getText()  # 调用 getText 方法获取实际文本
         else:
             # print("未找到作者名:",url)
             video_author = "Unknown"
         # 获取发布时间
-        video_date=soup.find('div', class_='pubdate-ip-text')
+        video_date = soup.find('div', class_='pubdate-ip-text')
         if video_date is not None:
-            video_date = video_date.getText(strip=True)
+            video_date = video_date.getText()  # 调用 getText 方法获取实际文本
         else:
             # print("未找到发布日期:",url)
             video_date = "Unknown"
