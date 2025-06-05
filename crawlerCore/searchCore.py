@@ -151,7 +151,6 @@ def get_target(keyword):
     first_page_url = f'https://search.bilibili.com/all?keyword={keyword}'
     videos = crawler_page(first_page_url)
     print('已经完成b站搜索视频爬取')
-    print(f"总计获取 {len(videos)} 个有效视频数据")
 
     # 返回结果
     return videos

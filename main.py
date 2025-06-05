@@ -4,7 +4,7 @@ import sys
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem
-from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget
+from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
@@ -304,6 +304,9 @@ class SearchInterface(QWidget):
         search_content = self.searchLine.text().lower()
         try:
             main_search_list = search_songList(search_content)
+            print("---搜索开始---")
+            print(f"本地获取 {len(main_search_list)} 个有效视频数据:")
+            print(main_search_list)
             if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
                 print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
@@ -318,6 +321,17 @@ class SearchInterface(QWidget):
                     main_search_list = search_songList(search_content)
                     '''插入的item是字符串类型'''
                     self.writeList(main_search_list)
+                except TypeError:
+                    print("bilibili搜索结果为空")
+                    InfoBar.error(
+                        title='错误',
+                        content="没有找到任何结果",
+                        orient=Qt.Orientation.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP_RIGHT,
+                        duration=2000,
+                        parent=self
+                    )
                 except Exception as e:
                     print(f"错误:{e};" + type(e).__name__)
             else:
@@ -333,20 +347,43 @@ class SearchInterface(QWidget):
                         temp_list.unique_by_bv()
                         temp_list.save_list(r"data\search_data.json")
 
+                        print(f"bilibili获取 {len(result_info)} 个有效视频数据:")
+                        print(result_info)
+
                         more_search_list = search_songList(search_content)
                         self.writeList(more_search_list)
                     except Exception as e:
                         print(f"错误:{e};" + type(e).__name__)
                         if type(main_search_list) != "NoneType":
                             print("bilibili搜索失败,返回本地列表项")
-                            main_search_list = search_songList(search_content)
                             self.writeList(main_search_list)
                 else:
                     # 暂时不可到达
                     # 直接写入列表
                     self.writeList(main_search_list)
+        except TypeError:
+            print("搜索结果为空")
+            InfoBar.error(
+                title='错误',
+                content="没有找到任何结果",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=2000,
+                parent=self
+            )
         except Exception as e:
+            InfoBar.error(
+                title='未知错误，请在github上提交issue',
+                content= type(e).__name__,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=2000,
+                parent=self
+            )
             print(f"错误:{e};" + type(e).__name__)
+        print("---搜索结束---")
         self.tableView.resizeColumnsToContents()
 
     # 当爬虫任务结束时
@@ -368,14 +405,14 @@ class SearchInterface(QWidget):
 
         searchResult: 包含搜索结果的列表，每个元素是一个包含歌曲信息的列表
         """
+        print(f"总计获取 {len(searchResult)} 个有效视频数据:")
         print(searchResult)
-        num = 0
 
         for i, songInfo in enumerate(searchResult):
-            num += 1
             for j in range(4):
                 self.tableView.setItem(i, j, QTableWidgetItem(songInfo[j]))
-        self.tableView.setRowCount(num)
+
+        self.tableView.setRowCount(len(searchResult))
 
 
 
