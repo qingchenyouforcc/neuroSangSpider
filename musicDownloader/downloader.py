@@ -29,7 +29,7 @@ async def download(url: str, out: str, intro: str):
 
 
 # noinspection DuplicatedCode
-async def download_music(bvid, title):
+async def download_music(bvid, title, fileType):
     # 实例化 Credential 类
     credential = Credential(sessdata=SESSDATA, bili_jct=BILI_JCT, buvid3=BUVID3)
     # 实例化 Video 类

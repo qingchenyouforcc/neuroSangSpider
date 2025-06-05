@@ -3,7 +3,7 @@ import sys
 
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
@@ -51,66 +51,8 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         self.setupUi(self)
         self.setWindowIcon(icon)
         self.setFixedSize(680, 530)
-        self.SearchBtn.clicked.connect(lambda: self.search_btn())
         self.DownloadBtn.clicked.connect(lambda: self.Download_btn())
         self.DownloadBtn_ogg.clicked.connect(lambda: self.Download_ogg_btn())
-        # 将 Enter 键绑定到搜索按钮
-        self.search_line.returnPressed.connect(self.search_btn)
-
-
-    def search_btn(self):
-        self.listWidget.clear()
-        search_content = self.search_line.text().lower()
-        try:
-
-            main_search_list = search_songList(search_content)
-            if main_search_list is None:
-                # 本地查找失败时，尝试使用bilibili搜索查找
-                print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
-                try:
-                    # 将搜索结果写入json
-                    result_info = search_song_online(search_content)
-                    temp_list = SongList()
-                    temp_list.append_list(result_info)
-                    temp_list.unique_by_bv()
-                    temp_list.save_list(r"data\search_data.json")
-
-                    main_search_list = search_songList(search_content)
-                    '''插入的item是字符串类型'''
-                    for item in main_search_list:
-                        self.listWidget.addItem(item)
-                except Exception as e:
-                    print(f"错误:{e};" + type(e).__name__)
-            else:
-                if True:
-                    # 本地查找成功，追加使用bilibili搜索查找
-                    # 或许可以做一个设置项进行配置?
-                    print("在本地列表找到该歌曲，继续尝试bilibili搜索")
-                    try:
-                        # 将搜索结果写入json
-                        result_info = search_song_online(search_content)
-                        temp_list = SongList()
-                        temp_list.append_list(result_info)
-                        temp_list.unique_by_bv()
-                        temp_list.save_list(r"data\search_data.json")
-
-                        more_search_list = search_songList(search_content)
-                        for item in more_search_list:
-                            self.listWidget.addItem(item)
-                    except Exception as e:
-                        print(f"错误:{e};" + type(e).__name__)
-                        if type(main_search_list) != "NoneType":
-                            print("bilibili搜索失败,返回本地列表项")
-                            main_search_list = search_songList(search_content)
-                            for item in main_search_list:
-                                self.listWidget.addItem(item)
-                else:
-                    # 暂时不可到达
-                    # 直接写入列表
-                    for item in main_search_list:
-                        self.listWidget.addItem(item)
-        except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
 
     def Download_btn(self):
         index = self.listWidget.currentRow()
@@ -132,16 +74,10 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
 
-    # 当爬虫任务结束时
-    def on_c_task_finished(self):
-        self.loading.close()
-        self.GetVideoBtn.setEnabled(True)
-        self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
-        print("获取歌曲列表完成！")
-
 
 class SettinsCard(GroupHeaderCardWidget):
     """设置卡片"""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setTitle("基本设置")
@@ -164,7 +100,7 @@ class SettinsCard(GroupHeaderCardWidget):
         self.bottomLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # 添加组件到分组中
-        self.addGroup(FluentIcon.BRIGHTNESS,"主题", "切换深色/浅色模式", self.themeSwitch)
+        self.addGroup(FluentIcon.BRIGHTNESS, "主题", "切换深色/浅色模式", self.themeSwitch)
 
         # 添加底部工具栏
         self.vBoxLayout.addLayout(self.bottomLayout)
@@ -219,13 +155,22 @@ class SettingInterface(QWidget):
         self.layout.setContentsMargins(30, 30, 30, 30)
         self.layout.setSpacing(15)
 
-
         self.layout.addWidget(SettinsCard(), Qt.AlignmentFlag.AlignTop)
         self.layout.addStretch(1)
 
 
+def searchOnBili(search_content):
+    # 将搜索结果写入json
+    result_info = search_song_online(search_content)
+    temp_list = SongList()
+    temp_list.append_list(result_info)
+    temp_list.unique_by_bv()
+    temp_list.save_list(r"data\search_data.json")
+
+
 class SearchInterface(QWidget):
     """ 搜索GUI """
+
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.stateTooltip = None
@@ -250,8 +195,18 @@ class SearchInterface(QWidget):
         self.tableView.verticalHeader().hide()
         self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'BV'])
 
-        self.GetVideoBtn = PushButton('获取歌曲列表', self)
-        self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
+        btnGroup = QWidget()
+        btnLayout = QHBoxLayout(btnGroup)
+
+        GetVideoBtn = PushButton('获取歌曲列表', self)
+        GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
+
+        DownloadBtn = PushButton('下载歌曲', self)
+        DownloadBtn.clicked.connect(lambda: self.Download_btn())
+
+        btnLayout.addWidget(GetVideoBtn)
+        btnLayout.addWidget(DownloadBtn)
+        btnLayout.setSpacing(15)
 
         self.searchLine = SearchLineEdit(self)
         self.searchLine.setClearButtonEnabled(True)
@@ -263,9 +218,8 @@ class SearchInterface(QWidget):
         self.tableView.resizeColumnsToContents()
         self.layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
         self.layout.addWidget(self.tableView)
-        self.layout.addWidget(self.GetVideoBtn)
+        self.layout.addWidget(btnGroup)
         self.layout.addWidget(self.searchLine, Qt.AlignmentFlag.AlignBottom)
-
 
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
@@ -296,7 +250,6 @@ class SearchInterface(QWidget):
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
 
-
     def search_btn(self):
         """实现搜索按钮功能"""
         self.tableView.clear()
@@ -309,7 +262,7 @@ class SearchInterface(QWidget):
                 # 本地查找失败时，尝试使用bilibili搜索查找
                 print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
-                    self.searchOnBili(search_content)
+                    searchOnBili(search_content)
 
                     main_search_list = search_songList(search_content)
                     self.writeList(main_search_list)
@@ -334,7 +287,7 @@ class SearchInterface(QWidget):
                     # 或许可以做一个设置项进行配置?
                     print("在本地列表找到该歌曲，继续尝试bilibili搜索")
                     try:
-                        self.searchOnBili(search_content)
+                        searchOnBili(search_content)
 
                         more_search_list = search_songList(search_content)
                         print(f"bilibili获取 "
@@ -365,7 +318,7 @@ class SearchInterface(QWidget):
         except Exception as e:
             InfoBar.error(
                 title='未知错误，请在github上提交issue',
-                content= type(e).__name__,
+                content=type(e).__name__,
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
@@ -388,7 +341,6 @@ class SearchInterface(QWidget):
         self.stateTooltip.setState(True)
         self.stateTooltip = None
 
-
     def writeList(self, searchResult):
         """
         将搜索结果写入表格
@@ -403,16 +355,15 @@ class SearchInterface(QWidget):
             for j in range(4):
                 self.tableView.setItem(i, j, QTableWidgetItem(songInfo[j]))
 
-
-    def searchOnBili(self, search_content):
-        # 将搜索结果写入json
-        result_info = search_song_online(search_content)
-        temp_list = SongList()
-        temp_list.append_list(result_info)
-        temp_list.unique_by_bv()
-        temp_list.save_list(r"data\search_data.json")
-
-
+    def Download_btn(self):
+        index = self.tableView.currentRow()
+        try:
+            run_download(index)
+        except IndexError:
+            messageBox = QMessageBox()
+            QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
+        except Exception as e:
+            print(f"错误:{e};" + type(e).__name__)
 
 
 class HomeInterface(QWidget):
@@ -441,6 +392,7 @@ class HomeInterface(QWidget):
         self.readmeInfoLabel = BodyLabel(
             "这是一个基于 Python 3.13 开发的程序，\n"
             "用于从 Bilibili（哔哩哔哩）爬取 Neuro/Evil 的歌曲的视频内容。\n"
+            "如果搜索没结果的话，可以试试多搜几次\n"
             "(当然未来也支持通过自定义UP 主列表和关键词，灵活调整爬取目标) \n"
             "\nLicense:   AGPL-3.0",
             self
@@ -486,7 +438,6 @@ class DemoWindow(FluentWindow):
             text="设置",
             position=NavigationItemPosition.BOTTOM
         )
-
 
         self.setWindowTitle("NeuroSangSpider")
 

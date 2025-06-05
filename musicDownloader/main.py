@@ -102,8 +102,8 @@ def run_download(index, fileType=""):
     
     # 检查文件是否已经存在
     file_exists = False
-    if fileType == "ogg":
-        file_exists = os.path.exists(f"{output_fileName}.ogg")
+    if fileType:
+        file_exists = os.path.exists(f"{output_fileName}.{fileType}")
     else:
         file_exists = os.path.exists(f"{output_fileName}.mp3")
     
