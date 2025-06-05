@@ -3,7 +3,7 @@ import sys
 
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
@@ -16,7 +16,6 @@ from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
 from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
-from ui.main_windows import Ui_NeuroSongSpider
 from utils.fileManager import MAIN_PATH
 
 
@@ -37,42 +36,6 @@ class CrawlerWorkerThread(QThread):
         create_video_list_file()
         # 任务完成后发出信号
         self.task_finished.emit("获取歌曲列表完成！")
-
-
-# 旧版GUI
-class MainWindow(QMainWindow, Ui_NeuroSongSpider):
-    def __init__(self, parent=None):
-        QMainWindow.__init__(self, parent=parent)
-        self.worker = None
-        self.thread = None
-        self.loading = None
-        icon = QtGui.QIcon("res\\main.ico")
-
-        self.setupUi(self)
-        self.setWindowIcon(icon)
-        self.setFixedSize(680, 530)
-        self.DownloadBtn.clicked.connect(lambda: self.Download_btn())
-        self.DownloadBtn_ogg.clicked.connect(lambda: self.Download_ogg_btn())
-
-    def Download_btn(self):
-        index = self.listWidget.currentRow()
-        try:
-            run_download(index)
-        except IndexError:
-            messageBox = QMessageBox()
-            QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
-        except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
-
-    def Download_ogg_btn(self):
-        index = self.listWidget.currentRow()
-        try:
-            run_download(index, "ogg")
-        except IndexError:
-            messageBox = QMessageBox()
-            QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
-        except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
 
 
 class SettinsCard(GroupHeaderCardWidget):
@@ -173,6 +136,7 @@ class SearchInterface(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
+        self.GetVideoBtn = None
         self.stateTooltip = None
         self.loading = None
         self.thread = None
