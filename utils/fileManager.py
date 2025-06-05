@@ -1,6 +1,9 @@
 import os
 import json
 from pathlib import Path
+
+from mutagen import File
+
 from infoManager.SongList import SongList
 from utils.bili_tools import url2bv
 
@@ -120,6 +123,58 @@ def convert_old2new(input_folder):
             print(f"处理文件 {filename} 时出错: {str(e)}")
             return None
     return None
+
+
+def get_audio_duration(file_path):
+    """
+    获取音频文件的时长和文件名
+
+    参数:
+        file_path (str): 音频文件的完整路径
+
+    返回:
+        tuple: (文件名, 时长秒数)
+
+    示例:
+        ("example.mp3", 245.3)
+    """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"文件不存在: {file_path}")
+
+    try:
+        audio = File(file_path)
+        # 单位为秒，保留两位小数
+        duration = round(audio.info.length, 2)
+        filename = os.path.basename(file_path)
+        return filename, duration
+    except Exception as e:
+        raise RuntimeError(f"无法读取音频信息: {e}")
+
+
+def read_all_audio_info(directory, extensions=None):
+    """
+    读取指定目录下的所有音频文件信息
+
+    参数:
+        directory (str): 要扫描的目录
+        extensions (list): 支持的音频扩展名列表
+
+    返回:
+        list of tuples: [(文件名, 时长), ...]
+    """
+    if extensions is None:
+        extensions = ['.mp3', '.ogg', '.wav']
+    results = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if os.path.splitext(file)[1].lower() in extensions:
+                full_path = os.path.join(root, file)
+                try:
+                    info = get_audio_duration(full_path)
+                    results.append(info)
+                except Exception as e:
+                    print(f"跳过文件: {full_path} - 原因: {e}")
+    return results
 
 
 if __name__ == "__main__":

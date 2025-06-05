@@ -2,10 +2,11 @@ import os
 import sys
 
 from PyQt6 import QtGui
-from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout
-from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBoxSettingCard, \
-    SettingCardGroup, ComboBox
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
+    QAbstractItemView
+from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, SettingCardGroup, \
+    ComboBox, TransparentToolButton
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
@@ -18,7 +19,7 @@ from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
 from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
-from utils.fileManager import MAIN_PATH
+from utils.fileManager import MAIN_PATH, read_all_audio_info
 
 
 # if __name__ == '__main__':
@@ -139,6 +140,7 @@ class LocPlayerInterface(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setObjectName("locPlayerInterface")
+        self.setStyleSheet("LocPlayerInterface{background: transparent}")
 
         self.layout = QVBoxLayout(self)
         self.tableView = TableWidget(self)
@@ -146,18 +148,71 @@ class LocPlayerInterface(QWidget):
         self.layout.setContentsMargins(30, 30, 30, 30)
         self.layout.setSpacing(15)
 
-        # enable border
         self.tableView.setBorderVisible(True)
         self.tableView.setBorderRadius(8)
+        self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.bar = StandardMediaPlayBar()
+        self.bar.player.setVolume(50)
+
+        # 创建标题和刷新按钮的水平布局
+        title_layout = QHBoxLayout()
 
         self.titleLabel = TitleLabel("本地播放器", self)
 
-        self.layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
+        self.refreshButton = TransparentToolButton(FIF.SYNC, self)
+        self.refreshButton.setToolTip("刷新歌曲列表")
+
+        title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
+        title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addStretch(1)
+
+        self.layout.addLayout(title_layout)
         self.layout.addWidget(self.tableView)
         self.layout.addWidget(self.bar)
 
+        self.tableView.cellDoubleClicked.connect(self.play_selected_song)
+        self.refreshButton.clicked.connect(self.load_local_songs)
+
+        self.load_local_songs()
+
+    def load_local_songs(self):
+        music_dir = os.path.join(MAIN_PATH, "music")
+        try:
+            songs = read_all_audio_info(music_dir)
+            self.tableView.setRowCount(len(songs))
+            self.tableView.setColumnCount(2)
+            self.tableView.setHorizontalHeaderLabels(['文件名', '时长'])
+
+            for i, (filename, duration) in enumerate(songs):
+                self.tableView.setItem(i, 0, QTableWidgetItem(filename))
+                self.tableView.setItem(i, 1, QTableWidgetItem(f"{duration}s"))
+
+            self.tableView.resizeColumnsToContents()
+        except Exception as e:
+            print("加载本地歌曲失败:", e)
+
+    def play_selected_song(self, row):
+        """双击播放指定行的歌曲"""
+        item = self.tableView.item(row, 0)
+        if not item:
+            return
+
+        filename = item.text()
+        music_dir = os.path.join(MAIN_PATH, "music")
+        file_path = os.path.join(music_dir, filename)
+
+        if not os.path.exists(file_path):
+            InfoBar.error(
+                "错误", f"找不到文件: {filename}",
+                duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
+            )
+            return
+
+        url = QUrl.fromLocalFile(file_path)
+        self.bar.player.setSource(url)
+        self.bar.player.play()
 
 
 def searchOnBili(search_content):
@@ -192,10 +247,10 @@ class SearchInterface(QWidget):
 
         self.tableView.setWordWrap(False)
         self.tableView.setRowCount(60)
-        self.tableView.setColumnCount(4)
+        self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.tableView.verticalHeader().hide()
-        self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'BV'])
 
         btnGroup = QWidget()
         btnLayout = QHBoxLayout(btnGroup)
@@ -255,6 +310,7 @@ class SearchInterface(QWidget):
     def search_btn(self):
         """实现搜索按钮功能"""
         self.tableView.clear()
+        self.tableView.setColumnCount(4)
         self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'BV'])
         search_content = self.searchLine.text().lower()
         try:
@@ -362,6 +418,15 @@ class SearchInterface(QWidget):
         try:
             fileType = cfg.downloadType
             run_download(index, fileType)
+            InfoBar.success(
+                title='完成',
+                content="歌曲下载完成",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
         except IndexError:
             messageBox = QMessageBox()
             QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
