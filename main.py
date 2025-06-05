@@ -1,27 +1,23 @@
 import os
 import sys
 
-from PyQt6 import QtWidgets, QtGui
+from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
-from PyQt6.QtGui import QMovie
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QWidget, QVBoxLayout, QApplication, QHBoxLayout
-from nulltype import NullType
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QVBoxLayout, QApplication
+from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget
+# 导入 PyQt-Fluent-Widgets 相关模块
+from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
+                            SubtitleLabel, SwitchButton,
+                            BodyLabel, TitleLabel, PushButton, SearchLineEdit, FluentIcon, GroupHeaderCardWidget,
+                            MessageBoxBase,
+                            ImageLabel, TeachingTip, TeachingTipView)
 
 from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
-
-from utils.fileManager import MAIN_PATH
+from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
 from ui.main_windows import Ui_NeuroSongSpider
-
-from infoManager.SongList import SongList
-
-# 导入 PyQt-Fluent-Widgets 相关模块
-from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
-                            SubtitleLabel, PrimaryPushButton, LineEdit, SwitchButton,
-                            InfoBar, InfoBarPosition, Flyout, FlyoutView, BodyLabel, TitleLabel, PushButton, ComboBox,
-                            SearchLineEdit, IconWidget, InfoBarIcon, FluentIcon, GroupHeaderCardWidget)
-from qfluentwidgets import FluentIcon as FIF
+from utils.fileManager import MAIN_PATH
 
 
 # if __name__ == '__main__':
@@ -43,47 +39,6 @@ class CrawlerWorkerThread(QThread):
         self.task_finished.emit("获取歌曲列表完成！")
 
 
-# 加载动画的窗口
-class LoadingWindow(QWidget):
-    def __init__(self, main_window_ref, parent=None):
-        super(LoadingWindow, self).__init__(parent)
-        self.loading_label = None
-        self.loading_gif = None
-        self.main_window = main_window_ref
-        if self.main_window:
-            # 现在可以使用保存的引用来调用主窗口的方法
-            main_pos = self.main_window.frameGeometry().topLeft()
-            main_size = self.main_window.frameGeometry().size()
-            print(f"从辅助窗口获取到主窗口位置: {main_pos.x()}, {main_pos.y()}")
-            print(f"从辅助窗口获取到主窗口大小: {main_size.width()}x{main_size.height()}")
-            # 你也可以在这里显示一个消息框等
-            QMessageBox.information(self, "主窗口信息",
-                                    f"主窗口位置: ({main_pos.x()}, {main_pos.y()})\n"
-                                    f"主窗口大小: {main_size.width()}x{main_size.height()}")
-        else:
-            print("错误: 未找到主窗口引用。")
-        self.m_winX = self.main_window.frameGeometry().topLeft().x()
-        self.m_winY = self.main_window.frameGeometry().topLeft().y()
-        self.initUI()
-
-    def initUI(self):
-        # 设置窗口基础类型
-        self.resize(250, 250)
-        self.move(self.m_winX + 340 - 125, self.m_winY + 265 - 100)
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.Dialog
-        )
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        # 设置背景透明
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        # 加载动画
-        self.loading_gif = QMovie(os.path.join(MAIN_PATH, "res", "loading.gif"))
-        self.loading_label = QLabel(self)
-        self.loading_label.setMovie(self.loading_gif)
-        self.loading_gif.start()
-
-
 # 旧版GUI
 class MainWindow(QMainWindow, Ui_NeuroSongSpider):
     def __init__(self, parent=None):
@@ -96,30 +51,12 @@ class MainWindow(QMainWindow, Ui_NeuroSongSpider):
         self.setupUi(self)
         self.setWindowIcon(icon)
         self.setFixedSize(680, 530)
-        self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
         self.SearchBtn.clicked.connect(lambda: self.search_btn())
         self.DownloadBtn.clicked.connect(lambda: self.Download_btn())
         self.DownloadBtn_ogg.clicked.connect(lambda: self.Download_ogg_btn())
         # 将 Enter 键绑定到搜索按钮
         self.search_line.returnPressed.connect(self.search_btn)
 
-    def getVideo_btn(self):
-        try:
-            print("获取歌曲列表中...")
-            self.GetVideoBtn.setEnabled(False)
-
-            # 显示加载动画
-            self.setWindowModality(Qt.WindowModality.ApplicationModal)  # 设置主窗口不可操作
-            self.loading = LoadingWindow(parent=self)
-            self.loading.show()
-
-            # 创建并启动工作线程
-            # noinspection PyArgumentList
-            self.thread = CrawlerWorkerThread()
-            self.thread.task_finished.connect(self.on_c_task_finished)
-            self.thread.start()
-        except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
 
     def search_btn(self):
         self.listWidget.clear()
@@ -241,6 +178,36 @@ def on_theme_switched(checked):
         setTheme(Theme.LIGHT)
 
 
+def showLoading(self):
+    """加载动画实现"""
+    view = TeachingTipView(
+        title="",
+        content="",
+        image=os.path.join(MAIN_PATH, "res", "loading.gif"),
+        isClosable=False
+    )
+
+    view.setFixedSize(250, 250)
+    view.imageLabel.setMinimumSize(250, 250)
+
+    # show view
+    w = TeachingTip.make(view, self.GetVideoBtn, duration=-1)
+    return w
+
+
+# noinspection PyTypeChecker
+class loadingCard(MessageBoxBase):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.resize(250, 250)
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.loading_gif = ImageLabel(os.path.join(MAIN_PATH, "res", "loading.gif"))
+
+        self.viewLayout.addWidget(self.loading_gif)
+
+
 class SettingInterface(QWidget):
     """ 设置GUI """
 
@@ -261,32 +228,63 @@ class SearchInterface(QWidget):
     """ 搜索GUI """
     def __init__(self, parent=None):
         super().__init__(parent=parent)
+        self.stateTooltip = None
+        self.loading = None
+        self.thread = None
         self.setObjectName("searchInterface")
 
         self.layout = QVBoxLayout(self)
+        self.tableView = TableWidget(self)
+
         self.layout.setContentsMargins(30, 30, 30, 30)
         self.layout.setSpacing(15)
 
+        # enable border
+        self.tableView.setBorderVisible(True)
+        self.tableView.setBorderRadius(8)
+
+        self.tableView.setWordWrap(False)
+        self.tableView.setRowCount(60)
+        self.tableView.setColumnCount(5)
+
+        self.tableView.verticalHeader().hide()
+        self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'URL', 'BV'])
+
         self.GetVideoBtn = PushButton('获取歌曲列表', self)
         self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
+
         self.lineEdit = SearchLineEdit(self)
         self.lineEdit.setClearButtonEnabled(True)
 
         self.titleLabel = TitleLabel("搜索歌回", self)
 
+        self.tableView.resizeColumnsToContents()
         self.layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
+        self.layout.addWidget(self.tableView)
         self.layout.addWidget(self.GetVideoBtn)
         self.layout.addWidget(self.lineEdit, Qt.AlignmentFlag.AlignBottom)
 
+
     def getVideo_btn(self):
+        """获取歌曲列表按钮功能实现"""
         try:
             print("获取歌曲列表中...")
             self.GetVideoBtn.setEnabled(False)
 
             # 显示加载动画
             self.setWindowModality(Qt.WindowModality.ApplicationModal)  # 设置主窗口不可操作
-            self.loading = LoadingWindow(main_window_ref=self, parent=self)
-            self.loading.show()
+            self.loading = showLoading(self)
+            window.setEnabled(False)
+
+            # 显示进度条
+            if self.stateTooltip:
+                self.stateTooltip.setContent('获取列表完成!!!')
+                self.stateTooltip.setState(True)
+                self.stateTooltip = None
+            else:
+                self.stateTooltip = StateToolTip('正在获取歌曲列表...', '请耐心等待<3', self)
+                self.stateTooltip.move(self.stateTooltip.getSuitablePos())
+                self.stateTooltip.show()
 
             # 创建并启动工作线程
             # noinspection PyArgumentList
@@ -299,9 +297,14 @@ class SearchInterface(QWidget):
     # 当爬虫任务结束时
     def on_c_task_finished(self):
         self.loading.close()
+        window.setEnabled(True)
         self.GetVideoBtn.setEnabled(True)
         self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
+
         print("获取歌曲列表完成！")
+        self.stateTooltip.setContent('获取列表完成!!!')
+        self.stateTooltip.setState(True)
+        self.stateTooltip = None
 
 
 class HomeInterface(QWidget):
