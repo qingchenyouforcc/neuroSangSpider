@@ -6,7 +6,8 @@ py_files = [
     'musicDownloader\\main.py', 'musicDownloader\\downloader.py', 
     'utils\\bili_tools.py', 'utils\\fileManager.py', 'utils\\string_tools.py', 'utils\\textbroswer_tools.py', 
     'ui\\main_windows.py',
-    'infoManager\\main.py','infoManager\\SongList.py'
+    'infoManager\\main.py','infoManager\\SongList.py',
+    'common\\config.py'
 ]
 
 
@@ -29,7 +30,14 @@ a = Analysis(
         'bilibili_api.clients.AioHTTPClient',
         'bilibili_api.clients.httpx_client',
         'bilibili_api.clients.requests_client',
-        'bilibili_api.clients.base'],
+        'bilibili_api.clients.base',
+        'PyQt6.QtMultimedia',
+        'PyQt6.QtNetwork',
+        'qfluentwidgets.common.icon',
+        'qfluentwidgets.components.widgets.flyout',
+        'qfluentwidgets.multimedia.media_play_bar',
+        'qfluentwidgets.window.fluent_window',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
