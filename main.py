@@ -19,7 +19,7 @@ from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
 from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
-from utils.fileManager import MAIN_PATH, read_all_audio_info
+from utils.fileManager import MAIN_PATH, read_all_audio_info, batch_clean_audio_files
 
 
 # if __name__ == '__main__':
@@ -67,9 +67,6 @@ class SettinsCard(GroupHeaderCardWidget):
         # self.setBorderRadius(8)
         self.setFixedHeight(240)
 
-        self.mainGroup = SettingCardGroup(
-            self.tr('基本设置'), self.scrollWidget)
-
         # 修改下载歌曲格式
         self.comboBox = ComboBox(self)
         items = ['mp3', 'ogg', 'wav']
@@ -89,10 +86,38 @@ class SettinsCard(GroupHeaderCardWidget):
             current_theme_is_dark if current_theme_is_dark is not None else (Theme.DARK == Theme.DARK))  # 默认为深色
         self.themeSwitch.checkedChanged.connect(on_theme_switched)
 
+        self.fixMusic = PushButton("修复音频", self)
+        self.fixMusic.clicked.connect(on_fix_music)
+
 
         # 添加组件到分组中
         self.addGroup(FluentIcon.BRIGHTNESS, "主题", "切换深色/浅色模式", self.themeSwitch)
         self.addGroup(FluentIcon.DOWNLOAD, "下载格式", "选择默认音乐格式", self.comboBox)
+        self.addGroup(FluentIcon.MUSIC, "修复音频文件", "修复下载异常的音频文件", self.fixMusic)
+
+
+def on_fix_music():
+    music_dir = os.path.join(MAIN_PATH, "music")
+    try:
+        batch_clean_audio_files(music_dir, target_format='mp3', overwrite=True)
+        InfoBar.success(
+            "修复完成",
+            "修复完成！",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+            parent=window
+        )
+    except Exception as e:
+        print(e)
+        InfoBar.error(
+            "修复失败",
+            "修复失败！",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+            parent=window
+        )
 
 
 def on_theme_switched(checked):

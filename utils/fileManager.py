@@ -1,9 +1,10 @@
 import os
 import json
+import subprocess
+
+from tqdm import tqdm
 from pathlib import Path
-
 from mutagen import File
-
 from infoManager.SongList import SongList
 from utils.bili_tools import url2bv
 
@@ -175,6 +176,90 @@ def read_all_audio_info(directory, extensions=None):
                 except Exception as e:
                     print(f"跳过文件: {full_path} - 原因: {e}")
     return results
+
+
+def clean_audio_file(input_path, output_path, target_format='mp3'):
+    """
+    使用 ffmpeg 清理音频文件，去除无效帧和时间戳问题
+
+    参数:
+        input_path: 输入音频文件路径
+        output_path: 输出文件路径（支持 .mp3/.ogg/.wav/.flac）
+        target_format: 输出格式，默认为 mp3
+    """
+    cmd = [
+        'ffmpeg',
+        '-i', str(input_path),
+        '-c:a', {
+            'mp3': 'libmp3lame',
+            'ogg': 'libvorbis',
+            'wav': 'pcm_s16le',
+            'flac': 'flac'
+        }[target_format],
+        '-vn',  # 忽略视频流（如封面）
+        '-af', 'aresample=async=1',  # 同步音频时间戳
+        '-nostdin',
+        '-y',  # 覆盖已有文件
+        str(output_path)
+    ]
+
+    try:
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ 处理失败: {input_path}")
+        return False
+
+
+SUPPORTED_EXTENSIONS = ['.mp3', '.ogg', '.wav', '.flac', '.m4a', '.aac']
+
+
+def batch_clean_audio_files(directory, target_format='mp3', overwrite=False):
+    """
+    批量清理指定目录下的音频文件，解决时间戳问题
+
+    参数:
+        directory: 目标目录路径
+        target_format: 输出格式（mp3/ogg/wav/flac）
+        overwrite: 是否覆盖原文件（默认生成新文件）
+    """
+    cleaned_count = 0
+    total_count = 0
+    input_dir = Path(directory)
+
+    # 收集所有需要处理的文件
+    files_to_process = []
+    for root, _, files in os.walk(input_dir):
+        for file in files:
+            if Path(file).suffix.lower() in SUPPORTED_EXTENSIONS:
+                input_file = Path(root) / file
+                output_file = input_file.parent / (input_file.stem + f"_fix.{target_format}")
+
+                if input_file == output_file and not overwrite:
+                    output_file = input_file.parent / (input_file.stem + f"_cleaned.{target_format}")
+
+                if not output_file.exists():
+                    files_to_process.append((input_file, output_file))
+                else:
+                    print(f"✅ 已存在: {output_file.name}")
+
+    total_count = len(files_to_process)
+
+    if total_count == 0:
+        print("✅ 没有需要处理的文件")
+        return
+
+    print(f"🔍 共找到 {total_count} 个音频文件，开始清理...\n")
+
+    for input_file, output_file in tqdm(files_to_process, desc="处理中", unit="file"):
+        success = clean_audio_file(input_file, output_file, target_format=target_format)
+        if success:
+            tqdm.write(f"✔️ 已清理: {input_file.name} -> {output_file.name}")
+            cleaned_count += 1
+            if overwrite:
+                input_file.unlink()
+
+    print(f"\n✅ 完成！共清理 {cleaned_count}/{total_count} 个文件")
 
 
 if __name__ == "__main__":
