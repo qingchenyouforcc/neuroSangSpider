@@ -22,6 +22,7 @@ def fileName_process(filename):
     return filename
 
 def count_cn_char(text):
+    """计算中文字符数"""
     count = 0
     for ch in text:
         if '\u4e00'<text<'\u9fa5' in ch:

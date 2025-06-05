@@ -75,9 +75,7 @@ def search_songList(search_content):
     search_resultlist.unique_by_bv()
     search_result = search_resultlist.getData()
     for item in search_result:
-        # 试图中文对齐,但是还是对不齐..只能等gui适配了
-        author_width = 20 - count_cn_char(item['author'])
-        tmp_str = f"{item['title']}\nup:{item['author']:<{author_width}}{item['bv']:<15}{item['date']:<20}"
+        tmp_str = [item['title'], item['author'].replace('\n', ''), item['date'], item['bv']]
         str_result.append(tmp_str)
 
     return str_result

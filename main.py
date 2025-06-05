@@ -3,7 +3,7 @@ import sys
 
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QVBoxLayout, QApplication
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
@@ -245,16 +245,18 @@ class SearchInterface(QWidget):
 
         self.tableView.setWordWrap(False)
         self.tableView.setRowCount(60)
-        self.tableView.setColumnCount(5)
+        self.tableView.setColumnCount(4)
 
         self.tableView.verticalHeader().hide()
-        self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'URL', 'BV'])
+        self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'BV'])
 
         self.GetVideoBtn = PushButton('获取歌曲列表', self)
         self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
 
-        self.lineEdit = SearchLineEdit(self)
-        self.lineEdit.setClearButtonEnabled(True)
+        self.searchLine = SearchLineEdit(self)
+        self.searchLine.setClearButtonEnabled(True)
+        self.searchLine.searchButton.clicked.connect(lambda: self.search_btn())
+        self.searchLine.returnPressed.connect(self.search_btn)
 
         self.titleLabel = TitleLabel("搜索歌回", self)
 
@@ -262,7 +264,7 @@ class SearchInterface(QWidget):
         self.layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
         self.layout.addWidget(self.tableView)
         self.layout.addWidget(self.GetVideoBtn)
-        self.layout.addWidget(self.lineEdit, Qt.AlignmentFlag.AlignBottom)
+        self.layout.addWidget(self.searchLine, Qt.AlignmentFlag.AlignBottom)
 
 
     def getVideo_btn(self):
@@ -294,6 +296,59 @@ class SearchInterface(QWidget):
         except Exception as e:
             print(f"错误:{e};" + type(e).__name__)
 
+
+    def search_btn(self):
+        """实现搜索按钮功能"""
+        self.tableView.clear()
+        self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'BV'])
+        search_content = self.searchLine.text().lower()
+        try:
+            main_search_list = search_songList(search_content)
+            if main_search_list is None:
+                # 本地查找失败时，尝试使用bilibili搜索查找
+                print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
+                try:
+                    # 将搜索结果写入json
+                    result_info = search_song_online(search_content)
+                    temp_list = SongList()
+                    temp_list.append_list(result_info)
+                    temp_list.unique_by_bv()
+                    temp_list.save_list(r"data\search_data.json")
+
+                    main_search_list = search_songList(search_content)
+                    '''插入的item是字符串类型'''
+                    self.writeList(main_search_list)
+                except Exception as e:
+                    print(f"错误:{e};" + type(e).__name__)
+            else:
+                if True:
+                    # 本地查找成功，追加使用bilibili搜索查找
+                    # 或许可以做一个设置项进行配置?
+                    print("在本地列表找到该歌曲，继续尝试bilibili搜索")
+                    try:
+                        # 将搜索结果写入json
+                        result_info = search_song_online(search_content)
+                        temp_list = SongList()
+                        temp_list.append_list(result_info)
+                        temp_list.unique_by_bv()
+                        temp_list.save_list(r"data\search_data.json")
+
+                        more_search_list = search_songList(search_content)
+                        self.writeList(more_search_list)
+                    except Exception as e:
+                        print(f"错误:{e};" + type(e).__name__)
+                        if type(main_search_list) != "NoneType":
+                            print("bilibili搜索失败,返回本地列表项")
+                            main_search_list = search_songList(search_content)
+                            self.writeList(main_search_list)
+                else:
+                    # 暂时不可到达
+                    # 直接写入列表
+                    self.writeList(main_search_list)
+        except Exception as e:
+            print(f"错误:{e};" + type(e).__name__)
+        self.tableView.resizeColumnsToContents()
+
     # 当爬虫任务结束时
     def on_c_task_finished(self):
         self.loading.close()
@@ -305,6 +360,23 @@ class SearchInterface(QWidget):
         self.stateTooltip.setContent('获取列表完成!!!')
         self.stateTooltip.setState(True)
         self.stateTooltip = None
+
+
+    def writeList(self, searchResult):
+        """
+        将搜索结果写入表格
+
+        searchResult: 包含搜索结果的列表，每个元素是一个包含歌曲信息的列表
+        """
+        print(searchResult)
+        num = 0
+
+        for i, songInfo in enumerate(searchResult):
+            num += 1
+            for j in range(4):
+                self.tableView.setItem(i, j, QTableWidgetItem(songInfo[j]))
+        self.tableView.setRowCount(num)
+
 
 
 class HomeInterface(QWidget):
