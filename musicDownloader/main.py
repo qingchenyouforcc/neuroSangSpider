@@ -65,6 +65,8 @@ def search_songList(search_content):
     global search_result
     search_result = []
     str_result = []
+    filter_list = ["neuro", "歌", "手书", "切片", "熟肉", "[evil", "社区", "21"]
+    black_list = ["李19"]
 
     search_resultlist = total_data
     search_resultlist.search_by_title(search_content)
@@ -75,8 +77,12 @@ def search_songList(search_content):
     search_resultlist.unique_by_bv()
     search_result = search_resultlist.getData()
     for item in search_result:
-        tmp_str = [item['title'], item['author'].replace('\n', ''), item['date'], item['bv']]
-        str_result.append(tmp_str)
+        if any(blackWord in item['author'].lower() for blackWord in black_list):
+            continue
+        else:
+            if any(filterWord in item['title'].lower() for filterWord in filter_list):
+                tmp_str = [item['title'], item['author'].replace('\n', ''), item['date'], item['bv']]
+                str_result.append(tmp_str)
 
     return str_result
 

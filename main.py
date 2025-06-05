@@ -305,21 +305,13 @@ class SearchInterface(QWidget):
         try:
             main_search_list = search_songList(search_content)
             print("---搜索开始---")
-            print(f"本地获取 {len(main_search_list)} 个有效视频数据:")
-            print(main_search_list)
             if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
                 print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
-                    # 将搜索结果写入json
-                    result_info = search_song_online(search_content)
-                    temp_list = SongList()
-                    temp_list.append_list(result_info)
-                    temp_list.unique_by_bv()
-                    temp_list.save_list(r"data\search_data.json")
+                    self.searchOnBili(search_content)
 
                     main_search_list = search_songList(search_content)
-                    '''插入的item是字符串类型'''
                     self.writeList(main_search_list)
                 except TypeError:
                     print("bilibili搜索结果为空")
@@ -336,21 +328,19 @@ class SearchInterface(QWidget):
                     print(f"错误:{e};" + type(e).__name__)
             else:
                 if True:
+                    print(f"本地获取 {len(main_search_list)} 个有效视频数据:")
+                    print(main_search_list)
                     # 本地查找成功，追加使用bilibili搜索查找
                     # 或许可以做一个设置项进行配置?
                     print("在本地列表找到该歌曲，继续尝试bilibili搜索")
                     try:
-                        # 将搜索结果写入json
-                        result_info = search_song_online(search_content)
-                        temp_list = SongList()
-                        temp_list.append_list(result_info)
-                        temp_list.unique_by_bv()
-                        temp_list.save_list(r"data\search_data.json")
-
-                        print(f"bilibili获取 {len(result_info)} 个有效视频数据:")
-                        print(result_info)
+                        self.searchOnBili(search_content)
 
                         more_search_list = search_songList(search_content)
+                        print(f"bilibili获取 "
+                              f"{len(more_search_list) - len(main_search_list)} "
+                              f"个有效视频数据:")
+
                         self.writeList(more_search_list)
                     except Exception as e:
                         print(f"错误:{e};" + type(e).__name__)
@@ -383,7 +373,7 @@ class SearchInterface(QWidget):
                 parent=self
             )
             print(f"错误:{e};" + type(e).__name__)
-        print("---搜索结束---")
+        print("---搜索结束---\n")
         self.tableView.resizeColumnsToContents()
 
     # 当爬虫任务结束时
@@ -407,12 +397,21 @@ class SearchInterface(QWidget):
         """
         print(f"总计获取 {len(searchResult)} 个有效视频数据:")
         print(searchResult)
+        self.tableView.setRowCount(len(searchResult))
 
         for i, songInfo in enumerate(searchResult):
             for j in range(4):
                 self.tableView.setItem(i, j, QTableWidgetItem(songInfo[j]))
 
-        self.tableView.setRowCount(len(searchResult))
+
+    def searchOnBili(self, search_content):
+        # 将搜索结果写入json
+        result_info = search_song_online(search_content)
+        temp_list = SongList()
+        temp_list.append_list(result_info)
+        temp_list.unique_by_bv()
+        temp_list.save_list(r"data\search_data.json")
+
 
 
 

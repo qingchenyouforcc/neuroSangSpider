@@ -159,6 +159,11 @@ def get_target(keyword):
 def search_song_online(search_content):
     """调用联网搜索,返回songList"""
     result_list = SongList()
-    result_list.dictInfo = {"data": get_target("[neuro]歌回" + search_content)}
+    result_list.dictInfo = {"data": get_target("neuro " + search_content)}
+    # result_list.dictInfo |= {"data": get_target("evil" + search_content)}
+
+    # debug
+    print(f"搜索结果:{result_list.dictInfo}")
+
     result_list.sync_json()
     return result_list
