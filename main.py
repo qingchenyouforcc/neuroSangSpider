@@ -17,7 +17,7 @@ from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlay
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
 import config
-from config import cfg
+from config import cfg, infoBarPlayBtn
 from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
 from infoManager.SongList import SongList
@@ -313,12 +313,78 @@ def open_player():
     """打开播放器"""
     window.bar.show()
 
+def open_info_tip():
+    """打开正在播放提示"""
+    if config.HAS_INFOPLAYERBAR:
+        print("检测到已经有了一个正在播放提示，正在关闭...")
+        config.infoBar.close()
+        config.infoBar = InfoBar.new(
+            icon=FluentIcon.MUSIC,
+            title='正在播放',
+            content=f"{config.playingNow.text()}",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=-1,
+            parent=InfoBar.desktopView()
+        )
+    else:
+        info = InfoBar.new(
+            icon=FluentIcon.MUSIC,
+            title='正在播放',
+            content=f"{config.playingNow.text()}",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=-1,
+            parent=InfoBar.desktopView()
+        )
+        info.setCustomBackgroundColor('white', '#202020')
+
+        config.infoBar = info
+        config.HAS_INFOPLAYERBAR = True
+    try:
+        info = config.infoBar
+
+        playBtn = TransparentToolButton(FluentIcon.PAUSE, info)
+        info.hBoxLayout.addWidget(playBtn, 0, Qt.AlignmentFlag.AlignLeft)
+        playBtn.setToolTip("暂停/播放")
+
+        config.infoBarPlayBtn = playBtn
+        print(playBtn)
+        print(config.infoBarPlayBtn)
+
+        playBtn.clicked.connect(infoPlayBtnClicked)
+
+    except AttributeError:
+        InfoBar.error(
+            "错误", "没有正在播放的音乐",
+            duration=1000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
+        )
+
+    except Exception as e:
+        print(e)
+        InfoBar.error(
+            "未知错误", "请复制日志反馈到github issue",
+            duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
+        )
+
+def infoPlayBtnClicked():
+    config.player.togglePlayState()
+
+    if config.player.player.isPlaying():
+        config.infoBarPlayBtn.setIcon(FluentIcon.PAUSE_BOLD)
+    else:
+        config.infoBarPlayBtn.setIcon(FluentIcon.PLAY_SOLID)
+
+
 
 class LocPlayerInterface(QWidget):
     """ 本地播放器GUI """
 
     def __init__(self, parent=None, main_window=None):
         super().__init__(parent=parent)
+        self.stateTooltip = None
         self.main_window = main_window
         self.setObjectName("locPlayerInterface")
         self.setStyleSheet("LocPlayerInterface{background: transparent}")
@@ -348,9 +414,13 @@ class LocPlayerInterface(QWidget):
         self.openPlayer = TransparentToolButton(FIF.MUSIC, self)
         self.openPlayer.setToolTip("打开播放器")
 
+        self.openInfoTip = TransparentToolButton(FIF.INFO, self)
+        self.openInfoTip.setToolTip("打开正在播放提示")
+
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
+        title_layout.addWidget(self.openInfoTip, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.openPlayer, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
 
@@ -361,6 +431,7 @@ class LocPlayerInterface(QWidget):
         self.refreshButton.clicked.connect(self.load_local_songs)
         self.addQueueButton.clicked.connect(self.add_to_queue)
         self.openPlayer.clicked.connect(open_player)
+        self.openInfoTip.clicked.connect(open_info_tip)
 
         self.load_local_songs()
 
@@ -388,6 +459,10 @@ class LocPlayerInterface(QWidget):
         url = QUrl.fromLocalFile(file_path)
         self.main_window.bar.player.setSource(url)
         self.main_window.bar.player.play()
+
+        config.playingNow = item
+
+        open_info_tip()
 
     def add_to_queue(self):
         """添加到播放列表"""
@@ -704,6 +779,7 @@ class DemoWindow(FluentWindow):
         self.bar.setWindowIcon(icon)
         self.bar.setWindowTitle("Player")
         self.bar.show()
+        config.player = self.bar
 
         # 添加子界面
         self.addSubInterface(
