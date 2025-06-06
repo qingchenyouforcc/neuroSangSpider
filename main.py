@@ -159,6 +159,25 @@ class SettingInterface(QWidget):
         self.layout.addStretch(1)
 
 
+def getMusicLocal(fileName):
+    """获取音乐文件位置"""
+    if not fileName:
+        return None
+
+    filename = fileName.text()
+    music_dir = os.path.join(MAIN_PATH, "music")
+    file_path = os.path.join(music_dir, filename)
+
+    if not os.path.exists(file_path):
+        InfoBar.error(
+            "错误", f"找不到文件: {filename}",
+            duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
+        )
+        return None
+
+    return file_path
+
+
 class LocPlayerInterface(QWidget):
     """ 本地播放器GUI """
 
@@ -189,9 +208,13 @@ class LocPlayerInterface(QWidget):
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip("刷新歌曲列表")
 
+        self.addQueueButton = TransparentToolButton(FIF.ADD, self)
+        self.addQueueButton.setToolTip("添加到播放列表")
+
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
+        title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.layout.addLayout(title_layout)
         self.layout.addWidget(self.tableView)
@@ -199,6 +222,7 @@ class LocPlayerInterface(QWidget):
 
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
         self.refreshButton.clicked.connect(self.load_local_songs)
+        self.addQueueButton.clicked.connect(self.add_to_queue)
 
         self.load_local_songs()
 
@@ -221,23 +245,48 @@ class LocPlayerInterface(QWidget):
     def play_selected_song(self, row):
         """双击播放指定行的歌曲"""
         item = self.tableView.item(row, 0)
-        if not item:
-            return
-
-        filename = item.text()
-        music_dir = os.path.join(MAIN_PATH, "music")
-        file_path = os.path.join(music_dir, filename)
-
-        if not os.path.exists(file_path):
-            InfoBar.error(
-                "错误", f"找不到文件: {filename}",
-                duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
-            )
-            return
+        file_path = getMusicLocal(item)
 
         url = QUrl.fromLocalFile(file_path)
         self.bar.player.setSource(url)
         self.bar.player.play()
+
+    def add_to_queue(self):
+        """添加到播放列表"""
+        item = self.tableView.currentItem()
+        file_path = getMusicLocal(item)
+
+        if file_path:
+            if file_path in config.play_queue:
+                InfoBar.warning(
+                    "已存在",
+                    f"{item.text()}已存在播放列表",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=1500,
+                    parent=self.parent()
+                )
+                return
+
+            config.play_queue.append(file_path)
+            InfoBar.success(
+                "成功",
+                f"已添加{item.text()}到播放列表",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1500,
+                parent=self.parent()
+            )
+            print(config.play_queue)
+        else:
+            InfoBar.error(
+                "失败",
+                "添加失败！",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1500,
+                parent=window
+            )
 
 
 def searchOnBili(search_content):

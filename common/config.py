@@ -15,3 +15,4 @@ class Config(QConfig):
 cfg = Config()
 
 search_page = 1
+play_queue = []
