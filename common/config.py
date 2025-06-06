@@ -14,5 +14,6 @@ class Config(QConfig):
 # 初始化变量
 cfg = Config()
 
+volume = 50
 search_page = 1
 play_queue = []

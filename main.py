@@ -1,20 +1,22 @@
 import os
 import sys
-import config
+from typing import cast
 
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
-    TransparentToolButton
+    TransparentToolButton, CaptionLabel
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
                             BodyLabel, TitleLabel, PushButton, SearchLineEdit, FluentIcon, GroupHeaderCardWidget,
                             TeachingTip, TeachingTipView)
-from qfluentwidgets.multimedia import StandardMediaPlayBar
+from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlayerBase
+from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
+import config
 from config import cfg
 from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
@@ -22,6 +24,7 @@ from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
 from utils.fileManager import MAIN_PATH, read_all_audio_info, batch_clean_audio_files
 
+global window
 
 # if __name__ == '__main__':
 #     print("")
@@ -40,6 +43,92 @@ class CrawlerWorkerThread(QThread):
         create_video_list_file()
         # 任务完成后发出信号
         self.task_finished.emit("获取歌曲列表完成！")
+
+
+class CustomMediaPlayBar(MediaPlayBarBase):
+    """自定义播放栏"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.vBoxLayout = QVBoxLayout(self)
+        self.timeLayout = QHBoxLayout()
+        self.buttonLayout = QHBoxLayout()
+        self.leftButtonContainer = QWidget()
+        self.centerButtonContainer = QWidget()
+        self.rightButtonContainer = QWidget()
+        self.leftButtonLayout = QHBoxLayout(self.leftButtonContainer)
+        self.centerButtonLayout = QHBoxLayout(self.centerButtonContainer)
+        self.rightButtonLayout = QHBoxLayout(self.rightButtonContainer)
+
+        self.skipBackButton = MediaPlayBarButton(FluentIcon.SKIP_BACK, self)
+        self.skipForwardButton = MediaPlayBarButton(FluentIcon.SKIP_FORWARD, self)
+
+        self.currentTimeLabel = CaptionLabel('0:00:00', self)
+        self.remainTimeLabel = CaptionLabel('0:00:00', self)
+
+        self.__initWidgets()
+
+    def __initWidgets(self):
+        self.setFixedHeight(102)
+        self.vBoxLayout.setSpacing(6)
+        self.vBoxLayout.setContentsMargins(5, 9, 5, 9)
+        self.vBoxLayout.addWidget(self.progressSlider, 1, Qt.AlignmentFlag.AlignTop)
+
+        self.vBoxLayout.addLayout(self.timeLayout)
+        self.timeLayout.setContentsMargins(10, 0, 10, 0)
+        self.timeLayout.addWidget(self.currentTimeLabel, 0, Qt.AlignmentFlag.AlignLeft)
+        self.timeLayout.addWidget(self.remainTimeLabel, 0, Qt.AlignmentFlag.AlignRight)
+
+        self.vBoxLayout.addStretch(1)
+        self.vBoxLayout.addLayout(self.buttonLayout, 1)
+        self.buttonLayout.setContentsMargins(0, 0, 0, 0)
+        self.leftButtonLayout.setContentsMargins(4, 0, 0, 0)
+        self.centerButtonLayout.setContentsMargins(0, 0, 0, 0)
+        self.rightButtonLayout.setContentsMargins(0, 0, 4, 0)
+
+        self.leftButtonLayout.addWidget(self.volumeButton, 0, Qt.AlignmentFlag.AlignLeft)
+        self.centerButtonLayout.addWidget(self.skipBackButton)
+        self.centerButtonLayout.addWidget(self.playButton)
+        self.centerButtonLayout.addWidget(self.skipForwardButton)
+
+        self.buttonLayout.addWidget(self.leftButtonContainer, 0, Qt.AlignmentFlag.AlignLeft)
+        self.buttonLayout.addWidget(self.centerButtonContainer, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.buttonLayout.addWidget(self.rightButtonContainer, 0, Qt.AlignmentFlag.AlignRight)
+
+        self.setMediaPlayer(cast(MediaPlayerBase, MediaPlayer(self)))
+
+        self.volumeButton.clicked.connect(self.volumeSet)
+        self.volumeButton.volumeView.volumeSlider.valueChanged.connect(self.volumeChanged)
+        self.skipBackButton.clicked.connect(lambda: self.skipBack(10000))
+        self.skipForwardButton.clicked.connect(lambda: self.skipForward(30000))
+
+    @staticmethod
+    def volumeChanged(value):
+        config.volume = value
+
+    def volumeSet(self):
+        """ 音量设置 """
+        self.setVolume(config.volume)
+
+    def skipBack(self, ms: int):
+        """ Back up for specified milliseconds """
+        self.player.setPosition(self.player.position()-ms)
+
+    def skipForward(self, ms: int):
+        """ Fast forward specified milliseconds """
+        self.player.setPosition(self.player.position()+ms)
+
+    def _onPositionChanged(self, position: int):
+        super()._onPositionChanged(position)
+        self.currentTimeLabel.setText(self._formatTime(position))
+        self.remainTimeLabel.setText(self._formatTime(self.player.duration() - position))
+
+    @staticmethod
+    def _formatTime(time: int):
+        time = int(time / 1000)
+        s = time % 60
+        m = int(time / 60)
+        h = int(time / 3600)
+        return f'{h}:{m:02}:{s:02}'
 
 
 def changeDownloadType(index):
@@ -159,6 +248,48 @@ class SettingInterface(QWidget):
         self.layout.addStretch(1)
 
 
+class PlayQueueInterface(QWidget):
+    """ 播放队列GUI """
+    def __init__(self, parent=None, main_window=None):
+        super().__init__(parent=parent)
+        self.main_window = main_window
+        self.setObjectName("playQueueInterface")
+
+        self.layout = QVBoxLayout(self)
+        self.tableView = TableWidget(self)
+
+        self.layout.setContentsMargins(30, 30, 30, 30)
+        self.layout.setSpacing(15)
+
+        self.tableView.setBorderVisible(True)
+        self.tableView.setBorderRadius(8)
+        self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+
+        # 创建标题和刷新按钮的水平布局
+        title_layout = QHBoxLayout()
+
+        self.titleLabel = TitleLabel("播放列表", self)
+
+        self.refreshButton = TransparentToolButton(FIF.SYNC, self)
+        self.refreshButton.setToolTip("刷新歌曲列表")
+
+        self.addQueueButton = TransparentToolButton(FIF.DELETE, self)
+        self.addQueueButton.setToolTip("从播放列表中删除")
+
+        title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
+        title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addStretch(1)
+        title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
+
+        self.layout.addLayout(title_layout)
+        self.layout.addWidget(self.tableView)
+        # self.layout.addWidget(self.main_window.bar)
+
+        # self.tableView.cellDoubleClicked.connect(self.play_selected_song)
+        # self.refreshButton.clicked.connect(self.load_local_songs)
+        # self.addQueueButton.clicked.connect(self.add_to_queue)
+
 def getMusicLocal(fileName):
     """获取音乐文件位置"""
     if not fileName:
@@ -178,11 +309,17 @@ def getMusicLocal(fileName):
     return file_path
 
 
+def open_player():
+    """打开播放器"""
+    window.bar.show()
+
+
 class LocPlayerInterface(QWidget):
     """ 本地播放器GUI """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, main_window=None):
         super().__init__(parent=parent)
+        self.main_window = main_window
         self.setObjectName("locPlayerInterface")
         self.setStyleSheet("LocPlayerInterface{background: transparent}")
 
@@ -197,9 +334,6 @@ class LocPlayerInterface(QWidget):
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
-        self.bar = StandardMediaPlayBar()
-        self.bar.player.setVolume(50)
-
         # 创建标题和刷新按钮的水平布局
         title_layout = QHBoxLayout()
 
@@ -211,18 +345,22 @@ class LocPlayerInterface(QWidget):
         self.addQueueButton = TransparentToolButton(FIF.ADD, self)
         self.addQueueButton.setToolTip("添加到播放列表")
 
+        self.openPlayer = TransparentToolButton(FIF.MUSIC, self)
+        self.openPlayer.setToolTip("打开播放器")
+
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
+        title_layout.addWidget(self.openPlayer, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.layout.addLayout(title_layout)
         self.layout.addWidget(self.tableView)
-        self.layout.addWidget(self.bar)
 
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
         self.refreshButton.clicked.connect(self.load_local_songs)
         self.addQueueButton.clicked.connect(self.add_to_queue)
+        self.openPlayer.clicked.connect(open_player)
 
         self.load_local_songs()
 
@@ -248,8 +386,8 @@ class LocPlayerInterface(QWidget):
         file_path = getMusicLocal(item)
 
         url = QUrl.fromLocalFile(file_path)
-        self.bar.player.setSource(url)
-        self.bar.player.play()
+        self.main_window.bar.player.setSource(url)
+        self.main_window.bar.player.play()
 
     def add_to_queue(self):
         """添加到播放列表"""
@@ -287,7 +425,6 @@ class LocPlayerInterface(QWidget):
                 duration=1500,
                 parent=window
             )
-
 
 def searchOnBili(search_content):
     # 将搜索结果写入json
@@ -561,6 +698,13 @@ class DemoWindow(FluentWindow):
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
 
+        self.bar = CustomMediaPlayBar()
+        self.bar.setFixedSize(300, 120)
+        self.bar.player.setVolume(config.volume)
+        self.bar.setWindowIcon(icon)
+        self.bar.setWindowTitle("Player")
+        self.bar.show()
+
         # 添加子界面
         self.addSubInterface(
             interface=self.homeInterface,
@@ -575,10 +719,16 @@ class DemoWindow(FluentWindow):
             position=NavigationItemPosition.TOP
         )
         self.addSubInterface(
-            interface=LocPlayerInterface(self),
+            interface=PlayQueueInterface(self, main_window=self),
+            icon=FIF.ALIGNMENT,
+            text="播放队列",
+            position=NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
+            interface=LocPlayerInterface(self, main_window=self),
             icon=FIF.PLAY,
             text="本地播放",
-            position=NavigationItemPosition.TOP
+            position=NavigationItemPosition.BOTTOM
         )
         self.addSubInterface(
             interface=SettingInterface(self),
