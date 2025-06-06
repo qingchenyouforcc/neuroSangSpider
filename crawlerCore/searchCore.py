@@ -45,7 +45,7 @@ def get_target(keyword, page=3):
             return "标题提取失败"
 
     def get_date(video_item):
-        """模仿着写的获取日期函数"""
+        """获取日期函数"""
         # print(video_item)
         try:
             date_elem = video_item.find('span', class_='bili-video-card__info--date')
@@ -77,6 +77,7 @@ def get_target(keyword, page=3):
         if not title or title == "标题提取失败":
             return False
         return True
+
 
     def crawler_page(url):
         """爬取页面"""

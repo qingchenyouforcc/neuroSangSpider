@@ -1,7 +1,5 @@
 """
 将获取到的文件信息以json的形式存储,同时实现json和map的互相转换,以简化代码逻辑
-也许也可以提高可读性awa
-不过我不太会写python项目,希望能轻点喷
 """
 
 from SongList import SongList

@@ -60,7 +60,7 @@ class SongList(object):
             print("json文件读取错误:", e)
 
     def unique_by_bv(self):
-        """对内容根据bv号进行去重"""
+        """根据bv号进行去重"""
         try:
             resultlist = []
             bvChecker = []
@@ -74,7 +74,7 @@ class SongList(object):
             print("去重模块错误:", e)
 
     def search_by_title(self, title: str):
-        """仅保留包含关键字的video项"""
+        """仅保留标题包含关键字的video项"""
         resultList = []
         for songInfo in self.dictInfo["data"]:
             if songInfo["title"].lower().find(title.lower()) != -1:
