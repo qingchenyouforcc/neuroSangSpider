@@ -17,14 +17,16 @@ from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlay
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
 import config
-from config import cfg, infoBarPlayBtn
+from config import cfg
 from crawlerCore.main import create_video_list_file
 from crawlerCore.searchCore import search_song_online
 from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
+from string_tools import remove_before_last_backslash
 from utils.fileManager import MAIN_PATH, read_all_audio_info, batch_clean_audio_files
 
 global window
+
 
 # if __name__ == '__main__':
 #     print("")
@@ -47,6 +49,7 @@ class CrawlerWorkerThread(QThread):
 
 class CustomMediaPlayBar(MediaPlayBarBase):
     """自定义播放栏"""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.vBoxLayout = QVBoxLayout(self)
@@ -111,11 +114,11 @@ class CustomMediaPlayBar(MediaPlayBarBase):
 
     def skipBack(self, ms: int):
         """ Back up for specified milliseconds """
-        self.player.setPosition(self.player.position()-ms)
+        self.player.setPosition(self.player.position() - ms)
 
     def skipForward(self, ms: int):
         """ Fast forward specified milliseconds """
-        self.player.setPosition(self.player.position()+ms)
+        self.player.setPosition(self.player.position() + ms)
 
     def _onPositionChanged(self, position: int):
         super()._onPositionChanged(position)
@@ -250,6 +253,7 @@ class SettingInterface(QWidget):
 
 class PlayQueueInterface(QWidget):
     """ 播放队列GUI """
+
     def __init__(self, parent=None, main_window=None):
         super().__init__(parent=parent)
         self.main_window = main_window
@@ -274,21 +278,48 @@ class PlayQueueInterface(QWidget):
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip("刷新歌曲列表")
 
-        self.addQueueButton = TransparentToolButton(FIF.DELETE, self)
-        self.addQueueButton.setToolTip("从播放列表中删除")
+        self.delQueueButton = TransparentToolButton(FIF.DELETE, self)
+        self.delQueueButton.setToolTip("从播放列表中删除")
+
+        self.upSongButton = TransparentToolButton(FIF.UP, self)
+        self.upSongButton.setToolTip("将当前歌曲上移")
+
+        self.downSongButton = TransparentToolButton(FIF.DOWN, self)
+        self.downSongButton.setToolTip("将当前歌曲下移")
 
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
-        title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.upSongButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.downSongButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.delQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.layout.addLayout(title_layout)
         self.layout.addWidget(self.tableView)
-        # self.layout.addWidget(self.main_window.bar)
+        # todo
+        # 实现歌曲移动操作
 
-        # self.tableView.cellDoubleClicked.connect(self.play_selected_song)
-        # self.refreshButton.clicked.connect(self.load_local_songs)
-        # self.addQueueButton.clicked.connect(self.add_to_queue)
+        self.refreshButton.clicked.connect(self.load_play_queue)
+
+        self.load_play_queue()
+
+    def load_play_queue(self):
+        if not config.play_queue:
+            return
+
+        try:
+            self.tableView.setRowCount(len(config.play_queue))
+            self.tableView.setColumnCount(1)
+            self.tableView.setHorizontalHeaderLabels(['歌曲'])
+
+            for i, (song) in enumerate(config.play_queue):
+                song = remove_before_last_backslash(song)
+                self.tableView.setItem(i, 0, QTableWidgetItem(song))
+
+            self.tableView.resizeColumnsToContents()
+        except Exception as e:
+            print("加载歌曲列表失败:", e)
+
 
 def getMusicLocal(fileName):
     """获取音乐文件位置"""
@@ -312,6 +343,7 @@ def getMusicLocal(fileName):
 def open_player():
     """打开播放器"""
     window.bar.show()
+
 
 def open_info_tip():
     """打开正在播放提示"""
@@ -351,8 +383,6 @@ def open_info_tip():
         playBtn.setToolTip("暂停/播放")
 
         config.infoBarPlayBtn = playBtn
-        print(playBtn)
-        print(config.infoBarPlayBtn)
 
         playBtn.clicked.connect(infoPlayBtnClicked)
 
@@ -369,14 +399,15 @@ def open_info_tip():
             duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
         )
 
+
 def infoPlayBtnClicked():
+    """悬浮栏播放按钮事件"""
     config.player.togglePlayState()
 
     if config.player.player.isPlaying():
         config.infoBarPlayBtn.setIcon(FluentIcon.PAUSE_BOLD)
     else:
         config.infoBarPlayBtn.setIcon(FluentIcon.PLAY_SOLID)
-
 
 
 class LocPlayerInterface(QWidget):
@@ -500,6 +531,7 @@ class LocPlayerInterface(QWidget):
                 duration=1500,
                 parent=window
             )
+
 
 def searchOnBili(search_content):
     # 将搜索结果写入json

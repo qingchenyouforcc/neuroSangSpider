@@ -60,3 +60,9 @@ def format_date_str(date):
     except Exception as search_e:
         print(f"日期格式化错误: {search_e}")
         return date
+
+
+def remove_before_last_backslash(path: str) -> str:
+    """删除路径中的最后一个斜杠之前的部分"""
+    parts = path.rsplit("\\", 1)
+    return parts[1] if len(parts) > 1 else path
