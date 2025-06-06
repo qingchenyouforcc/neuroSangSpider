@@ -5,8 +5,8 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
-from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, SettingCardGroup, \
-    ComboBox, TransparentToolButton
+from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
+    TransparentToolButton
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
