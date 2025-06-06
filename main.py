@@ -1,5 +1,6 @@
 import os
 import sys
+import config
 
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
@@ -68,14 +69,13 @@ class SettinsCard(GroupHeaderCardWidget):
         self.setFixedHeight(240)
 
         # 修改下载歌曲格式
-        self.comboBox = ComboBox(self)
         items = ['mp3', 'ogg', 'wav']
+        self.comboBox = ComboBox(self)
         self.comboBox.addItems(items)
 
         current_index = items.index(cfg.downloadType.value)
         self.comboBox.setCurrentIndex(current_index)
         self.comboBox.currentIndexChanged.connect(changeDownloadType)
-
 
         # 切换主题按钮
         self.themeSwitch = SwitchButton(self)
@@ -88,7 +88,6 @@ class SettinsCard(GroupHeaderCardWidget):
 
         self.fixMusic = PushButton("修复音频", self)
         self.fixMusic.clicked.connect(on_fix_music)
-
 
         # 添加组件到分组中
         self.addGroup(FluentIcon.BRIGHTNESS, "主题", "切换深色/浅色模式", self.themeSwitch)
@@ -162,6 +161,7 @@ class SettingInterface(QWidget):
 
 class LocPlayerInterface(QWidget):
     """ 本地播放器GUI """
+
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setObjectName("locPlayerInterface")
@@ -242,7 +242,7 @@ class LocPlayerInterface(QWidget):
 
 def searchOnBili(search_content):
     # 将搜索结果写入json
-    result_info = search_song_online(search_content)
+    result_info = search_song_online(search_content, config.search_page)
     temp_list = SongList()
     temp_list.append_list(result_info)
     temp_list.unique_by_bv()
