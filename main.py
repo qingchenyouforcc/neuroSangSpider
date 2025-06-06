@@ -336,7 +336,7 @@ class SearchInterface(QWidget):
         """实现搜索按钮功能"""
         self.tableView.clear()
         self.tableView.setColumnCount(4)
-        self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'BV'])
+        self.tableView.setHorizontalHeaderLabels(['标题', 'UP主', '日期', 'BV号'])
         search_content = self.searchLine.text().lower()
         try:
             main_search_list = search_songList(search_content)
