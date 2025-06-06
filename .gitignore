@@ -7,7 +7,6 @@ venv/
 /dist/
 /build/
 __pycache__/
-/.idea/
 *.pyc
 /crawlerCore/__pycache__/
 /data/
