@@ -6,7 +6,7 @@ venv/
 /upx-3.96-win64/
 /dist/
 /build/
-/__pycache__/
+__pycache__/
 /.idea/
 *.pyc
 /crawlerCore/__pycache__/
