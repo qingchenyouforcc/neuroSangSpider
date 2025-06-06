@@ -4,6 +4,8 @@ from crawlerCore.videosList import get_video_list, resolve_url_to_info
 from utils.fileManager import create_dir, load_from_all_data, load_extend
 from infoManager import SongList
 
+create_dir("data")
+
 
 def create_video_list_file():
     """获得视频列表文件(多线程)"""
@@ -13,8 +15,6 @@ def create_video_list_file():
     words_set = ["合唱", "歌回", "金曲"]
     threads = []
     bv_list = []
-
-    create_dir("data")
 
     # 启动多线程爬取程序内建的up主近期视频
     for up in up_list:
