@@ -5,8 +5,8 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
-from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, SettingCardGroup, \
-    ComboBox, TransparentToolButton
+from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
+    TransparentToolButton
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
@@ -336,7 +336,7 @@ class SearchInterface(QWidget):
         """实现搜索按钮功能"""
         self.tableView.clear()
         self.tableView.setColumnCount(4)
-        self.tableView.setHorizontalHeaderLabels(['Title', 'Author', 'Date', 'BV'])
+        self.tableView.setHorizontalHeaderLabels(['标题', 'UP主', '日期', 'BV号'])
         search_content = self.searchLine.text().lower()
         try:
             main_search_list = search_songList(search_content)
