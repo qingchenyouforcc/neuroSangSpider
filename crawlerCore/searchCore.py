@@ -1,3 +1,6 @@
+import random
+import time
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -5,8 +8,7 @@ from infoManager.SongList import SongList
 from utils.bili_tools import url2bv
 
 
-
-def get_target(keyword):
+def get_target(keyword, page=3):
     """爬取B站视频信息"""
     seen_videos = set()
     headers = {
@@ -152,16 +154,40 @@ def get_target(keyword):
     # 爬取
     first_page_url = f'https://search.bilibili.com/all?keyword={keyword}'
     videos = crawler_page(first_page_url)
+    print(f"已经完成b站第 1 页爬取，本页获取 {len(videos)} 个视频")
+    print(videos)
+
+    try:
+        for i in range(2, page + 1):
+            n_url = f'https://search.bilibili.com/all?keyword={keyword}&page={i}&o={(i - 1) * 30}'
+            new_data = crawler_page(n_url)
+            videos += new_data
+            print(f'已经完成b站第 {i} 页爬取，本页获取 {len(new_data)} 个视频')
+            time.sleep(random.uniform(1, 2))
+
+        # 最终去重
+        initial_len = len(videos)
+        videos = list(dict.fromkeys(videos))
+        final_len = len(videos)
+
+        if initial_len != final_len:
+            print(f"最终去重移除了 {initial_len - final_len} 条重复数据")
+
+    except TypeError as e:
+        print(f"爬取页面时发生错误: {e}")
+
+    print(f"总计获取 {len(videos)} 个有效视频数据")
     print('已经完成b站搜索视频爬取')
+
 
     # 返回结果
     return videos
 
 
-def search_song_online(search_content):
+def search_song_online(search_content, page):
     """调用联网搜索,返回songList"""
     result_list = SongList()
-    result_list.dictInfo = {"data": get_target("neuro " + search_content)}
+    result_list.dictInfo = {"data": get_target("neuro " + search_content, page)}
     # result_list.dictInfo = {"data": get_target("evil" + search_content)}
 
     # debug

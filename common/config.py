@@ -11,4 +11,7 @@ class Config(QConfig):
         OptionsValidator(["mp3", "ogg", "wav"]), restart=False)
 
 
+# 初始化变量
 cfg = Config()
+
+search_page = 1
