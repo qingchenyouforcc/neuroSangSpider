@@ -451,7 +451,8 @@ class PlayQueueInterface(QWidget):
 
     def del_queue(self):
         index = self.tableView.currentIndex().row()
-        config.play_queue.pop(index)
+        if index > 0:
+            config.play_queue.pop(index)
         self.load_play_queue()
 
 def getMusicLocal(fileName):
