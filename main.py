@@ -91,16 +91,20 @@ def previousSong():
 
 def nextSong():
     """ 播放下一首 """
-    if config.play_queue_index >= len(config.play_queue) - 1:
-        InfoBar.info(
-            "提示",
-            "已经没有下一首了",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1000,
-            parent=InfoBar.desktopView()
-        )
-        return
+    if config.play_mode == 1:
+        if config.play_queue_index >= len(config.play_queue) - 1:
+            InfoBar.info(
+                "提示",
+                "已经没有下一首了",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1000,
+                parent=InfoBar.desktopView()
+            )
+            return
+    elif config.play_mode == 0:
+        if config.play_queue_index >= len(config.play_queue) - 1:
+            config.play_queue_index = -1
 
     try:
         config.play_queue_index += 1
@@ -138,7 +142,9 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.previousSongButton = MediaPlayBarButton(FluentIcon.CARE_LEFT_SOLID, self)
 
         self.skipBackButton = MediaPlayBarButton(FluentIcon.SKIP_BACK, self)
-        self.skipForwardButton = MediaPlayBarButton(FluentIcon.SKIP_FORWARD, self)
+
+        self.modeChangeButton = MediaPlayBarButton(FluentIcon.SYNC, self)
+        self.modeChangeButton.setToolTip('列表循环')
 
         self.currentTimeLabel = CaptionLabel('0:00:00', self)
         self.remainTimeLabel = CaptionLabel('0:00:00', self)
@@ -163,13 +169,13 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.centerButtonLayout.setContentsMargins(0, 0, 0, 0)
         self.rightButtonLayout.setContentsMargins(0, 0, 4, 0)
 
-        self.leftButtonLayout.addWidget(self.volumeButton, 0, Qt.AlignmentFlag.AlignLeft)
-
         self.centerButtonLayout.addWidget(self.skipBackButton)
         self.centerButtonLayout.addWidget(self.previousSongButton)
         self.centerButtonLayout.addWidget(self.playButton)
         self.centerButtonLayout.addWidget(self.nextSongButton)
-        self.centerButtonLayout.addWidget(self.skipForwardButton)
+        self.centerButtonLayout.addWidget(self.modeChangeButton)
+
+        self.rightButtonLayout.addWidget(self.volumeButton, 0, Qt.AlignmentFlag.AlignRight)
 
         self.buttonLayout.addWidget(self.leftButtonContainer, 0, Qt.AlignmentFlag.AlignLeft)
         self.buttonLayout.addWidget(self.centerButtonContainer, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -180,9 +186,9 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.volumeButton.clicked.connect(self.volumeSet)
         self.volumeButton.volumeView.volumeSlider.valueChanged.connect(self.volumeChanged)
         self.skipBackButton.clicked.connect(lambda: self.skipBack(10000))
-        self.skipForwardButton.clicked.connect(lambda: self.skipForward(30000))
         self.previousSongButton.clicked.connect(previousSong)
         self.nextSongButton.clicked.connect(nextSong)
+        self.modeChangeButton.clicked.connect(self.modeChange)
 
     @staticmethod
     def volumeChanged(value):
@@ -196,14 +202,23 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         """ Back up for specified milliseconds """
         self.player.setPosition(self.player.position() - ms)
 
-    def skipForward(self, ms: int):
-        """ Fast forward specified milliseconds """
-        self.player.setPosition(self.player.position() + ms)
-
     def _onPositionChanged(self, position: int):
         super()._onPositionChanged(position)
         self.currentTimeLabel.setText(self._formatTime(position))
         self.remainTimeLabel.setText(self._formatTime(self.player.duration() - position))
+
+        remainTime = self.player.duration() - position
+
+        if remainTime == 0:
+            if config.play_mode == 0:
+                    print("歌曲播放完毕，自动播放下一首。")
+                    nextSong()
+            elif config.play_mode == 1:
+                if config.play_queue_index < len(config.play_queue):
+                    print("歌曲播放完毕，自动播放下一首。")
+                    nextSong()
+            elif config.play_mode == 2:
+                    playSongByIndex()
 
     @staticmethod
     def _formatTime(time: int):
@@ -212,6 +227,22 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         m = int(time / 60)
         h = int(time / 3600)
         return f'{h}:{m:02}:{s:02}'
+
+    def modeChange(self):
+        if config.play_mode >= 2:
+            config.play_mode = 0
+        else:
+            config.play_mode += 1
+
+        if config.play_mode == 0:
+            self.modeChangeButton.setIcon(FluentIcon.SYNC)
+            self.modeChangeButton.setToolTip('列表循环')
+        elif config.play_mode == 1:
+            self.modeChangeButton.setIcon(FluentIcon.MENU)
+            self.modeChangeButton.setToolTip('顺序播放')
+        elif config.play_mode == 2:
+            self.modeChangeButton.setIcon(FluentIcon.ROTATE)
+            self.modeChangeButton.setToolTip('单曲循环')
 
 
 def changeDownloadType(index):

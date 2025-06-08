@@ -19,6 +19,8 @@ search_page = 1
 volume = 50
 play_queue = []
 play_queue_index = 0
+# 播放模式 0是列表循环 1是顺序播放 2是单曲循环
+play_mode = 0
 
 playingNow = None
 # 这个是播放器类，player在这个里面
