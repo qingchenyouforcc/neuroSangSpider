@@ -23,7 +23,7 @@ from crawlerCore.searchCore import search_song_online
 from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
 from string_tools import remove_before_last_backslash
-from utils.fileManager import MAIN_PATH, read_all_audio_info, batch_clean_audio_files
+from utils.fileManager import MAIN_PATH, read_all_audio_info, batch_clean_audio_files, create_dir
 
 global window
 
@@ -212,14 +212,14 @@ class CustomMediaPlayBar(MediaPlayBarBase):
 
         if remainTime == 0:
             if config.play_mode == 0:
-                    print("歌曲播放完毕，自动播放下一首。")
-                    nextSong()
+                print("歌曲播放完毕，自动播放下一首。")
+                nextSong()
             elif config.play_mode == 1:
                 if config.play_queue_index < len(config.play_queue):
                     print("歌曲播放完毕，自动播放下一首。")
                     nextSong()
             elif config.play_mode == 2:
-                    playSongByIndex()
+                playSongByIndex()
 
     @staticmethod
     def _formatTime(time: int):
@@ -436,7 +436,8 @@ class PlayQueueInterface(QWidget):
     def move_up(self):
         index = self.tableView.currentIndex().row()
         if index > 0:
-            config.play_queue[index - 1], config.play_queue[index] = config.play_queue[index], config.play_queue[index - 1]
+            config.play_queue[index - 1], config.play_queue[index] = config.play_queue[index], config.play_queue[
+                index - 1]
             self.tableView.setCurrentIndex(self.tableView.model().index(index - 1, 0))
 
             if config.play_queue_index == index:
@@ -447,7 +448,8 @@ class PlayQueueInterface(QWidget):
     def move_down(self):
         index = self.tableView.currentIndex().row()
         if index < len(config.play_queue) - 1:
-            config.play_queue[index + 1], config.play_queue[index] = config.play_queue[index], config.play_queue[index + 1]
+            config.play_queue[index + 1], config.play_queue[index] = config.play_queue[index], config.play_queue[
+                index + 1]
             self.tableView.setCurrentIndex(self.tableView.model().index(index + 1, 0))
 
             if config.play_queue_index == index:
@@ -460,6 +462,7 @@ class PlayQueueInterface(QWidget):
         if index > 0:
             config.play_queue.pop(index)
         self.load_play_queue()
+
 
 def getMusicLocal(fileName):
     """获取音乐文件位置"""
@@ -1036,6 +1039,7 @@ if __name__ == '__main__':
 
     window = DemoWindow()
     window.show()
+    create_dir("data")
 
     sys.exit(app.exec())
 
