@@ -47,18 +47,35 @@ class CrawlerWorkerThread(QThread):
         self.task_finished.emit("获取歌曲列表完成！")
 
 
+def playSongByIndex():
+    file_path = getMusicLocalStr(
+        config.play_queue[config.play_queue_index])
+
+    url = QUrl.fromLocalFile(file_path)
+    window.bar.player.setSource(url)
+    window.bar.player.play()
+
+    config.playingNow = config.play_queue[config.play_queue_index]
+
+    print(f"当前播放歌曲队列位置：{config.play_queue_index}")
+
+
 def previousSong():
     """ 播放上一首 """
+    if config.play_queue_index <= 0:
+        InfoBar.info(
+            "提示",
+            "已经没有上一首了",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1000,
+            parent=InfoBar.desktopView()
+        )
+        return
     try:
-        config.play_queue_index -= 1
-        file_path = getMusicLocalStr(
-            config.play_queue[config.play_queue_index])
+        config.play_queue_index = config.play_queue_index - 1
+        playSongByIndex()
 
-        url = QUrl.fromLocalFile(file_path)
-        window.bar.player.setSource(url)
-        window.bar.player.play()
-
-        config.playingNow = config.play_queue[config.play_queue_index]
     except IndexError:
         InfoBar.info(
             "提示",
@@ -74,16 +91,21 @@ def previousSong():
 
 def nextSong():
     """ 播放下一首 """
+    if config.play_queue_index >= len(config.play_queue) - 1:
+        InfoBar.info(
+            "提示",
+            "已经没有下一首了",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1000,
+            parent=InfoBar.desktopView()
+        )
+        return
+
     try:
         config.play_queue_index += 1
-        file_path = getMusicLocalStr(
-            config.play_queue[config.play_queue_index])
+        playSongByIndex()
 
-        url = QUrl.fromLocalFile(file_path)
-        window.bar.player.setSource(url)
-        window.bar.player.play()
-
-        config.playingNow = config.play_queue[config.play_queue_index]
     except IndexError:
         InfoBar.info(
             "提示",
@@ -148,7 +170,6 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.centerButtonLayout.addWidget(self.playButton)
         self.centerButtonLayout.addWidget(self.nextSongButton)
         self.centerButtonLayout.addWidget(self.skipForwardButton)
-
 
         self.buttonLayout.addWidget(self.leftButtonContainer, 0, Qt.AlignmentFlag.AlignLeft)
         self.buttonLayout.addWidget(self.centerButtonContainer, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -395,6 +416,7 @@ def getMusicLocalStr(fileName):
 
     return summonMusicLocal(fileName)
 
+
 def summonMusicLocal(fileName):
     """生成音乐文件路径"""
     if not fileName:
@@ -411,7 +433,6 @@ def summonMusicLocal(fileName):
         return None
 
     return file_path
-
 
 
 def open_player():
@@ -568,6 +589,10 @@ class LocPlayerInterface(QWidget):
         config.playingNow = item
 
         open_info_tip()
+
+        self.add_to_queue()
+        config.play_queue_index = config.play_queue.index(file_path)
+        print(f"当前播放歌曲队列位置：{config.play_queue_index}")
 
     def add_to_queue(self):
         """添加到播放列表"""
