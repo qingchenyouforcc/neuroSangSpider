@@ -438,6 +438,10 @@ class PlayQueueInterface(QWidget):
         if index > 0:
             config.play_queue[index - 1], config.play_queue[index] = config.play_queue[index], config.play_queue[index - 1]
             self.tableView.setCurrentIndex(self.tableView.model().index(index - 1, 0))
+
+            if config.play_queue_index == index:
+                config.play_queue_index -= 1
+
         self.load_play_queue()
 
     def move_down(self):
@@ -445,6 +449,10 @@ class PlayQueueInterface(QWidget):
         if index < len(config.play_queue) - 1:
             config.play_queue[index + 1], config.play_queue[index] = config.play_queue[index], config.play_queue[index + 1]
             self.tableView.setCurrentIndex(self.tableView.model().index(index + 1, 0))
+
+            if config.play_queue_index == index:
+                config.play_queue_index += 1
+
         self.load_play_queue()
 
     def del_queue(self):
