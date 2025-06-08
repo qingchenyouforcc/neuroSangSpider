@@ -55,9 +55,10 @@ def playSongByIndex():
     window.bar.player.setSource(url)
     window.bar.player.play()
 
-    config.playingNow = config.play_queue[config.play_queue_index]
+    config.playingNow = remove_before_last_backslash(config.play_queue[config.play_queue_index])
 
     print(f"当前播放歌曲队列位置：{config.play_queue_index}")
+    open_info_tip()
 
 
 def previousSong():
@@ -479,7 +480,7 @@ def open_info_tip():
         config.infoBar = InfoBar.new(
             icon=FluentIcon.MUSIC,
             title='正在播放',
-            content=f"{config.playingNow.text()}",
+            content=f"{config.playingNow}",
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -490,7 +491,7 @@ def open_info_tip():
         info = InfoBar.new(
             icon=FluentIcon.MUSIC,
             title='正在播放',
-            content=f"{config.playingNow.text()}",
+            content=f"{config.playingNow}",
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -617,7 +618,7 @@ class LocPlayerInterface(QWidget):
         self.main_window.bar.player.setSource(url)
         self.main_window.bar.player.play()
 
-        config.playingNow = item
+        config.playingNow = item.text()
 
         open_info_tip()
 
