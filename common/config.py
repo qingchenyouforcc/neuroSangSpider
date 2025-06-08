@@ -18,6 +18,8 @@ search_page = 1
 
 volume = 50
 play_queue = []
+play_queue_index = 0
+
 playingNow = None
 # 这个是播放器类，player在这个里面
 player = None

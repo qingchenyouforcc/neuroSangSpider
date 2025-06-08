@@ -47,6 +47,56 @@ class CrawlerWorkerThread(QThread):
         self.task_finished.emit("获取歌曲列表完成！")
 
 
+def previousSong():
+    """ 播放上一首 """
+    try:
+        config.play_queue_index -= 1
+        file_path = getMusicLocalStr(
+            config.play_queue[config.play_queue_index])
+
+        url = QUrl.fromLocalFile(file_path)
+        window.bar.player.setSource(url)
+        window.bar.player.play()
+
+        config.playingNow = config.play_queue[config.play_queue_index]
+    except IndexError:
+        InfoBar.info(
+            "提示",
+            "已经没有上一首了",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1000,
+            parent=InfoBar.desktopView()
+        )
+    except Exception as e:
+        print(e)
+
+
+def nextSong():
+    """ 播放下一首 """
+    try:
+        config.play_queue_index += 1
+        file_path = getMusicLocalStr(
+            config.play_queue[config.play_queue_index])
+
+        url = QUrl.fromLocalFile(file_path)
+        window.bar.player.setSource(url)
+        window.bar.player.play()
+
+        config.playingNow = config.play_queue[config.play_queue_index]
+    except IndexError:
+        InfoBar.info(
+            "提示",
+            "已经没有下一首了",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1000,
+            parent=InfoBar.desktopView()
+        )
+    except Exception as e:
+        print(e)
+
+
 class CustomMediaPlayBar(MediaPlayBarBase):
     """自定义播放栏"""
 
@@ -61,6 +111,9 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.leftButtonLayout = QHBoxLayout(self.leftButtonContainer)
         self.centerButtonLayout = QHBoxLayout(self.centerButtonContainer)
         self.rightButtonLayout = QHBoxLayout(self.rightButtonContainer)
+
+        self.nextSongButton = MediaPlayBarButton(FluentIcon.CARE_RIGHT_SOLID, self)
+        self.previousSongButton = MediaPlayBarButton(FluentIcon.CARE_LEFT_SOLID, self)
 
         self.skipBackButton = MediaPlayBarButton(FluentIcon.SKIP_BACK, self)
         self.skipForwardButton = MediaPlayBarButton(FluentIcon.SKIP_FORWARD, self)
@@ -89,9 +142,13 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.rightButtonLayout.setContentsMargins(0, 0, 4, 0)
 
         self.leftButtonLayout.addWidget(self.volumeButton, 0, Qt.AlignmentFlag.AlignLeft)
+
         self.centerButtonLayout.addWidget(self.skipBackButton)
+        self.centerButtonLayout.addWidget(self.previousSongButton)
         self.centerButtonLayout.addWidget(self.playButton)
+        self.centerButtonLayout.addWidget(self.nextSongButton)
         self.centerButtonLayout.addWidget(self.skipForwardButton)
+
 
         self.buttonLayout.addWidget(self.leftButtonContainer, 0, Qt.AlignmentFlag.AlignLeft)
         self.buttonLayout.addWidget(self.centerButtonContainer, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -103,6 +160,8 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.volumeButton.volumeView.volumeSlider.valueChanged.connect(self.volumeChanged)
         self.skipBackButton.clicked.connect(lambda: self.skipBack(10000))
         self.skipForwardButton.clicked.connect(lambda: self.skipForward(30000))
+        self.previousSongButton.clicked.connect(previousSong)
+        self.nextSongButton.clicked.connect(nextSong)
 
     @staticmethod
     def volumeChanged(value):
@@ -326,18 +385,33 @@ def getMusicLocal(fileName):
     if not fileName:
         return None
 
-    filename = fileName.text()
+    return summonMusicLocal(fileName.text())
+
+
+def getMusicLocalStr(fileName):
+    """获取音乐文件位置(字符串)"""
+    if not fileName:
+        return None
+
+    return summonMusicLocal(fileName)
+
+def summonMusicLocal(fileName):
+    """生成音乐文件路径"""
+    if not fileName:
+        return None
+
     music_dir = os.path.join(MAIN_PATH, "music")
-    file_path = os.path.join(music_dir, filename)
+    file_path = os.path.join(music_dir, fileName)
 
     if not os.path.exists(file_path):
         InfoBar.error(
-            "错误", f"找不到文件: {filename}",
+            "错误", f"找不到文件: {fileName}",
             duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
         )
         return None
 
     return file_path
+
 
 
 def open_player():
@@ -521,7 +595,7 @@ class LocPlayerInterface(QWidget):
                 duration=1500,
                 parent=self.parent()
             )
-            print(config.play_queue)
+            print(f"当前播放列表:{config.play_queue}")
         else:
             InfoBar.error(
                 "失败",
