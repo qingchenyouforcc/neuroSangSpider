@@ -408,8 +408,6 @@ class PlayQueueInterface(QWidget):
 
         self.layout.addLayout(title_layout)
         self.layout.addWidget(self.tableView)
-        # todo
-        # 实现歌曲移动操作
 
         self.upSongButton.clicked.connect(self.move_up)
         self.downSongButton.clicked.connect(self.move_down)
