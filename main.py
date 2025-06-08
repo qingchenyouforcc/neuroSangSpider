@@ -411,6 +411,9 @@ class PlayQueueInterface(QWidget):
         # todo
         # 实现歌曲移动操作
 
+        self.upSongButton.clicked.connect(self.move_up)
+        self.downSongButton.clicked.connect(self.move_down)
+        self.delQueueButton.clicked.connect(self.del_queue)
         self.refreshButton.clicked.connect(self.load_play_queue)
 
         self.load_play_queue()
@@ -432,6 +435,24 @@ class PlayQueueInterface(QWidget):
         except Exception as e:
             print("加载歌曲列表失败:", e)
 
+    def move_up(self):
+        index = self.tableView.currentIndex().row()
+        if index > 0:
+            config.play_queue[index - 1], config.play_queue[index] = config.play_queue[index], config.play_queue[index - 1]
+            self.tableView.setCurrentIndex(self.tableView.model().index(index - 1, 0))
+        self.load_play_queue()
+
+    def move_down(self):
+        index = self.tableView.currentIndex().row()
+        if index < len(config.play_queue) - 1:
+            config.play_queue[index + 1], config.play_queue[index] = config.play_queue[index], config.play_queue[index + 1]
+            self.tableView.setCurrentIndex(self.tableView.model().index(index + 1, 0))
+        self.load_play_queue()
+
+    def del_queue(self):
+        index = self.tableView.currentIndex().row()
+        config.play_queue.pop(index)
+        self.load_play_queue()
 
 def getMusicLocal(fileName):
     """获取音乐文件位置"""
