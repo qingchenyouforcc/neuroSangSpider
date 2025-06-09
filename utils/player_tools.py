@@ -130,4 +130,9 @@ def getRandomIndex():
     while index == cfg.play_queue_index: index = random.randint(0, len(cfg.play_queue) - 1)
     cfg.play_queue_index = index
 
+def sequencePlay():
+    """顺序播放"""
+    cfg.play_mode = 0
+    playSongByIndex()
+
 

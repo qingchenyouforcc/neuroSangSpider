@@ -23,7 +23,7 @@ import config
 from config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
 from musicDownloader.main import run_download, search_songList
-from player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal
+from player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal, sequencePlay
 from searchCore import searchOnBili
 from text_tools import remove_before_last_backslash
 from tipbar_tools import open_info_tip, update_info_tip
@@ -132,15 +132,18 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         remainTime = self.player.duration() - position
 
         if remainTime == 0:
-            if cfg.play_mode == 0:
-                logger.info("歌曲播放完毕，自动播放下一首。")
-                nextSong()
-            elif cfg.play_mode == 1:
-                if cfg.play_queue_index < len(cfg.play_queue):
+            match cfg.play_mode:
+                case 0:
                     logger.info("歌曲播放完毕，自动播放下一首。")
                     nextSong()
-            elif cfg.play_mode == 2:
-                playSongByIndex()
+                case 1:
+                    if cfg.play_queue_index < len(cfg.play_queue):
+                        logger.info("歌曲播放完毕，自动播放下一首。")
+                        nextSong()
+                case 2: playSongByIndex()
+                case 3:
+                    logger.info("歌曲播放完毕，自动播放下一首。")
+                    nextSong()
 
     @staticmethod
     def _formatTime(time: int):
@@ -299,6 +302,9 @@ class PlayQueueInterface(QWidget):
 
         self.titleLabel = TitleLabel("播放列表", self)
 
+        self.seqPlayBtn = TransparentToolButton(FIF.MENU, self)
+        self.seqPlayBtn.setToolTip("按顺序播放(不改变播放模式)")
+
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip("刷新歌曲列表")
 
@@ -314,6 +320,7 @@ class PlayQueueInterface(QWidget):
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
+        title_layout.addWidget(self.seqPlayBtn, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.upSongButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.downSongButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.delQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
@@ -321,6 +328,7 @@ class PlayQueueInterface(QWidget):
         self.layout.addLayout(title_layout)
         self.layout.addWidget(self.tableView)
 
+        self.seqPlayBtn.clicked.connect(sequencePlay)
         self.upSongButton.clicked.connect(self.move_up)
         self.downSongButton.clicked.connect(self.move_down)
         self.delQueueButton.clicked.connect(self.del_queue)
@@ -414,7 +422,7 @@ class LocPlayerInterface(QWidget):
         self.openInfoTip = TransparentToolButton(FIF.INFO, self)
         self.openInfoTip.setToolTip("打开正在播放提示")
 
-        self.delSongBtn =  TransparentToolButton(FIF.DELETE, self)
+        self.delSongBtn = TransparentToolButton(FIF.DELETE, self)
         self.delSongBtn.setToolTip("删除文件")
 
         self.addQueueAllBtn = TransparentToolButton(FIF.CHEVRON_DOWN_MED, self)
@@ -562,7 +570,6 @@ class LocPlayerInterface(QWidget):
                 parent=window
             )
             logger.error(e)
-
 
 
 class SearchInterface(QWidget):
@@ -919,7 +926,6 @@ class DemoWindow(FluentWindow):
 
         except Exception as e:
             logger.error(f"在退出确认过程中发生错误: {e}")
-
 
 
 if __name__ == '__main__':
