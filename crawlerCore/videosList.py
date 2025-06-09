@@ -17,8 +17,8 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 # noinspection PyUnresolvedReferences
 from selenium.webdriver.common.action_chains import ActionChains
 
-from utils.fileManager import MAIN_PATH
-from utils.string_tools import contain_text
+from utils.file_tools import MAIN_PATH
+from utils.text_tools import contain_text
 from utils.bili_tools import url2bv
 from bs4 import BeautifulSoup
 

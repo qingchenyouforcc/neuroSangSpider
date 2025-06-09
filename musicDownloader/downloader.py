@@ -3,7 +3,7 @@ import os
 # noinspection PyUnresolvedReferences
 from bilibili_api import video, Credential, HEADERS, get_client
 
-from utils.fileManager import MAIN_PATH
+from utils.file_tools import MAIN_PATH
 
 SESSDATA = ""
 BILI_JCT = ""

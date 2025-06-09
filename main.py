@@ -17,13 +17,14 @@ from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlay
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
 import config
-from config import cfg
+from config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
-from crawlerCore.searchCore import search_song_online
-from infoManager.SongList import SongList
 from musicDownloader.main import run_download, search_songList
-from string_tools import remove_before_last_backslash
-from utils.fileManager import MAIN_PATH, read_all_audio_info, batch_clean_audio_files, create_dir
+from player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal
+from searchCore import searchOnBili
+from text_tools import remove_before_last_backslash
+from tipbar_tools import open_info_tip
+from utils.file_tools import read_all_audio_info, create_dir, on_fix_music
 
 global window
 
@@ -45,83 +46,6 @@ class CrawlerWorkerThread(QThread):
         create_video_list_file()
         # 任务完成后发出信号
         self.task_finished.emit("获取歌曲列表完成！")
-
-
-def playSongByIndex():
-    file_path = getMusicLocalStr(
-        config.play_queue[config.play_queue_index])
-
-    url = QUrl.fromLocalFile(file_path)
-    window.bar.player.setSource(url)
-    window.bar.player.play()
-
-    config.playing_now = remove_before_last_backslash(config.play_queue[config.play_queue_index])
-
-    print(f"当前播放歌曲队列位置：{config.play_queue_index}")
-    open_info_tip()
-
-
-def previousSong():
-    """ 播放上一首 """
-    if config.play_queue_index <= 0:
-        InfoBar.info(
-            "提示",
-            "已经没有上一首了",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1000,
-            parent=InfoBar.desktopView()
-        )
-        return
-    try:
-        config.play_queue_index = config.play_queue_index - 1
-        playSongByIndex()
-
-    except IndexError:
-        InfoBar.info(
-            "提示",
-            "已经没有上一首了",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1000,
-            parent=InfoBar.desktopView()
-        )
-    except Exception as e:
-        print(e)
-
-
-def nextSong():
-    """ 播放下一首 """
-    if config.play_mode == 1:
-        if config.play_queue_index >= len(config.play_queue) - 1:
-            InfoBar.info(
-                "提示",
-                "已经没有下一首了",
-                orient=Qt.Orientation.Horizontal,
-                position=InfoBarPosition.BOTTOM_RIGHT,
-                duration=1000,
-                parent=InfoBar.desktopView()
-            )
-            return
-    elif config.play_mode == 0:
-        if config.play_queue_index >= len(config.play_queue) - 1:
-            config.play_queue_index = -1
-
-    try:
-        config.play_queue_index += 1
-        playSongByIndex()
-
-    except IndexError:
-        InfoBar.info(
-            "提示",
-            "已经没有下一首了",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1000,
-            parent=InfoBar.desktopView()
-        )
-    except Exception as e:
-        print(e)
 
 
 class CustomMediaPlayBar(MediaPlayBarBase):
@@ -299,30 +223,6 @@ class SettinsCard(GroupHeaderCardWidget):
         self.addGroup(FluentIcon.MUSIC, "修复音频文件", "修复下载异常的音频文件", self.fixMusic)
 
 
-def on_fix_music():
-    music_dir = os.path.join(MAIN_PATH, "music")
-    try:
-        batch_clean_audio_files(music_dir, target_format='mp3', overwrite=True)
-        InfoBar.success(
-            "修复完成",
-            "修复完成！",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1500,
-            parent=window
-        )
-    except Exception as e:
-        print(e)
-        InfoBar.error(
-            "修复失败",
-            "修复失败！",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1500,
-            parent=window
-        )
-
-
 def on_theme_switched(checked):
     """切换主题"""
     if checked:
@@ -464,116 +364,6 @@ class PlayQueueInterface(QWidget):
         self.load_play_queue()
 
 
-def getMusicLocal(fileName):
-    """获取音乐文件位置"""
-    if not fileName:
-        return None
-
-    return summonMusicLocal(fileName.text())
-
-
-def getMusicLocalStr(fileName):
-    """获取音乐文件位置(字符串)"""
-    if not fileName:
-        return None
-
-    return summonMusicLocal(fileName)
-
-
-def summonMusicLocal(fileName):
-    """生成音乐文件路径"""
-    if not fileName:
-        return None
-
-    music_dir = os.path.join(MAIN_PATH, "music")
-    file_path = os.path.join(music_dir, fileName)
-
-    if not os.path.exists(file_path):
-        InfoBar.error(
-            "错误", f"找不到文件: {fileName}",
-            duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
-        )
-        return None
-
-    return file_path
-
-
-def open_player():
-    """打开播放器"""
-    window.bar.show()
-
-
-def open_info_tip():
-    """打开正在播放提示"""
-    if config.HAS_INFOPLAYERBAR:
-        print("检测到已经有了一个正在播放提示，正在关闭...")
-        config.info_bar.close()
-        config.info_bar = InfoBar.new(
-            icon=FluentIcon.MUSIC,
-            title='正在播放',
-            content=f"{config.playing_now}",
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=-1,
-            parent=InfoBar.desktopView()
-        )
-    else:
-        print(f"正在播放{config.playing_now}")
-        info = InfoBar.new(
-            icon=FluentIcon.MUSIC,
-            title='正在播放',
-            content=f"{config.playing_now}",
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=-1,
-            parent=InfoBar.desktopView()
-        )
-        info.setCustomBackgroundColor('white', '#202020')
-
-        config.info_bar = info
-        config.HAS_INFOPLAYERBAR = True
-    try:
-        info = config.info_bar
-
-        playBtn = TransparentToolButton(FluentIcon.PAUSE, info)
-        info.hBoxLayout.addWidget(playBtn, 0, Qt.AlignmentFlag.AlignLeft)
-        playBtn.setToolTip("暂停/播放")
-
-        config.info_bar_play_btn = playBtn
-
-        playBtn.clicked.connect(infoPlayBtnClicked)
-        info.closeButton.clicked.connect(infoCloseBtnClicked)
-
-    except AttributeError:
-        InfoBar.error(
-            "错误", "没有正在播放的音乐",
-            duration=1000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
-        )
-
-    except Exception as e:
-        print(e)
-        InfoBar.error(
-            "未知错误", "请复制日志反馈到github issue",
-            duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
-        )
-
-def infoCloseBtnClicked():
-    """悬浮栏关闭按钮事件"""
-    config.info_bar.close()
-    config.HAS_INFOPLAYERBAR = False
-
-def infoPlayBtnClicked():
-    """悬浮栏播放按钮事件"""
-    config.player.togglePlayState()
-
-    if config.player.player.isPlaying():
-        config.info_bar_play_btn.setIcon(FluentIcon.PAUSE_BOLD)
-    else:
-        config.info_bar_play_btn.setIcon(FluentIcon.PLAY_SOLID)
-
-
 class LocPlayerInterface(QWidget):
     """ 本地播放器GUI """
 
@@ -648,20 +438,23 @@ class LocPlayerInterface(QWidget):
 
     def play_selected_song(self, row):
         """双击播放指定行的歌曲"""
-        item = self.tableView.item(row, 0)
-        file_path = getMusicLocal(item)
+        try:
+            item = self.tableView.item(row, 0)
+            file_path = getMusicLocal(item)
 
-        url = QUrl.fromLocalFile(file_path)
-        self.main_window.bar.player.setSource(url)
-        self.main_window.bar.player.play()
+            url = QUrl.fromLocalFile(file_path)
+            self.main_window.player_bar.player.setSource(url)
+            self.main_window.player_bar.player.play()
 
-        config.playing_now = item.text()
+            config.playing_now = item.text()
 
-        open_info_tip()
+            open_info_tip()
 
-        self.add_to_queue()
-        config.play_queue_index = config.play_queue.index(file_path)
-        print(f"当前播放歌曲队列位置：{config.play_queue_index}")
+            self.add_to_queue()
+            config.play_queue_index = config.play_queue.index(file_path)
+            print(f"当前播放歌曲队列位置：{config.play_queue_index}")
+        except Exception as e:
+            print(e)
 
     def add_to_queue(self):
         """添加到播放列表"""
@@ -699,15 +492,6 @@ class LocPlayerInterface(QWidget):
                 duration=1500,
                 parent=window
             )
-
-
-def searchOnBili(search_content):
-    # 将搜索结果写入json
-    result_info = search_song_online(search_content, config.search_page)
-    temp_list = SongList()
-    temp_list.append_list(result_info)
-    temp_list.unique_by_bv()
-    temp_list.save_list(r"data\search_data.json")
 
 
 class SearchInterface(QWidget):
@@ -799,6 +583,7 @@ class SearchInterface(QWidget):
         self.tableView.setColumnCount(4)
         self.tableView.setHorizontalHeaderLabels(['标题', 'UP主', '日期', 'BV号'])
         search_content = self.searchLine.text().lower()
+
         try:
             main_search_list = search_songList(search_content)
             print("---搜索开始---")
@@ -973,13 +758,13 @@ class DemoWindow(FluentWindow):
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
 
-        self.bar = CustomMediaPlayBar()
-        self.bar.setFixedSize(300, 120)
-        self.bar.player.setVolume(config.volume)
-        self.bar.setWindowIcon(icon)
-        self.bar.setWindowTitle("Player")
-        self.bar.show()
-        config.player = self.bar
+        self.player_bar = CustomMediaPlayBar()
+        self.player_bar.setFixedSize(300, 120)
+        self.player_bar.player.setVolume(config.volume)
+        self.player_bar.setWindowIcon(icon)
+        self.player_bar.setWindowTitle("Player")
+        self.player_bar.show()
+        cfg.set_player(self.player_bar)
 
         # 添加子界面
         self.addSubInterface(
@@ -1044,7 +829,10 @@ if __name__ == '__main__':
     setTheme(Theme.AUTO)
 
     window = DemoWindow()
+    cfg.set_main_window(window)
+
     window.show()
+
     create_dir("data")
 
     sys.exit(app.exec())

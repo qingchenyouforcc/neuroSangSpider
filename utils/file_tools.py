@@ -2,13 +2,15 @@ import os
 import json
 import subprocess
 
+from PyQt6.QtCore import Qt
+from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 from pathlib import Path
 from mutagen import File
+
+from config import MAIN_PATH, cfg
 from infoManager.SongList import SongList
 from utils.bili_tools import url2bv
-
-MAIN_PATH = Path.cwd()
 
 
 def create_dir(dir_name):
@@ -207,7 +209,7 @@ def clean_audio_file(input_path, output_path, target_format='mp3'):
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ 处理失败: {input_path}")
+        print(f"❌ 处理失败: {input_path}\n错误{e}")
         return False
 
 
@@ -224,7 +226,6 @@ def batch_clean_audio_files(directory, target_format='mp3', overwrite=False):
         overwrite: 是否覆盖原文件（默认生成新文件）
     """
     cleaned_count = 0
-    total_count = 0
     input_dir = Path(directory)
 
     # 收集所有需要处理的文件
@@ -260,6 +261,31 @@ def batch_clean_audio_files(directory, target_format='mp3', overwrite=False):
                 input_file.unlink()
 
     print(f"\n✅ 完成！共清理 {cleaned_count}/{total_count} 个文件")
+
+
+def on_fix_music():
+    music_dir = os.path.join(MAIN_PATH, "music")
+    try:
+        batch_clean_audio_files(music_dir, target_format='mp3', overwrite=True)
+        InfoBar.success(
+            "修复完成",
+            "修复完成！",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+            parent=cfg.MAIN_WINDOW
+        )
+        print(f"父类：{cfg.MAIN_WINDOW}")
+    except Exception as e:
+        print(e)
+        InfoBar.error(
+            "修复失败",
+            "修复失败！",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+            parent=cfg.MAIN_WINDOW
+        )
 
 
 if __name__ == "__main__":

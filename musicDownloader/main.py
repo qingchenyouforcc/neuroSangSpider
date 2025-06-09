@@ -3,9 +3,9 @@ import os
 
 from PyQt6.QtWidgets import QMessageBox
 from musicDownloader.downloader import download_music
-from string_tools import format_date_str
-from utils.fileManager import create_dir, MAIN_PATH, part2all, load_from_all_data
-from utils.string_tools import fileName_process
+from text_tools import format_date_str
+from utils.file_tools import create_dir, MAIN_PATH, part2all, load_from_all_data
+from utils.text_tools import fileName_process
 
 create_dir("music")
 search_result = []

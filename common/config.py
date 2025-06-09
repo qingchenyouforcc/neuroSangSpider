@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 from qfluentwidgets import QConfig, OptionsConfigItem, OptionsValidator
 
@@ -10,8 +11,18 @@ class Config(QConfig):
         "Download", "downloadType", "mp3",
         OptionsValidator(["mp3", "ogg", "wav"]), restart=False)
 
+    def __init__(self):
+        super().__init__()
+        self.PLAYER = None
+        self.MAIN_WINDOW = None
+
+    def set_main_window(self, window): self.MAIN_WINDOW = window
+
+    # 这个是播放器类，player在这个里面
+    def set_player(self, Player): self.PLAYER = Player
 
 # 初始化变量
+MAIN_PATH = Path.cwd()
 cfg = Config()
 
 search_page = 1
@@ -23,8 +34,6 @@ play_queue_index = 0
 play_mode = 0
 
 playing_now = None
-# 这个是播放器类，player在这个里面
-player = None
 
 info_bar = None
 info_bar_play_btn = None
