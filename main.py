@@ -239,10 +239,13 @@ class SettinsCard(GroupHeaderCardWidget):
 
 def on_theme_switched(checked):
     """切换主题"""
-    if checked:
-        setTheme(Theme.DARK)
-    else:
-        setTheme(Theme.LIGHT)
+    try:
+        if checked:
+            setTheme(Theme.DARK)
+        else:
+            setTheme(Theme.LIGHT)
+    except Exception as e:
+        logger.error(f"不是哥们你这怎么报错的？{e}")
 
 
 def showLoading(self):
@@ -346,6 +349,7 @@ class PlayQueueInterface(QWidget):
                 duration=1000,
                 parent=cfg.MAIN_WINDOW
             )
+            self.tableView.clear()
             return
 
         try:

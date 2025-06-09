@@ -80,6 +80,8 @@ def nextSong():
     except Exception as e:
         logger.error(e)
 
+
+# noinspection PyTypeChecker
 def playSongByIndex():
     file_path = getMusicLocalStr(
         cfg.play_queue[cfg.play_queue_index])
@@ -132,7 +134,10 @@ def getRandomIndex():
 
 def sequencePlay():
     """顺序播放"""
-    cfg.play_mode = 0
-    playSongByIndex()
+    try:
+        cfg.play_mode = 0
+        playSongByIndex()
+    except Exception as e:
+        logger.error(e)
 
 
