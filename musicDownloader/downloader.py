@@ -11,7 +11,7 @@ BILI_JCT = ""
 BUVID3 = ""
 
 # FFMPEG 路径，查看：http://ffmpeg.org/
-FFMPEG_PATH = f"{MAIN_PATH}" + "\\ffmpeg\\bin\\ffmpeg.exe"
+FFMPEG_PATH = f"\"{MAIN_PATH}" + "\\ffmpeg\\bin\\ffmpeg.exe\""
 
 
 async def download(url: str, out: str, intro: str):

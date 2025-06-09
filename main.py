@@ -31,7 +31,6 @@ from utils.file_tools import read_all_audio_info, create_dir, on_fix_music
 
 global window
 
-
 # 将爬虫线程分离
 class CrawlerWorkerThread(QThread):
     # 定义一个信号，用于通知主线程任务完成
@@ -333,11 +332,20 @@ class PlayQueueInterface(QWidget):
         self.downSongButton.clicked.connect(self.move_down)
         self.delQueueButton.clicked.connect(self.del_queue)
         self.refreshButton.clicked.connect(self.load_play_queue)
+        self.tableView.cellDoubleClicked.connect(self.play_selected_song)
 
         self.load_play_queue()
 
     def load_play_queue(self):
         if not cfg.play_queue:
+            InfoBar.warning(
+                "提示",
+                "播放列表为空",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1000,
+                parent=cfg.MAIN_WINDOW
+            )
             return
 
         try:
@@ -379,9 +387,22 @@ class PlayQueueInterface(QWidget):
 
     def del_queue(self):
         index = self.tableView.currentIndex().row()
-        if index > 0:
-            cfg.play_queue.pop(index)
-        self.load_play_queue()
+        if index >= 0:
+            try:
+                logger.info(f"删除了歌曲: {cfg.play_queue[index]}, 位置: {index}")
+                cfg.play_queue.pop(index)
+                self.load_play_queue()
+            except Exception as e:
+                logger.error(e)
+
+    @staticmethod
+    def play_selected_song(row):
+        """双击播放指定行的歌曲"""
+        try:
+            cfg.play_queue_index = row
+            playSongByIndex()
+        except Exception as e:
+            logger.error(e)
 
 
 class LocPlayerInterface(QWidget):
@@ -530,6 +551,19 @@ class LocPlayerInterface(QWidget):
             file_path = getMusicLocal(item)
             os.remove(file_path)
 
+            if file_path in cfg.play_queue:
+                cfg.play_queue.remove(file_path)
+
+            InfoBar.success(
+                "完成",
+                f"已删除该歌曲",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1000,
+                parent=self.parent()
+            )
+            self.load_local_songs()
+
         except Exception as e:
             logger.error(e)
 
@@ -545,7 +579,7 @@ class LocPlayerInterface(QWidget):
                         f"{item.text()}已存在播放列表",
                         orient=Qt.Orientation.Horizontal,
                         position=InfoBarPosition.TOP,
-                        duration=1500,
+                        duration=500,
                         parent=self.parent()
                     )
                 else:
@@ -764,17 +798,17 @@ class SearchInterface(QWidget):
 
     def Download_btn(self):
         index = self.tableView.currentRow()
+        InfoBar.info(
+            title='提示',
+            content="开始下载歌曲，请耐心等待",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1500,
+            parent=self
+        )
         try:
             fileType = cfg.downloadType
-            InfoBar.info(
-                title='提示',
-                content="开始下载歌曲，请耐心等待",
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=1500,
-                parent=self
-            )
             run_download(index, fileType)
             InfoBar.success(
                 title='完成',
@@ -836,7 +870,7 @@ class HomeInterface(QWidget):
             "用于从 Bilibili（哔哩哔哩）爬取 Neuro/Evil 的歌曲的视频内容。\n"
             "如果搜索没结果的话，可以试试多搜几次\n"
             "(当然未来也支持通过自定义UP 主列表和关键词，灵活调整爬取目标) \n"
-            "\nLicense:   AGPL-3.0",
+            f"\nLicense:   AGPL-3.0\nVersion: {config.VERSION}",
             self
         )
 
