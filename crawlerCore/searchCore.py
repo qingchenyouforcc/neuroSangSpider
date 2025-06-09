@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 from config import cfg
-from SongList.SongList import SongList
+from SongListManager.SongList import SongList
 from utils.bili_tools import url2bv
 
 
@@ -116,6 +116,7 @@ def get_target(keyword, page=cfg.search_page):
                     title = get_title(v_item)
                     date = get_date(v_item)
                     author = get_author(v_item)
+                    author.strip()
 
                     # logger.info(title)
                     # logger.info(date)

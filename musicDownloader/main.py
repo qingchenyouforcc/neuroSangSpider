@@ -15,7 +15,7 @@ create_dir("music")
 bvid = ""
 title = ""
 
-@warnings.deprecated
+@warnings.deprecated("被废弃的用法,对应的函数替换为`search_song_list`")
 def search_song(search_content):
     """从文件中搜索歌曲"""
     os.chdir(MAIN_PATH)

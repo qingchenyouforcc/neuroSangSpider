@@ -26,7 +26,7 @@ def create_video_list_file():
     extend_data = load_extend("data")
     if extend_data is not None:
         bv_list.extend(extend_data["bv"])
-    song_list = SongList.SongList()
+    song_list = SongList()
 
     for bv in bv_list:
         song_url = f"https://www.bilibili.com/video/{bv}/"

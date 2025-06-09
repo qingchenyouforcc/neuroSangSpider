@@ -22,7 +22,7 @@ from utils.text_tools import contain_text
 from utils.bili_tools import url2bv
 from bs4 import BeautifulSoup
 
-from SongList.SongList import SongList
+from SongListManager.SongList import SongList
 
 remove_urls_index = []
 
@@ -76,7 +76,7 @@ def get_video_list(user_id, words_set):
             video_dict["bv"] = url2bv(video_url)
             videos.append_info(video_dict)
 
-    print("---------------------")
+    # print("---------------------")
     os.chdir(MAIN_PATH)
 
     videos.save_list(file_path)
@@ -112,6 +112,7 @@ def resolve_url_to_info(url, words_set=None):
         video_author = soup.find('a', class_='up-name')
         if video_author is not None:
             video_author = video_author.getText()  # 调用 getText 方法获取实际文本
+            video_author=video_author.strip()
         else:
             # print("未找到作者名:",url)
             video_author = "Unknown"

@@ -20,7 +20,7 @@ from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlay
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
 import config
-from SongList import SongList
+from SongListManager.SongList import SongList
 from config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
 from musicDownloader.main import run_download, search_song_list
