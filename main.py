@@ -55,7 +55,7 @@ def playSongByIndex():
     window.bar.player.setSource(url)
     window.bar.player.play()
 
-    config.playingNow = remove_before_last_backslash(config.play_queue[config.play_queue_index])
+    config.playing_now = remove_before_last_backslash(config.play_queue[config.play_queue_index])
 
     print(f"当前播放歌曲队列位置：{config.play_queue_index}")
     open_info_tip()
@@ -507,11 +507,11 @@ def open_info_tip():
     """打开正在播放提示"""
     if config.HAS_INFOPLAYERBAR:
         print("检测到已经有了一个正在播放提示，正在关闭...")
-        config.infoBar.close()
-        config.infoBar = InfoBar.new(
+        config.info_bar.close()
+        config.info_bar = InfoBar.new(
             icon=FluentIcon.MUSIC,
             title='正在播放',
-            content=f"{config.playingNow}",
+            content=f"{config.playing_now}",
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -519,10 +519,11 @@ def open_info_tip():
             parent=InfoBar.desktopView()
         )
     else:
+        print(f"正在播放{config.playing_now}")
         info = InfoBar.new(
             icon=FluentIcon.MUSIC,
             title='正在播放',
-            content=f"{config.playingNow}",
+            content=f"{config.playing_now}",
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -531,18 +532,19 @@ def open_info_tip():
         )
         info.setCustomBackgroundColor('white', '#202020')
 
-        config.infoBar = info
+        config.info_bar = info
         config.HAS_INFOPLAYERBAR = True
     try:
-        info = config.infoBar
+        info = config.info_bar
 
         playBtn = TransparentToolButton(FluentIcon.PAUSE, info)
         info.hBoxLayout.addWidget(playBtn, 0, Qt.AlignmentFlag.AlignLeft)
         playBtn.setToolTip("暂停/播放")
 
-        config.infoBarPlayBtn = playBtn
+        config.info_bar_play_btn = playBtn
 
         playBtn.clicked.connect(infoPlayBtnClicked)
+        info.closeButton.clicked.connect(infoCloseBtnClicked)
 
     except AttributeError:
         InfoBar.error(
@@ -557,15 +559,19 @@ def open_info_tip():
             duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
         )
 
+def infoCloseBtnClicked():
+    """悬浮栏关闭按钮事件"""
+    config.info_bar.close()
+    config.HAS_INFOPLAYERBAR = False
 
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""
     config.player.togglePlayState()
 
     if config.player.player.isPlaying():
-        config.infoBarPlayBtn.setIcon(FluentIcon.PAUSE_BOLD)
+        config.info_bar_play_btn.setIcon(FluentIcon.PAUSE_BOLD)
     else:
-        config.infoBarPlayBtn.setIcon(FluentIcon.PLAY_SOLID)
+        config.info_bar_play_btn.setIcon(FluentIcon.PLAY_SOLID)
 
 
 class LocPlayerInterface(QWidget):
@@ -649,7 +655,7 @@ class LocPlayerInterface(QWidget):
         self.main_window.bar.player.setSource(url)
         self.main_window.bar.player.play()
 
-        config.playingNow = item.text()
+        config.playing_now = item.text()
 
         open_info_tip()
 

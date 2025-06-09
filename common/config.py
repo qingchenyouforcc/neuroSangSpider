@@ -22,11 +22,11 @@ play_queue_index = 0
 # 播放模式 0是列表循环 1是顺序播放 2是单曲循环
 play_mode = 0
 
-playingNow = None
+playing_now = None
 # 这个是播放器类，player在这个里面
 player = None
 
-infoBar = None
-infoBarPlayBtn = None
+info_bar = None
+info_bar_play_btn = None
 
 HAS_INFOPLAYERBAR = False
