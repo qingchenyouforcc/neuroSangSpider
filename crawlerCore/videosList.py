@@ -23,6 +23,7 @@ from utils.bili_tools import url2bv
 from bs4 import BeautifulSoup
 
 from SongListManager.SongList import SongList
+from loguru import logger
 
 remove_urls_index = []
 
@@ -79,6 +80,9 @@ def get_video_list(user_id, words_set):
     # print("---------------------")
     os.chdir(MAIN_PATH)
 
+    old_data=SongList(file_path)
+    videos.append_list(old_data)
+    logger.info(f"{user_id} 作者歌回记录数量从 {len(old_data)} 更新到 {len(videos)} ")
     videos.save_list(file_path)
 
 

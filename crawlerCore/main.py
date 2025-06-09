@@ -43,6 +43,3 @@ def create_video_list_file():
 
     for t in threads:
         t.join()
-
-    # 合成完整的视频列表
-    load_from_all_data("data", ["videoList.json"]).save_list("data/videoList.json")

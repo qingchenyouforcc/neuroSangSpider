@@ -203,8 +203,9 @@ def search_song_online(search_content, page):
 
 def searchOnBili(search_content):
     # 将搜索结果写入json
+    # 在search后执行,因此目录在根目录
     result_info = search_song_online(search_content, cfg.search_page)
-    temp_list = SongList()
+    temp_list = SongList(r"data\search_data.json")
     temp_list.append_list(result_info)
     temp_list.unique_by_bv()
     temp_list.save_list(r"data\search_data.json")
