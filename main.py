@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QTableWidgetItem
     QAbstractItemView
 from loguru import logger
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
-    TransparentToolButton, CaptionLabel, isDarkTheme
+    TransparentToolButton, CaptionLabel, isDarkTheme, MessageBox
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
@@ -772,11 +772,6 @@ class HomeInterface(QWidget):
         self.layout.addStretch(1)
 
 
-def closeEvent():
-    logger.info("窗口关闭，程序退出。")
-    QApplication.instance().quit()
-
-
 class DemoWindow(FluentWindow):
     """全新GUI"""
 
@@ -787,8 +782,6 @@ class DemoWindow(FluentWindow):
 
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
-
-        self.titleBar.closeBtn.clicked.connect(closeEvent)
 
         self.player_bar = CustomMediaPlayBar()
         self.player_bar.setFixedSize(300, 120)
@@ -842,6 +835,29 @@ class DemoWindow(FluentWindow):
 
         # 设置默认音频格式
         cfg.downloadType = "mp3"
+
+    def closeEvent(self, event):
+        try:
+            logger.info("正在弹出退出确认对话框...")
+
+            w = MessageBox(
+                '即将关闭整个程序',
+                "您确定要这么做吗？",
+                self
+            )
+            w.setDraggable(False)
+
+            if w.exec():
+                logger.info("用户确认退出，程序即将关闭。")
+                event.accept()
+                QApplication.quit()
+            else:
+                logger.info("用户取消了退出操作。")
+                event.ignore()
+
+        except Exception as e:
+            logger.error(f"在退出确认过程中发生错误: {e}")
+
 
 
 if __name__ == '__main__':
