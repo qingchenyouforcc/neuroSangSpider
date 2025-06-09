@@ -772,6 +772,11 @@ class HomeInterface(QWidget):
         self.layout.addStretch(1)
 
 
+def closeEvent():
+    logger.info("窗口关闭，程序退出。")
+    QApplication.instance().quit()
+
+
 class DemoWindow(FluentWindow):
     """全新GUI"""
 
@@ -782,6 +787,8 @@ class DemoWindow(FluentWindow):
 
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
+
+        self.titleBar.closeBtn.clicked.connect(closeEvent)
 
         self.player_bar = CustomMediaPlayBar()
         self.player_bar.setFixedSize(300, 120)
@@ -853,7 +860,7 @@ if __name__ == '__main__':
     create_dir("log")
 
     # 初始化日志
-    log_file_name_format = "%Y-%m-%d_%H-%M-%S"
+    log_file_name_format = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_folder_name = datetime.now().strftime("%Y-%m-%d")
     base_log_dir = Path("log")
     daily_log_dir = base_log_dir / log_folder_name
