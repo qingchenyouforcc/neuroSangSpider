@@ -1,6 +1,5 @@
 import json
 
-
 """用于保存歌曲列表"""
 
 
@@ -150,6 +149,7 @@ class SongList(object):
                     result_list.append(songInfo)
             else:
                 raise TypeError(f"words参数类型错误:{type(words)}")
+            # noinspection PyUnreachableCode
             self.dictInfo = {"data": result_list}
             self.sync_json()
             return 0
@@ -204,6 +204,8 @@ class SongList(object):
                         raise TypeError("types参数范围错误")
             else:
                 raise TypeError(f"words参数类型错误:{type(words)}")
+
+            # noinspection PyUnreachableCode
             self.dictInfo = {"data": result_list}
             self.sync_json()
             return 0
