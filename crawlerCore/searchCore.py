@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 from config import cfg
-from infoManager.SongList import SongList
+from SongList.SongList import SongList
 from utils.bili_tools import url2bv
 
 

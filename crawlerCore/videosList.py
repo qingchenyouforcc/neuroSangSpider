@@ -22,7 +22,7 @@ from utils.text_tools import contain_text
 from utils.bili_tools import url2bv
 from bs4 import BeautifulSoup
 
-from infoManager.SongList import SongList
+from SongList.SongList import SongList
 
 remove_urls_index = []
 

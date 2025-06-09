@@ -20,16 +20,18 @@ from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlay
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
 import config
+from SongList import SongList
 from config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
-from musicDownloader.main import run_download, search_songList
+from musicDownloader.main import run_download, search_song_list
 from player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal, sequencePlay
 from searchCore import searchOnBili
-from text_tools import remove_before_last_backslash
+from text_tools import remove_before_last_backslash, format_date_str
 from tipbar_tools import open_info_tip, update_info_tip
 from utils.file_tools import read_all_audio_info, create_dir, on_fix_music
 
 global window
+
 
 # 将爬虫线程分离
 class CrawlerWorkerThread(QThread):
@@ -139,7 +141,8 @@ class CustomMediaPlayBar(MediaPlayBarBase):
                     if cfg.play_queue_index < len(cfg.play_queue):
                         logger.info("歌曲播放完毕，自动播放下一首。")
                         nextSong()
-                case 2: playSongByIndex()
+                case 2:
+                    playSongByIndex()
                 case 3:
                     logger.info("歌曲播放完毕，自动播放下一首。")
                     nextSong()
@@ -663,6 +666,8 @@ class SearchInterface(QWidget):
         self.layout.addWidget(btnGroup)
         self.layout.addWidget(self.searchLine, Qt.AlignmentFlag.AlignBottom)
 
+        self.search_result = SongList()
+
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
         try:
@@ -697,19 +702,22 @@ class SearchInterface(QWidget):
         self.tableView.clear()
         self.tableView.setColumnCount(4)
         self.tableView.setHorizontalHeaderLabels(['标题', 'UP主', '日期', 'BV号'])
+
+        self.search_result.clear()
         search_content = self.searchLine.text().lower()
 
         try:
-            main_search_list = search_songList(search_content)
             logger.info("---搜索开始---")
+            # 获取本地数据
+            main_search_list = search_song_list(search_content)
             if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
                 logger.info("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
                     searchOnBili(search_content)
-
-                    main_search_list = search_songList(search_content)
-                    self.writeList(main_search_list)
+                    main_search_list = search_song_list(search_content)
+                    if main_search_list is None:
+                        raise TypeError
                 except TypeError:
                     logger.error("bilibili搜索结果为空")
                     InfoBar.error(
@@ -725,29 +733,31 @@ class SearchInterface(QWidget):
                     logger.error(f"错误:{e};" + type(e).__name__)
             else:
                 if True:
-                    logger.info(f"本地获取 {len(main_search_list)} 个有效视频数据:")
-                    logger.info(main_search_list)
+                    logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
+                    logger.info(main_search_list.get_data())
                     # 本地查找成功，追加使用bilibili搜索查找
-                    # 或许可以做一个设置项进行配置?
+                    # todo:可以加入一个设置项配置是否联网搜索
                     logger.info("在本地列表找到该歌曲，继续尝试bilibili搜索")
                     try:
                         searchOnBili(search_content)
 
-                        more_search_list = search_songList(search_content)
+                        more_search_list = search_song_list(search_content)
                         logger.info(f"bilibili获取 "
-                                    f"{len(more_search_list) - len(main_search_list)} "
+                                    f"{len(more_search_list.get_data()) - len(main_search_list.get_data())} "
                                     f"个有效视频数据:")
 
-                        self.writeList(more_search_list)
                     except Exception as e:
                         logger.error(f"错误:{e};" + type(e).__name__)
                         if type(main_search_list) != "NoneType":
                             logger.warning("bilibili搜索失败,返回本地列表项")
-                            self.writeList(main_search_list)
-                else:
-                    # 暂时不可到达
-                    # 直接写入列表
-                    self.writeList(main_search_list)
+
+            # 写入表格和数据
+            if main_search_list is not None:
+                self.search_result = main_search_list
+                self.writeList()
+            else:
+                raise TypeError
+
             self.tableView.setCurrentIndex(self.tableView.model().index(0, 0))
         except TypeError:
             logger.error("搜索结果为空")
@@ -786,19 +796,18 @@ class SearchInterface(QWidget):
         self.stateTooltip.setState(True)
         self.stateTooltip = None
 
-    def writeList(self, searchResult):
-        """
-        将搜索结果写入表格
+    def writeList(self):
+        """将搜索结果写入表格"""
+        search_result = self.search_result
+        print(f"总计获取 {len(search_result.get_data())} 个有效视频数据:")
+        print(search_result.get_data())
+        self.tableView.setRowCount(len(search_result.get_data()))
 
-        searchResult: 包含搜索结果的列表，每个元素是一个包含歌曲信息的列表
-        """
-        logger.info(f"总计获取 {len(searchResult)} 个有效视频数据:")
-        logger.info(searchResult)
-        self.tableView.setRowCount(len(searchResult))
-
-        for i, songInfo in enumerate(searchResult):
-            for j in range(4):
-                self.tableView.setItem(i, j, QTableWidgetItem(songInfo[j]))
+        for i, songInfo in enumerate(search_result.get_data()):
+            self.tableView.setItem(i, 0, QTableWidgetItem(songInfo["title"]))
+            self.tableView.setItem(i, 1, QTableWidgetItem(songInfo["author"]))
+            self.tableView.setItem(i, 2, QTableWidgetItem(format_date_str(songInfo["date"])))
+            self.tableView.setItem(i, 3, QTableWidgetItem(songInfo["bv"]))
 
     def Download_btn(self):
         index = self.tableView.currentRow()
@@ -813,7 +822,7 @@ class SearchInterface(QWidget):
         )
         try:
             fileType = cfg.downloadType
-            run_download(index, fileType)
+            run_download(index, self.search_result, fileType)
             InfoBar.success(
                 title='完成',
                 content="歌曲下载完成",
