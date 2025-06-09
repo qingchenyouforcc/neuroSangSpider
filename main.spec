@@ -6,8 +6,8 @@ py_files = [
     'musicDownloader\\main.py', 'musicDownloader\\downloader.py', 
     'utils\\bili_tools.py', 'utils\\file_tools.py', 'utils\\text_tools.py', 'utils\\textbroswer_tools.py',
     'utils\\tipbar_tools.py', 'utils\\player_tools.py',
-    'infoManager\\main.py','infoManager\\SongList.py',
-    'common\\config.py'
+    'common\\config.py',
+    'SongListManager\\SongList.py'
 ]
 
 

@@ -4,12 +4,12 @@ import warnings
 
 from loguru import logger
 from qfluentwidgets import MessageBox
+
+from SongListManager.SongList import SongList
 from config import cfg
 from musicDownloader.downloader import download_music
-from text_tools import format_date_str
 from utils.file_tools import create_dir, MAIN_PATH, part2all, load_from_all_data
 from utils.text_tools import fileName_process
-from SongList import SongList
 
 create_dir("music")
 bvid = ""
@@ -23,7 +23,6 @@ def search_song(search_content):
     file_name = 'data/videos_list.txt'
 
     # 查找内容
-    global search_result
     search_result = []
 
     # 重置videos_list.txt
