@@ -711,6 +711,7 @@ class SearchInterface(QWidget):
                     # 暂时不可到达
                     # 直接写入列表
                     self.writeList(main_search_list)
+            self.tableView.setCurrentIndex(self.tableView.model().index(0, 0))
         except TypeError:
             logger.error("搜索结果为空")
             InfoBar.error(
