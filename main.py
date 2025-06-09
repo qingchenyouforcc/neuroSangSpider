@@ -200,7 +200,7 @@ def changeDownloadType(index):
     )
 
 
-class SettinsCard(GroupHeaderCardWidget):
+class SettingsCard(GroupHeaderCardWidget):
     """设置卡片"""
 
     def __init__(self, parent=None):
@@ -279,7 +279,7 @@ class SettingInterface(QWidget):
         self.layout.setContentsMargins(30, 30, 30, 30)
         self.layout.setSpacing(15)
 
-        self.layout.addWidget(SettinsCard(), Qt.AlignmentFlag.AlignTop)
+        self.layout.addWidget(SettingsCard(), Qt.AlignmentFlag.AlignTop)
         self.layout.addStretch(1)
 
 
