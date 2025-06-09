@@ -6,8 +6,9 @@ import config
 
 
 def open_info_tip():
+
     """打开正在播放提示"""
-    if config.HAS_INFOPLAYERBAR:
+    if cfg.HAS_INFOPLAYERBAR:
         print("检测到已经有了一个正在播放提示，正在关闭...")
         config.info_bar.close()
         config.info_bar = InfoBar.new(
@@ -35,7 +36,7 @@ def open_info_tip():
         info.setCustomBackgroundColor('white', '#202020')
 
         config.info_bar = info
-        config.HAS_INFOPLAYERBAR = True
+        cfg.HAS_INFOPLAYERBAR = True
     try:
         info = config.info_bar
 
@@ -64,7 +65,7 @@ def open_info_tip():
 def infoCloseBtnClicked():
     """悬浮栏关闭按钮事件"""
     config.info_bar.close()
-    config.HAS_INFOPLAYERBAR = False
+    cfg.HAS_INFOPLAYERBAR = False
 
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""

@@ -13,6 +13,7 @@ class Config(QConfig):
 
     def __init__(self):
         super().__init__()
+        self.HAS_INFOPLAYERBAR = None
         self.PLAYER = None
         self.MAIN_WINDOW = None
 
@@ -20,6 +21,9 @@ class Config(QConfig):
 
     # 这个是播放器类，player在这个里面
     def set_player(self, Player): self.PLAYER = Player
+
+    def set_has_infoplayerbar(self, has_infoplayerbar): self.HAS_INFOPLAYERBAR = has_infoplayerbar
+
 
 # 初始化变量
 MAIN_PATH = Path.cwd()
@@ -37,5 +41,3 @@ playing_now = None
 
 info_bar = None
 info_bar_play_btn = None
-
-HAS_INFOPLAYERBAR = False
