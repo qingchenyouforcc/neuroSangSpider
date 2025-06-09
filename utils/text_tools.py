@@ -1,6 +1,9 @@
 import re
 import time
 
+from loguru import logger
+
+
 def contain_text(words_set, text):
     """检测是否包含内容"""
     for word in words_set:
@@ -58,5 +61,11 @@ def format_date_str(date):
         # print(res)
         return res
     except Exception as search_e:
-        print(f"日期格式化错误: {search_e}")
+        logger.error(f"日期格式化错误: {search_e}")
         return date
+
+
+def remove_before_last_backslash(path: str) -> str:
+    """删除路径中的最后一个斜杠之前的部分"""
+    parts = path.rsplit("\\", 1)
+    return parts[1] if len(parts) > 1 else path

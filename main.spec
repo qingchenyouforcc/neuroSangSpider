@@ -4,8 +4,8 @@ py_files = [
     'main.py', 
     'crawlerCore\\main.py', 'crawlerCore\\videosList.py', 'crawlerCore\\searchCore.py',
     'musicDownloader\\main.py', 'musicDownloader\\downloader.py', 
-    'utils\\bili_tools.py', 'utils\\fileManager.py', 'utils\\string_tools.py', 'utils\\textbroswer_tools.py', 
-    'ui\\main_windows.py',
+    'utils\\bili_tools.py', 'utils\\file_tools.py', 'utils\\text_tools.py', 'utils\\textbroswer_tools.py',
+    'utils\\tipbar_tools.py', 'utils\\player_tools.py',
     'infoManager\\main.py','infoManager\\SongList.py',
     'common\\config.py'
 ]

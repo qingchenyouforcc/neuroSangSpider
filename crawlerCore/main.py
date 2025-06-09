@@ -1,10 +1,9 @@
 import threading
 
 from crawlerCore.videosList import get_video_list, resolve_url_to_info
-from utils.fileManager import create_dir, load_from_all_data, load_extend
-from infoManager import SongList
+from utils.file_tools import create_dir, load_from_all_data, load_extend
+from SongList import SongList
 
-create_dir("data")
 
 
 def create_video_list_file():
@@ -15,6 +14,7 @@ def create_video_list_file():
     words_set = ["合唱", "歌回", "金曲"]
     threads = []
     bv_list = []
+    create_dir("data")
 
     # 启动多线程爬取程序内建的up主近期视频
     for up in up_list:
@@ -26,7 +26,7 @@ def create_video_list_file():
     extend_data = load_extend("data")
     if extend_data is not None:
         bv_list.extend(extend_data["bv"])
-    song_list = SongList.SongList()
+    song_list = SongList()
 
     for bv in bv_list:
         song_url = f"https://www.bilibili.com/video/{bv}/"
@@ -43,6 +43,3 @@ def create_video_list_file():
 
     for t in threads:
         t.join()
-
-    # 合成完整的视频列表
-    load_from_all_data("data", ["videoList.json"]).save_list("data/videoList.json")

@@ -2,13 +2,16 @@ import os
 import json
 import subprocess
 
+from PyQt6.QtCore import Qt
+from loguru import logger
+from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 from pathlib import Path
 from mutagen import File
-from infoManager.SongList import SongList
-from utils.bili_tools import url2bv
 
-MAIN_PATH = Path.cwd()
+from config import MAIN_PATH, cfg
+from SongListManager.SongList import SongList
+from utils.bili_tools import url2bv
 
 
 def create_dir(dir_name):
@@ -16,11 +19,11 @@ def create_dir(dir_name):
     try:
         if not os.path.exists(dir_name):
             os.mkdir(dir_name)
-            print(f"目录 '{dir_name}' 已创建 (os.mkdir)")
+            logger.info(f"目录 '{dir_name}' 已创建 (os.mkdir)")
         else:
-            print(f"目录 '{dir_name}' 已存在 (os.mkdir)")
+            logger.info(f"目录 '{dir_name}' 已存在 (os.mkdir)")
     except OSError as e:
-        print(f"创建目录 '{dir_name}' 失败: {e}")
+        logger.error(f"创建目录 '{dir_name}' 失败: {e}")
 
 
 def part2all(input_folder, output_file):
@@ -32,7 +35,7 @@ def part2all(input_folder, output_file):
             # 只是创建/清空文件
             pass
     except IOError as e:
-        print(f"写入文件时发生错误: {e}")
+        logger.error(f"写入文件时发生错误: {e}")
 
     with open(output_file_path, 'a', encoding='utf-8') as f:
         for filename in os.listdir(input_folder):
@@ -47,11 +50,11 @@ def part2all(input_folder, output_file):
                     for line in infile:
                         f.write(line)
             except UnicodeDecodeError:
-                print(f"跳过非文本文件: {filename}")
+                logger.info(f"跳过非文本文件: {filename}")
             except Exception as e:
-                print(f"处理文件 {filename} 时出错: {str(e)}")
+                logger.error(f"处理文件 {filename} 时出错: {str(e)}")
 
-    print(f"所有文件内容已合并到 {output_file_path}")
+    logger.info(f"所有文件内容已合并到 {output_file_path}")
 
 
 def load_from_all_data(input_folder, exclude_file=None):
@@ -71,7 +74,7 @@ def load_from_all_data(input_folder, exclude_file=None):
             this_list = SongList(file_path)
             total_list.append_list(this_list)
         except Exception as e:
-            print(f"处理文件 {filename} 时出错: {str(e)}")
+            logger.error(f"处理文件 {filename} 时出错: {str(e)}")
             return None
     total_list.unique_by_bv()
     return total_list
@@ -92,7 +95,7 @@ def load_extend(input_folder):
                 for video in dict_info["video"]:
                     bv_list.append(video["bv"])
         except Exception as e:
-            print(f"处理扩展包 {filename} 时出错: {str(e)}")
+            logger.error(f"处理扩展包 {filename} 时出错: {str(e)}")
             return None
     return {"bv": bv_list}
 
@@ -121,7 +124,7 @@ def convert_old2new(input_folder):
                 return None
 
         except Exception as e:
-            print(f"处理文件 {filename} 时出错: {str(e)}")
+            logger.error(f"处理文件 {filename} 时出错: {str(e)}")
             return None
     return None
 
@@ -174,7 +177,7 @@ def read_all_audio_info(directory, extensions=None):
                     info = get_audio_duration(full_path)
                     results.append(info)
                 except Exception as e:
-                    print(f"跳过文件: {full_path} - 原因: {e}")
+                    logger.error(f"跳过文件: {full_path} - 原因: {e}")
     return results
 
 
@@ -207,7 +210,7 @@ def clean_audio_file(input_path, output_path, target_format='mp3'):
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ 处理失败: {input_path}")
+        logger.error(f"❌ 处理失败: {input_path}\n错误{e}")
         return False
 
 
@@ -224,7 +227,6 @@ def batch_clean_audio_files(directory, target_format='mp3', overwrite=False):
         overwrite: 是否覆盖原文件（默认生成新文件）
     """
     cleaned_count = 0
-    total_count = 0
     input_dir = Path(directory)
 
     # 收集所有需要处理的文件
@@ -241,15 +243,15 @@ def batch_clean_audio_files(directory, target_format='mp3', overwrite=False):
                 if not output_file.exists():
                     files_to_process.append((input_file, output_file))
                 else:
-                    print(f"✅ 已存在: {output_file.name}")
+                    logger.info(f"✅ 已存在: {output_file.name}")
 
     total_count = len(files_to_process)
 
     if total_count == 0:
-        print("✅ 没有需要处理的文件")
+        logger.info("✅ 没有需要处理的文件")
         return
 
-    print(f"🔍 共找到 {total_count} 个音频文件，开始清理...\n")
+    logger.info(f"🔍 共找到 {total_count} 个音频文件，开始清理...\n")
 
     for input_file, output_file in tqdm(files_to_process, desc="处理中", unit="file"):
         success = clean_audio_file(input_file, output_file, target_format=target_format)
@@ -259,7 +261,31 @@ def batch_clean_audio_files(directory, target_format='mp3', overwrite=False):
             if overwrite:
                 input_file.unlink()
 
-    print(f"\n✅ 完成！共清理 {cleaned_count}/{total_count} 个文件")
+    logger.info(f"\n✅ 完成！共清理 {cleaned_count}/{total_count} 个文件")
+
+
+def on_fix_music():
+    music_dir = os.path.join(MAIN_PATH, "music")
+    try:
+        batch_clean_audio_files(music_dir, target_format='mp3', overwrite=True)
+        InfoBar.success(
+            "修复完成",
+            "修复完成！",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+            parent=cfg.MAIN_WINDOW
+        )
+    except Exception as e:
+        logger.error(e)
+        InfoBar.error(
+            "修复失败",
+            "修复失败！",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+            parent=cfg.MAIN_WINDOW
+        )
 
 
 if __name__ == "__main__":

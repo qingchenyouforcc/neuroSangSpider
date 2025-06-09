@@ -1,33 +1,37 @@
 import os
 import sys
-import config
+from datetime import datetime
+from pathlib import Path
+from typing import cast
 
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
+from loguru import logger
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
-    TransparentToolButton
+    TransparentToolButton, CaptionLabel, isDarkTheme, MessageBox
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
                             BodyLabel, TitleLabel, PushButton, SearchLineEdit, FluentIcon, GroupHeaderCardWidget,
                             TeachingTip, TeachingTipView)
-from qfluentwidgets.multimedia import StandardMediaPlayBar
+from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlayerBase
+from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
-from config import cfg
+import config
+from SongListManager.SongList import SongList
+from config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
-from crawlerCore.searchCore import search_song_online
-from infoManager.SongList import SongList
-from musicDownloader.main import run_download, search_songList
-from utils.fileManager import MAIN_PATH, read_all_audio_info, batch_clean_audio_files
+from musicDownloader.main import run_download, search_song_list
+from player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal, sequencePlay
+from searchCore import searchOnBili
+from text_tools import remove_before_last_backslash, format_date_str
+from tipbar_tools import open_info_tip, update_info_tip
+from utils.file_tools import read_all_audio_info, create_dir, on_fix_music
 
+global window
 
-# if __name__ == '__main__':
-#     print("")
-#     create_video_list_file()
-#
-#     download_main()
 
 # 将爬虫线程分离
 class CrawlerWorkerThread(QThread):
@@ -40,6 +44,145 @@ class CrawlerWorkerThread(QThread):
         create_video_list_file()
         # 任务完成后发出信号
         self.task_finished.emit("获取歌曲列表完成！")
+
+
+class CustomMediaPlayBar(MediaPlayBarBase):
+    """自定义播放栏"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.vBoxLayout = QVBoxLayout(self)
+        self.timeLayout = QHBoxLayout()
+        self.buttonLayout = QHBoxLayout()
+        self.leftButtonContainer = QWidget()
+        self.centerButtonContainer = QWidget()
+        self.rightButtonContainer = QWidget()
+        self.leftButtonLayout = QHBoxLayout(self.leftButtonContainer)
+        self.centerButtonLayout = QHBoxLayout(self.centerButtonContainer)
+        self.rightButtonLayout = QHBoxLayout(self.rightButtonContainer)
+
+        self.nextSongButton = MediaPlayBarButton(FluentIcon.CARE_RIGHT_SOLID, self)
+        self.previousSongButton = MediaPlayBarButton(FluentIcon.CARE_LEFT_SOLID, self)
+
+        self.skipBackButton = MediaPlayBarButton(FluentIcon.SKIP_BACK, self)
+
+        self.modeChangeButton = MediaPlayBarButton(FluentIcon.SYNC, self)
+        self.modeChangeButton.setToolTip('列表循环')
+
+        self.currentTimeLabel = CaptionLabel('0:00:00', self)
+        self.remainTimeLabel = CaptionLabel('0:00:00', self)
+
+        self.__initWidgets()
+
+    def __initWidgets(self):
+        self.setFixedHeight(102)
+        self.vBoxLayout.setSpacing(6)
+        self.vBoxLayout.setContentsMargins(5, 9, 5, 9)
+        self.vBoxLayout.addWidget(self.progressSlider, 1, Qt.AlignmentFlag.AlignTop)
+
+        self.vBoxLayout.addLayout(self.timeLayout)
+        self.timeLayout.setContentsMargins(10, 0, 10, 0)
+        self.timeLayout.addWidget(self.currentTimeLabel, 0, Qt.AlignmentFlag.AlignLeft)
+        self.timeLayout.addWidget(self.remainTimeLabel, 0, Qt.AlignmentFlag.AlignRight)
+
+        self.vBoxLayout.addStretch(1)
+        self.vBoxLayout.addLayout(self.buttonLayout, 1)
+        self.buttonLayout.setContentsMargins(0, 0, 0, 0)
+        self.leftButtonLayout.setContentsMargins(4, 0, 0, 0)
+        self.centerButtonLayout.setContentsMargins(0, 0, 0, 0)
+        self.rightButtonLayout.setContentsMargins(0, 0, 4, 0)
+
+        self.centerButtonLayout.addWidget(self.skipBackButton)
+        self.centerButtonLayout.addWidget(self.previousSongButton)
+        self.centerButtonLayout.addWidget(self.playButton)
+        self.centerButtonLayout.addWidget(self.nextSongButton)
+        self.centerButtonLayout.addWidget(self.modeChangeButton)
+
+        self.rightButtonLayout.addWidget(self.volumeButton, 0, Qt.AlignmentFlag.AlignRight)
+
+        self.buttonLayout.addWidget(self.leftButtonContainer, 0, Qt.AlignmentFlag.AlignLeft)
+        self.buttonLayout.addWidget(self.centerButtonContainer, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.buttonLayout.addWidget(self.rightButtonContainer, 0, Qt.AlignmentFlag.AlignRight)
+
+        self.setMediaPlayer(cast(MediaPlayerBase, MediaPlayer(self)))
+
+        self.volumeButton.clicked.connect(self.volumeSet)
+        self.volumeButton.volumeView.volumeSlider.valueChanged.connect(self.volumeChanged)
+        self.skipBackButton.clicked.connect(lambda: self.skipBack(10000))
+        self.previousSongButton.clicked.connect(previousSong)
+        self.nextSongButton.clicked.connect(nextSong)
+        self.modeChangeButton.clicked.connect(self.modeChange)
+
+    @staticmethod
+    def volumeChanged(value):
+        cfg.volume = value
+
+    def volumeSet(self):
+        """ 音量设置 """
+        self.setVolume(cfg.volume)
+
+    def skipBack(self, ms: int):
+        """ Back up for specified milliseconds """
+        self.player.setPosition(self.player.position() - ms)
+
+    def _onPositionChanged(self, position: int):
+        super()._onPositionChanged(position)
+        self.currentTimeLabel.setText(self._formatTime(position))
+        self.remainTimeLabel.setText(self._formatTime(self.player.duration() - position))
+
+        remainTime = self.player.duration() - position
+
+        if remainTime == 0:
+            match cfg.play_mode:
+                case 0:
+                    logger.info("歌曲播放完毕，自动播放下一首。")
+                    nextSong()
+                case 1:
+                    if cfg.play_queue_index < len(cfg.play_queue):
+                        logger.info("歌曲播放完毕，自动播放下一首。")
+                        nextSong()
+                case 2:
+                    playSongByIndex()
+                case 3:
+                    logger.info("歌曲播放完毕，自动播放下一首。")
+                    nextSong()
+
+    @staticmethod
+    def _formatTime(time: int):
+        time = int(time / 1000)
+        s = time % 60
+        m = int(time / 60)
+        h = int(time / 3600)
+        return f'{h}:{m:02}:{s:02}'
+
+    def modeChange(self):
+        if cfg.play_mode >= 3:
+            cfg.play_mode = 0
+        else:
+            cfg.play_mode += 1
+
+        if cfg.play_mode == 0:
+            self.modeChangeButton.setIcon(FluentIcon.SYNC)
+            self.modeChangeButton.setToolTip('列表循环')
+        elif cfg.play_mode == 1:
+            self.modeChangeButton.setIcon(FluentIcon.MENU)
+            self.modeChangeButton.setToolTip('顺序播放')
+        elif cfg.play_mode == 2:
+            self.modeChangeButton.setIcon(FluentIcon.ROTATE)
+            self.modeChangeButton.setToolTip('单曲循环')
+        elif cfg.play_mode == 3:
+            self.modeChangeButton.setIcon(FluentIcon.QUESTION)
+            self.modeChangeButton.setToolTip('随机播放')
+
+    def togglePlayState(self):
+        """ toggle the play state of media player """
+        super().togglePlayState()
+
+        if config.info_bar is not None:
+            try:
+                update_info_tip()
+            except Exception as e:
+                logger.warning(e)
 
 
 def changeDownloadType(index):
@@ -57,7 +200,7 @@ def changeDownloadType(index):
     )
 
 
-class SettinsCard(GroupHeaderCardWidget):
+class SettingsCard(GroupHeaderCardWidget):
     """设置卡片"""
 
     def __init__(self, parent=None):
@@ -82,8 +225,10 @@ class SettinsCard(GroupHeaderCardWidget):
         self.themeSwitch.setOffText(self.tr("浅色"))
         self.themeSwitch.setOnText(self.tr("深色"))
         current_theme_is_dark = QApplication.instance().property("darkMode")
-        self.themeSwitch.setChecked(
-            current_theme_is_dark if current_theme_is_dark is not None else (Theme.DARK == Theme.DARK))  # 默认为深色
+        # 默认系统主题
+        if current_theme_is_dark is None:
+            current_theme_is_dark = isDarkTheme()
+        self.themeSwitch.setChecked(current_theme_is_dark)
         self.themeSwitch.checkedChanged.connect(on_theme_switched)
 
         self.fixMusic = PushButton("修复音频", self)
@@ -95,36 +240,15 @@ class SettinsCard(GroupHeaderCardWidget):
         self.addGroup(FluentIcon.MUSIC, "修复音频文件", "修复下载异常的音频文件", self.fixMusic)
 
 
-def on_fix_music():
-    music_dir = os.path.join(MAIN_PATH, "music")
-    try:
-        batch_clean_audio_files(music_dir, target_format='mp3', overwrite=True)
-        InfoBar.success(
-            "修复完成",
-            "修复完成！",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1500,
-            parent=window
-        )
-    except Exception as e:
-        print(e)
-        InfoBar.error(
-            "修复失败",
-            "修复失败！",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            duration=1500,
-            parent=window
-        )
-
-
 def on_theme_switched(checked):
     """切换主题"""
-    if checked:
-        setTheme(Theme.DARK)
-    else:
-        setTheme(Theme.LIGHT)
+    try:
+        if checked:
+            setTheme(Theme.DARK)
+        else:
+            setTheme(Theme.LIGHT)
+    except Exception as e:
+        logger.error(f"不是哥们你这怎么报错的？{e}")
 
 
 def showLoading(self):
@@ -155,15 +279,146 @@ class SettingInterface(QWidget):
         self.layout.setContentsMargins(30, 30, 30, 30)
         self.layout.setSpacing(15)
 
-        self.layout.addWidget(SettinsCard(), Qt.AlignmentFlag.AlignTop)
+        self.layout.addWidget(SettingsCard(), Qt.AlignmentFlag.AlignTop)
         self.layout.addStretch(1)
+
+
+class PlayQueueInterface(QWidget):
+    """ 播放队列GUI """
+
+    def __init__(self, parent=None, main_window=None):
+        super().__init__(parent=parent)
+        self.main_window = main_window
+        self.setObjectName("playQueueInterface")
+
+        self.layout = QVBoxLayout(self)
+        self.tableView = TableWidget(self)
+
+        self.layout.setContentsMargins(30, 30, 30, 30)
+        self.layout.setSpacing(15)
+
+        self.tableView.setBorderVisible(True)
+        self.tableView.setBorderRadius(8)
+        self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+
+        # 创建标题和刷新按钮的水平布局
+        title_layout = QHBoxLayout()
+
+        self.titleLabel = TitleLabel("播放列表", self)
+
+        self.seqPlayBtn = TransparentToolButton(FIF.MENU, self)
+        self.seqPlayBtn.setToolTip("按顺序播放(不改变播放模式)")
+
+        self.refreshButton = TransparentToolButton(FIF.SYNC, self)
+        self.refreshButton.setToolTip("刷新歌曲列表")
+
+        self.delQueueButton = TransparentToolButton(FIF.DELETE, self)
+        self.delQueueButton.setToolTip("从播放列表中删除")
+
+        self.upSongButton = TransparentToolButton(FIF.UP, self)
+        self.upSongButton.setToolTip("将当前歌曲上移")
+
+        self.downSongButton = TransparentToolButton(FIF.DOWN, self)
+        self.downSongButton.setToolTip("将当前歌曲下移")
+
+        title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
+        title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addStretch(1)
+        title_layout.addWidget(self.seqPlayBtn, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.upSongButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.downSongButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.delQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
+
+        self.layout.addLayout(title_layout)
+        self.layout.addWidget(self.tableView)
+
+        self.seqPlayBtn.clicked.connect(sequencePlay)
+        self.upSongButton.clicked.connect(self.move_up)
+        self.downSongButton.clicked.connect(self.move_down)
+        self.delQueueButton.clicked.connect(self.del_queue)
+        self.refreshButton.clicked.connect(self.load_play_queue)
+        self.tableView.cellDoubleClicked.connect(self.play_selected_song)
+
+        self.load_play_queue()
+
+    def load_play_queue(self):
+        if not cfg.play_queue:
+            InfoBar.warning(
+                "提示",
+                "播放列表为空",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1000,
+                parent=cfg.MAIN_WINDOW
+            )
+            self.tableView.clear()
+            return
+
+        try:
+            self.tableView.setRowCount(len(cfg.play_queue))
+            self.tableView.setColumnCount(1)
+            self.tableView.setHorizontalHeaderLabels(['歌曲'])
+
+            for i, (song) in enumerate(cfg.play_queue):
+                song = remove_before_last_backslash(song)
+                self.tableView.setItem(i, 0, QTableWidgetItem(song))
+
+            self.tableView.resizeColumnsToContents()
+        except Exception as e:
+            logger.error("加载歌曲列表失败:", e)
+
+    def move_up(self):
+        index = self.tableView.currentIndex().row()
+        if index > 0:
+            cfg.play_queue[index - 1], cfg.play_queue[index] = cfg.play_queue[index], cfg.play_queue[
+                index - 1]
+            self.tableView.setCurrentIndex(self.tableView.model().index(index - 1, 0))
+
+            if cfg.play_queue_index == index:
+                cfg.play_queue_index -= 1
+
+        self.load_play_queue()
+
+    def move_down(self):
+        index = self.tableView.currentIndex().row()
+        if index < len(cfg.play_queue) - 1:
+            cfg.play_queue[index + 1], cfg.play_queue[index] = cfg.play_queue[index], cfg.play_queue[
+                index + 1]
+            self.tableView.setCurrentIndex(self.tableView.model().index(index + 1, 0))
+
+            if cfg.play_queue_index == index:
+                cfg.play_queue_index += 1
+
+        self.load_play_queue()
+
+    def del_queue(self):
+        index = self.tableView.currentIndex().row()
+        if index >= 0:
+            try:
+                logger.info(f"删除了歌曲: {cfg.play_queue[index]}, 位置: {index}")
+                cfg.play_queue.pop(index)
+                self.load_play_queue()
+            except Exception as e:
+                logger.error(e)
+
+    @staticmethod
+    def play_selected_song(row):
+        """双击播放指定行的歌曲"""
+        try:
+            cfg.play_queue_index = row
+            playSongByIndex()
+        except Exception as e:
+            logger.error(e)
 
 
 class LocPlayerInterface(QWidget):
     """ 本地播放器GUI """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, main_window=None):
         super().__init__(parent=parent)
+        self.stateTooltip = None
+        self.main_window = main_window
         self.setObjectName("locPlayerInterface")
         self.setStyleSheet("LocPlayerInterface{background: transparent}")
 
@@ -178,9 +433,6 @@ class LocPlayerInterface(QWidget):
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
-        self.bar = StandardMediaPlayBar()
-        self.bar.player.setVolume(50)
-
         # 创建标题和刷新按钮的水平布局
         title_layout = QHBoxLayout()
 
@@ -189,16 +441,40 @@ class LocPlayerInterface(QWidget):
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip("刷新歌曲列表")
 
+        self.addQueueButton = TransparentToolButton(FIF.ADD, self)
+        self.addQueueButton.setToolTip("添加到播放列表")
+
+        self.openPlayer = TransparentToolButton(FIF.MUSIC, self)
+        self.openPlayer.setToolTip("打开播放器")
+
+        self.openInfoTip = TransparentToolButton(FIF.INFO, self)
+        self.openInfoTip.setToolTip("打开正在播放提示")
+
+        self.delSongBtn = TransparentToolButton(FIF.DELETE, self)
+        self.delSongBtn.setToolTip("删除文件")
+
+        self.addQueueAllBtn = TransparentToolButton(FIF.CHEVRON_DOWN_MED, self)
+        self.addQueueAllBtn.setToolTip("添加所有文件到播放列表")
+
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
+        title_layout.addWidget(self.openInfoTip, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.openPlayer, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.addQueueAllBtn, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.delSongBtn, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.layout.addLayout(title_layout)
         self.layout.addWidget(self.tableView)
-        self.layout.addWidget(self.bar)
 
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
         self.refreshButton.clicked.connect(self.load_local_songs)
+        self.addQueueButton.clicked.connect(self.add_to_queue)
+        self.openPlayer.clicked.connect(open_player)
+        self.openInfoTip.clicked.connect(open_info_tip)
+        self.delSongBtn.clicked.connect(self.del_song)
+        self.addQueueAllBtn.clicked.connect(self.add_all_to_queue)
 
         self.load_local_songs()
 
@@ -216,37 +492,124 @@ class LocPlayerInterface(QWidget):
 
             self.tableView.resizeColumnsToContents()
         except Exception as e:
-            print("加载本地歌曲失败:", e)
+            logger.error("加载本地歌曲失败:", e)
 
     def play_selected_song(self, row):
         """双击播放指定行的歌曲"""
-        item = self.tableView.item(row, 0)
-        if not item:
-            return
+        try:
+            item = self.tableView.item(row, 0)
+            file_path = getMusicLocal(item)
 
-        filename = item.text()
-        music_dir = os.path.join(MAIN_PATH, "music")
-        file_path = os.path.join(music_dir, filename)
+            url = QUrl.fromLocalFile(file_path)
+            self.main_window.player_bar.player.setSource(url)
+            self.main_window.player_bar.player.play()
 
-        if not os.path.exists(file_path):
-            InfoBar.error(
-                "错误", f"找不到文件: {filename}",
-                duration=2000, parent=window, position=InfoBarPosition.BOTTOM_RIGHT
+            cfg.playing_now = item.text()
+
+            open_info_tip()
+
+            self.add_to_queue()
+            cfg.play_queue_index = cfg.play_queue.index(file_path)
+            logger.info(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
+        except Exception as e:
+            logger.error(e)
+
+    def add_to_queue(self):
+        """添加到播放列表"""
+        item = self.tableView.currentItem()
+        file_path = getMusicLocal(item)
+
+        if file_path:
+            if file_path in cfg.play_queue:
+                InfoBar.warning(
+                    "已存在",
+                    f"{item.text()}已存在播放列表",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=1500,
+                    parent=self.parent()
+                )
+                return
+
+            cfg.play_queue.append(file_path)
+            InfoBar.success(
+                "成功",
+                f"已添加{item.text()}到播放列表",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1500,
+                parent=self.parent()
             )
-            return
+            logger.info(f"当前播放列表:{cfg.play_queue}")
+        else:
+            InfoBar.error(
+                "失败",
+                "添加失败！",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1500,
+                parent=window
+            )
 
-        url = QUrl.fromLocalFile(file_path)
-        self.bar.player.setSource(url)
-        self.bar.player.play()
+    def del_song(self):
+        """删除列表项文件"""
+        try:
+            item = self.tableView.currentItem()
+            file_path = getMusicLocal(item)
+            os.remove(file_path)
 
+            if file_path in cfg.play_queue:
+                cfg.play_queue.remove(file_path)
 
-def searchOnBili(search_content):
-    # 将搜索结果写入json
-    result_info = search_song_online(search_content, config.search_page)
-    temp_list = SongList()
-    temp_list.append_list(result_info)
-    temp_list.unique_by_bv()
-    temp_list.save_list(r"data\search_data.json")
+            InfoBar.success(
+                "完成",
+                f"已删除该歌曲",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1000,
+                parent=self.parent()
+            )
+            self.load_local_songs()
+
+        except Exception as e:
+            logger.error(e)
+
+    def add_all_to_queue(self):
+        """添加列表所有歌曲到播放列表"""
+        try:
+            for i in range(self.tableView.rowCount()):
+                item = self.tableView.item(i, 0)
+                file_path = getMusicLocal(item)
+                if file_path in cfg.play_queue:
+                    InfoBar.warning(
+                        "已存在",
+                        f"{item.text()}已存在播放列表",
+                        orient=Qt.Orientation.Horizontal,
+                        position=InfoBarPosition.TOP,
+                        duration=500,
+                        parent=self.parent()
+                    )
+                else:
+                    cfg.play_queue.append(file_path)
+            InfoBar.success(
+                "成功",
+                f"已添加所有歌曲到播放列表",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1500,
+                parent=self.parent()
+            )
+            logger.info(f"当前播放列表:{cfg.play_queue}")
+        except Exception as e:
+            InfoBar.error(
+                "添加失败",
+                f"{e}",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1500,
+                parent=window
+            )
+            logger.error(e)
 
 
 class SearchInterface(QWidget):
@@ -303,10 +666,12 @@ class SearchInterface(QWidget):
         self.layout.addWidget(btnGroup)
         self.layout.addWidget(self.searchLine, Qt.AlignmentFlag.AlignBottom)
 
+        self.search_result = SongList()
+
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
         try:
-            print("获取歌曲列表中...")
+            logger.info("获取歌曲列表中...")
             self.GetVideoBtn.setEnabled(False)
 
             # 显示加载动画
@@ -330,27 +695,31 @@ class SearchInterface(QWidget):
             self.thread.task_finished.connect(self.on_c_task_finished)
             self.thread.start()
         except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
+            logger.error(f"错误:{e};" + type(e).__name__)
 
     def search_btn(self):
         """实现搜索按钮功能"""
         self.tableView.clear()
         self.tableView.setColumnCount(4)
         self.tableView.setHorizontalHeaderLabels(['标题', 'UP主', '日期', 'BV号'])
+
+        self.search_result.clear()
         search_content = self.searchLine.text().lower()
+
         try:
-            main_search_list = search_songList(search_content)
-            print("---搜索开始---")
+            logger.info("---搜索开始---")
+            # 获取本地数据
+            main_search_list = search_song_list(search_content)
             if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
-                print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
+                logger.info("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
                     searchOnBili(search_content)
-
-                    main_search_list = search_songList(search_content)
-                    self.writeList(main_search_list)
+                    main_search_list = search_song_list(search_content)
+                    if main_search_list is None:
+                        raise TypeError
                 except TypeError:
-                    print("bilibili搜索结果为空")
+                    logger.error("bilibili搜索结果为空")
                     InfoBar.error(
                         title='错误',
                         content="没有找到任何结果",
@@ -361,34 +730,37 @@ class SearchInterface(QWidget):
                         parent=self
                     )
                 except Exception as e:
-                    print(f"错误:{e};" + type(e).__name__)
+                    logger.error(f"错误:{e};" + type(e).__name__)
             else:
                 if True:
-                    print(f"本地获取 {len(main_search_list)} 个有效视频数据:")
-                    print(main_search_list)
+                    logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
+                    logger.info(main_search_list.get_data())
                     # 本地查找成功，追加使用bilibili搜索查找
-                    # 或许可以做一个设置项进行配置?
-                    print("在本地列表找到该歌曲，继续尝试bilibili搜索")
+                    # todo:可以加入一个设置项配置是否联网搜索
+                    logger.info("在本地列表找到该歌曲，继续尝试bilibili搜索")
                     try:
                         searchOnBili(search_content)
 
-                        more_search_list = search_songList(search_content)
-                        print(f"bilibili获取 "
-                              f"{len(more_search_list) - len(main_search_list)} "
-                              f"个有效视频数据:")
+                        more_search_list = search_song_list(search_content)
+                        logger.info(f"bilibili获取 "
+                                    f"{len(more_search_list.get_data()) - len(main_search_list.get_data())} "
+                                    f"个有效视频数据:")
 
-                        self.writeList(more_search_list)
                     except Exception as e:
-                        print(f"错误:{e};" + type(e).__name__)
+                        logger.error(f"错误:{e};" + type(e).__name__)
                         if type(main_search_list) != "NoneType":
-                            print("bilibili搜索失败,返回本地列表项")
-                            self.writeList(main_search_list)
-                else:
-                    # 暂时不可到达
-                    # 直接写入列表
-                    self.writeList(main_search_list)
+                            logger.warning("bilibili搜索失败,返回本地列表项")
+
+            # 写入表格和数据
+            if main_search_list is not None:
+                self.search_result = main_search_list
+                self.writeList()
+            else:
+                raise TypeError
+
+            self.tableView.setCurrentIndex(self.tableView.model().index(0, 0))
         except TypeError:
-            print("搜索结果为空")
+            logger.error("搜索结果为空")
             InfoBar.error(
                 title='错误',
                 content="没有找到任何结果",
@@ -408,8 +780,8 @@ class SearchInterface(QWidget):
                 duration=2000,
                 parent=self
             )
-            print(f"错误:{e};" + type(e).__name__)
-        print("---搜索结束---\n")
+            logger.error(f"错误:{e};" + type(e).__name__)
+        logger.info("---搜索结束---\n")
         self.tableView.resizeColumnsToContents()
 
     # 当爬虫任务结束时
@@ -419,30 +791,38 @@ class SearchInterface(QWidget):
         self.GetVideoBtn.setEnabled(True)
         self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
 
-        print("获取歌曲列表完成！")
+        logger.info("获取歌曲列表完成！")
         self.stateTooltip.setContent('获取列表完成!!!')
         self.stateTooltip.setState(True)
         self.stateTooltip = None
 
-    def writeList(self, searchResult):
-        """
-        将搜索结果写入表格
+    def writeList(self):
+        """将搜索结果写入表格"""
+        search_result = self.search_result
+        print(f"总计获取 {len(search_result.get_data())} 个有效视频数据:")
+        print(search_result.get_data())
+        self.tableView.setRowCount(len(search_result.get_data()))
 
-        searchResult: 包含搜索结果的列表，每个元素是一个包含歌曲信息的列表
-        """
-        print(f"总计获取 {len(searchResult)} 个有效视频数据:")
-        print(searchResult)
-        self.tableView.setRowCount(len(searchResult))
-
-        for i, songInfo in enumerate(searchResult):
-            for j in range(4):
-                self.tableView.setItem(i, j, QTableWidgetItem(songInfo[j]))
+        for i, songInfo in enumerate(search_result.get_data()):
+            self.tableView.setItem(i, 0, QTableWidgetItem(songInfo["title"]))
+            self.tableView.setItem(i, 1, QTableWidgetItem(songInfo["author"]))
+            self.tableView.setItem(i, 2, QTableWidgetItem(format_date_str(songInfo["date"])))
+            self.tableView.setItem(i, 3, QTableWidgetItem(songInfo["bv"]))
 
     def Download_btn(self):
         index = self.tableView.currentRow()
+        InfoBar.info(
+            title='提示',
+            content="开始下载歌曲，请耐心等待",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1500,
+            parent=self
+        )
         try:
             fileType = cfg.downloadType
-            run_download(index, fileType)
+            run_download(index, self.search_result, fileType)
             InfoBar.success(
                 title='完成',
                 content="歌曲下载完成",
@@ -453,10 +833,26 @@ class SearchInterface(QWidget):
                 parent=self
             )
         except IndexError:
-            messageBox = QMessageBox()
-            QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
+            InfoBar.error(
+                title='错误',
+                content="你还没有选择歌曲",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=1500,
+                parent=self
+            )
         except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
+            InfoBar.error(
+                title='未知错误，请在github上提交issue',
+                content=type(e).__name__,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=2000,
+                parent=self
+            )
+            logger.error(f"[Error]{e}")
 
 
 class HomeInterface(QWidget):
@@ -487,7 +883,7 @@ class HomeInterface(QWidget):
             "用于从 Bilibili（哔哩哔哩）爬取 Neuro/Evil 的歌曲的视频内容。\n"
             "如果搜索没结果的话，可以试试多搜几次\n"
             "(当然未来也支持通过自定义UP 主列表和关键词，灵活调整爬取目标) \n"
-            "\nLicense:   AGPL-3.0",
+            f"\nLicense:   AGPL-3.0\nVersion: {config.VERSION}",
             self
         )
 
@@ -512,6 +908,14 @@ class DemoWindow(FluentWindow):
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
 
+        self.player_bar = CustomMediaPlayBar()
+        self.player_bar.setFixedSize(300, 120)
+        self.player_bar.player.setVolume(cfg.volume)
+        self.player_bar.setWindowIcon(icon)
+        self.player_bar.setWindowTitle("Player")
+        self.player_bar.show()
+        cfg.set_player(self.player_bar)
+
         # 添加子界面
         self.addSubInterface(
             interface=self.homeInterface,
@@ -526,10 +930,16 @@ class DemoWindow(FluentWindow):
             position=NavigationItemPosition.TOP
         )
         self.addSubInterface(
-            interface=LocPlayerInterface(self),
+            interface=PlayQueueInterface(self, main_window=self),
+            icon=FIF.ALIGNMENT,
+            text="播放队列",
+            position=NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
+            interface=LocPlayerInterface(self, main_window=self),
             icon=FIF.PLAY,
             text="本地播放",
-            position=NavigationItemPosition.TOP
+            position=NavigationItemPosition.BOTTOM
         )
         self.addSubInterface(
             interface=SettingInterface(self),
@@ -551,6 +961,28 @@ class DemoWindow(FluentWindow):
         # 设置默认音频格式
         cfg.downloadType = "mp3"
 
+    def closeEvent(self, event):
+        try:
+            logger.info("正在弹出退出确认对话框...")
+
+            w = MessageBox(
+                '即将关闭整个程序',
+                "您确定要这么做吗？",
+                self
+            )
+            w.setDraggable(False)
+
+            if w.exec():
+                logger.info("用户确认退出，程序即将关闭。")
+                event.accept()
+                QApplication.quit()
+            else:
+                logger.info("用户取消了退出操作。")
+                event.ignore()
+
+        except Exception as e:
+            logger.error(f"在退出确认过程中发生错误: {e}")
+
 
 if __name__ == '__main__':
     # 新版GUI开发中
@@ -563,19 +995,28 @@ if __name__ == '__main__':
         if hasattr(Qt.HighDpiScaleFactorRoundingPolicy, 'PassThrough'):
             QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
+    # 初始化
+    create_dir("data")
+    create_dir("log")
+
+    # 初始化日志
+    log_file_name_format = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_folder_name = datetime.now().strftime("%Y-%m-%d")
+    base_log_dir = Path("log")
+    daily_log_dir = base_log_dir / log_folder_name
+    log_file_name = f"{log_file_name_format}.log"
+    log_file_path = daily_log_dir / log_file_name
+
+    # 添加 sink，Loguru 会自动创建 "daily_logs/2025-06-09/" 这样的目录结构
+    logger.add(log_file_path, format="[{time:HH:mm:ss}]-[{level}]{message}")
+
     app = QApplication(sys.argv)
 
     # 设置初始主题
     setTheme(Theme.AUTO)
 
     window = DemoWindow()
+    cfg.set_main_window(window)
+
     window.show()
-
     sys.exit(app.exec())
-
-    # # 旧版GUI
-    # print(MAIN_PATH)
-    # app = QtWidgets.QApplication(sys.argv)
-    # main = MainWindow()
-    # main.show()
-    # sys.exit(app.exec())
