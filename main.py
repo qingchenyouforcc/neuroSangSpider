@@ -700,10 +700,26 @@ class SearchInterface(QWidget):
                 parent=self
             )
         except IndexError:
-            messageBox = QMessageBox()
-            QMessageBox.about(messageBox, "提示", "你还没有选择歌曲！")
+            InfoBar.error(
+                title='错误',
+                content="你还没有选择歌曲",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=1500,
+                parent=self
+            )
         except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
+            InfoBar.error(
+                title='未知错误，请在github上提交issue',
+                content=type(e).__name__,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=2000,
+                parent=self
+            )
+            print(f"[Error]{e}")
 
 
 class HomeInterface(QWidget):

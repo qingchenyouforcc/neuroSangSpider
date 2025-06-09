@@ -1,7 +1,8 @@
 import asyncio
 import os
 
-from PyQt6.QtWidgets import QMessageBox
+from qfluentwidgets import MessageBox
+from config import cfg
 from musicDownloader.downloader import download_music
 from text_tools import format_date_str
 from utils.file_tools import create_dir, MAIN_PATH, part2all, load_from_all_data
@@ -102,7 +103,6 @@ def run_download(index, fileType=""):
     os.chdir("music")
     
     # 检查文件是否已经存在
-    file_exists = False
     if fileType:
         file_exists = os.path.exists(f"{output_fileName}.{fileType}")
     else:
@@ -110,13 +110,16 @@ def run_download(index, fileType=""):
     
     # 如果文件存在，弹出提示窗口
     if file_exists:
-        msg_box = QMessageBox()
-        msg_box.setWindowTitle("文件已存在")
-        msg_box.setText(f"文件 '{output_fileName}.{fileType or 'mp3'}' 已存在。是否覆盖？")
-        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msg_box.setDefaultButton(QMessageBox.StandardButton.No)
-        reply = msg_box.exec()
-        if reply == QMessageBox.StandardButton.No:
+        w = MessageBox(
+            '文件已存在',
+            f"文件 '{output_fileName}.{fileType or 'mp3'}' 已存在。是否覆盖？",
+            cfg.MAIN_WINDOW
+        )
+
+        w.setClosableOnMaskClicked(True)
+        w.setDraggable(True)
+
+        if not w.exec():
             print("用户取消下载。")
             return
     
