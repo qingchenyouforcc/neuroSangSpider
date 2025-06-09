@@ -39,4 +39,4 @@ cfg = Config()
 info_bar = None
 info_bar_play_btn = None
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"

@@ -10,7 +10,7 @@ from infoManager.SongList import SongList
 from utils.bili_tools import url2bv
 
 
-def get_target(keyword, page=3):
+def get_target(keyword, page=cfg.search_page):
     """爬取B站视频信息"""
     seen_videos = set()
     headers = {
@@ -155,6 +155,7 @@ def get_target(keyword, page=3):
 
     # 爬取
     first_page_url = f'https://search.bilibili.com/all?keyword={keyword}'
+    org_videos = crawler_page(first_page_url)
     videos = crawler_page(first_page_url)
     logger.info(f"已经完成b站第 1 页爬取，本页获取 {len(videos)} 个视频")
     logger.info(videos)
@@ -177,6 +178,7 @@ def get_target(keyword, page=3):
 
     except TypeError as e:
         logger.error(f"爬取页面时发生错误: {e}")
+        videos = org_videos
 
     logger.info(f"总计获取 {len(videos)} 个有效视频数据")
     logger.info('已经完成b站搜索视频爬取')
