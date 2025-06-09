@@ -414,11 +414,19 @@ class LocPlayerInterface(QWidget):
         self.openInfoTip = TransparentToolButton(FIF.INFO, self)
         self.openInfoTip.setToolTip("打开正在播放提示")
 
+        self.delSongBtn =  TransparentToolButton(FIF.DELETE, self)
+        self.delSongBtn.setToolTip("删除文件")
+
+        self.addQueueAllBtn = TransparentToolButton(FIF.CHEVRON_DOWN_MED, self)
+        self.addQueueAllBtn.setToolTip("添加所有文件到播放列表")
+
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
         title_layout.addWidget(self.openInfoTip, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.openPlayer, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.addQueueAllBtn, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.delSongBtn, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.layout.addLayout(title_layout)
@@ -429,6 +437,8 @@ class LocPlayerInterface(QWidget):
         self.addQueueButton.clicked.connect(self.add_to_queue)
         self.openPlayer.clicked.connect(open_player)
         self.openInfoTip.clicked.connect(open_info_tip)
+        self.delSongBtn.clicked.connect(self.del_song)
+        self.addQueueAllBtn.clicked.connect(self.add_all_to_queue)
 
         self.load_local_songs()
 
@@ -504,6 +514,55 @@ class LocPlayerInterface(QWidget):
                 duration=1500,
                 parent=window
             )
+
+    def del_song(self):
+        """删除列表项文件"""
+        try:
+            item = self.tableView.currentItem()
+            file_path = getMusicLocal(item)
+            os.remove(file_path)
+
+        except Exception as e:
+            logger.error(e)
+
+    def add_all_to_queue(self):
+        """添加列表所有歌曲到播放列表"""
+        try:
+            for i in range(self.tableView.rowCount()):
+                item = self.tableView.item(i, 0)
+                file_path = getMusicLocal(item)
+                if file_path in cfg.play_queue:
+                    InfoBar.warning(
+                        "已存在",
+                        f"{item.text()}已存在播放列表",
+                        orient=Qt.Orientation.Horizontal,
+                        position=InfoBarPosition.TOP,
+                        duration=1500,
+                        parent=self.parent()
+                    )
+                    return
+
+                cfg.play_queue.append(file_path)
+            InfoBar.success(
+                "成功",
+                f"已添加所有歌曲到播放列表",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1500,
+                parent=self.parent()
+            )
+            logger.info(f"当前播放列表:{cfg.play_queue}")
+        except Exception as e:
+            InfoBar.error(
+                "添加失败",
+                f"{e}",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1500,
+                parent=window
+            )
+            logger.error(e)
+
 
 
 class SearchInterface(QWidget):
