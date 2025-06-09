@@ -1,4 +1,5 @@
 import os
+import random
 
 from PyQt6.QtCore import Qt, QUrl
 from loguru import logger
@@ -58,6 +59,10 @@ def nextSong():
     elif cfg.play_mode == 0:
         if cfg.play_queue_index >= len(cfg.play_queue) - 1:
             cfg.play_queue_index = -1
+    elif  cfg.play_mode == 3:
+        getRandomIndex()
+        playSongByIndex()
+        return
 
     try:
         cfg.play_queue_index += 1
@@ -118,5 +123,11 @@ def summonMusicLocal(fileName):
         return None
 
     return file_path
+
+def getRandomIndex():
+    """当处于随机模式时，获取随机的歌曲"""
+    index = random.randint(0, len(cfg.play_queue) - 1)
+    while index == cfg.play_queue_index: index = random.randint(0, len(cfg.play_queue) - 1)
+    cfg.play_queue_index = index
 
 

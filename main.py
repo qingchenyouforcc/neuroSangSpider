@@ -151,7 +151,7 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         return f'{h}:{m:02}:{s:02}'
 
     def modeChange(self):
-        if cfg.play_mode >= 2:
+        if cfg.play_mode >= 3:
             cfg.play_mode = 0
         else:
             cfg.play_mode += 1
@@ -165,6 +165,9 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         elif cfg.play_mode == 2:
             self.modeChangeButton.setIcon(FluentIcon.ROTATE)
             self.modeChangeButton.setToolTip('单曲循环')
+        elif cfg.play_mode == 3:
+            self.modeChangeButton.setIcon(FluentIcon.QUESTION)
+            self.modeChangeButton.setToolTip('随机播放')
 
     def togglePlayState(self):
         """ toggle the play state of media player """

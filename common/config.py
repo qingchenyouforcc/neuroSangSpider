@@ -20,7 +20,7 @@ class Config(QConfig):
         self.volume = 50
         self.play_queue = []
         self.play_queue_index = 0
-        self.play_mode = 0  # 播放模式 0是列表循环 1是顺序播放 2是单曲循环
+        self.play_mode = 0  # 播放模式 0是列表循环 1是顺序播放 2是单曲循环 3是随机播放
         self.search_page = 1
 
         self.PLAYER = None
