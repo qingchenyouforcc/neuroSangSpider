@@ -548,9 +548,8 @@ class LocPlayerInterface(QWidget):
                         duration=1500,
                         parent=self.parent()
                     )
-                    return
-
-                cfg.play_queue.append(file_path)
+                else:
+                    cfg.play_queue.append(file_path)
             InfoBar.success(
                 "成功",
                 f"已添加所有歌曲到播放列表",
