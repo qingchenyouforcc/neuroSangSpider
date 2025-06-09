@@ -1,6 +1,9 @@
 import re
 import time
 
+from loguru import logger
+
+
 def contain_text(words_set, text):
     """检测是否包含内容"""
     for word in words_set:
@@ -58,7 +61,7 @@ def format_date_str(date):
         # print(res)
         return res
     except Exception as search_e:
-        print(f"日期格式化错误: {search_e}")
+        logger.error(f"日期格式化错误: {search_e}")
         return date
 
 

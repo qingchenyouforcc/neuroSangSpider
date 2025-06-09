@@ -1,11 +1,14 @@
 import os
 import sys
+from datetime import datetime
+from pathlib import Path
 from typing import cast
 
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
+from loguru import logger
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
     TransparentToolButton, CaptionLabel, isDarkTheme
 # 导入 PyQt-Fluent-Widgets 相关模块
@@ -16,23 +19,18 @@ from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPositio
 from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
+import config
 from config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
 from musicDownloader.main import run_download, search_songList
 from player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal
 from searchCore import searchOnBili
 from text_tools import remove_before_last_backslash
-from tipbar_tools import open_info_tip
+from tipbar_tools import open_info_tip, update_info_tip
 from utils.file_tools import read_all_audio_info, create_dir, on_fix_music
 
 global window
 
-
-# if __name__ == '__main__':
-#     print("")
-#     create_video_list_file()
-#
-#     download_main()
 
 # 将爬虫线程分离
 class CrawlerWorkerThread(QThread):
@@ -135,11 +133,11 @@ class CustomMediaPlayBar(MediaPlayBarBase):
 
         if remainTime == 0:
             if cfg.play_mode == 0:
-                print("歌曲播放完毕，自动播放下一首。")
+                logger.info("歌曲播放完毕，自动播放下一首。")
                 nextSong()
             elif cfg.play_mode == 1:
                 if cfg.play_queue_index < len(cfg.play_queue):
-                    print("歌曲播放完毕，自动播放下一首。")
+                    logger.info("歌曲播放完毕，自动播放下一首。")
                     nextSong()
             elif cfg.play_mode == 2:
                 playSongByIndex()
@@ -167,6 +165,15 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         elif cfg.play_mode == 2:
             self.modeChangeButton.setIcon(FluentIcon.ROTATE)
             self.modeChangeButton.setToolTip('单曲循环')
+
+    def togglePlayState(self):
+        """ toggle the play state of media player """
+        super().togglePlayState()
+
+        if config.info_bar is not None:
+            update_info_tip()
+
+
 
 
 def changeDownloadType(index):
@@ -332,7 +339,7 @@ class PlayQueueInterface(QWidget):
 
             self.tableView.resizeColumnsToContents()
         except Exception as e:
-            print("加载歌曲列表失败:", e)
+            logger.error("加载歌曲列表失败:", e)
 
     def move_up(self):
         index = self.tableView.currentIndex().row()
@@ -435,7 +442,7 @@ class LocPlayerInterface(QWidget):
 
             self.tableView.resizeColumnsToContents()
         except Exception as e:
-            print("加载本地歌曲失败:", e)
+            logger.error("加载本地歌曲失败:", e)
 
     def play_selected_song(self, row):
         """双击播放指定行的歌曲"""
@@ -453,9 +460,9 @@ class LocPlayerInterface(QWidget):
 
             self.add_to_queue()
             cfg.play_queue_index = cfg.play_queue.index(file_path)
-            print(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
+            logger.info(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
         except Exception as e:
-            print(e)
+            logger.error(e)
 
     def add_to_queue(self):
         """添加到播放列表"""
@@ -483,7 +490,7 @@ class LocPlayerInterface(QWidget):
                 duration=1500,
                 parent=self.parent()
             )
-            print(f"当前播放列表:{cfg.play_queue}")
+            logger.info(f"当前播放列表:{cfg.play_queue}")
         else:
             InfoBar.error(
                 "失败",
@@ -552,7 +559,7 @@ class SearchInterface(QWidget):
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
         try:
-            print("获取歌曲列表中...")
+            logger.info("获取歌曲列表中...")
             self.GetVideoBtn.setEnabled(False)
 
             # 显示加载动画
@@ -576,7 +583,7 @@ class SearchInterface(QWidget):
             self.thread.task_finished.connect(self.on_c_task_finished)
             self.thread.start()
         except Exception as e:
-            print(f"错误:{e};" + type(e).__name__)
+            logger.error(f"错误:{e};" + type(e).__name__)
 
     def search_btn(self):
         """实现搜索按钮功能"""
@@ -587,17 +594,17 @@ class SearchInterface(QWidget):
 
         try:
             main_search_list = search_songList(search_content)
-            print("---搜索开始---")
+            logger.info("---搜索开始---")
             if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
-                print("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
+                logger.info("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
                     searchOnBili(search_content)
 
                     main_search_list = search_songList(search_content)
                     self.writeList(main_search_list)
                 except TypeError:
-                    print("bilibili搜索结果为空")
+                    logger.error("bilibili搜索结果为空")
                     InfoBar.error(
                         title='错误',
                         content="没有找到任何结果",
@@ -608,34 +615,34 @@ class SearchInterface(QWidget):
                         parent=self
                     )
                 except Exception as e:
-                    print(f"错误:{e};" + type(e).__name__)
+                    logger.error(f"错误:{e};" + type(e).__name__)
             else:
                 if True:
-                    print(f"本地获取 {len(main_search_list)} 个有效视频数据:")
-                    print(main_search_list)
+                    logger.info(f"本地获取 {len(main_search_list)} 个有效视频数据:")
+                    logger.info(main_search_list)
                     # 本地查找成功，追加使用bilibili搜索查找
                     # 或许可以做一个设置项进行配置?
-                    print("在本地列表找到该歌曲，继续尝试bilibili搜索")
+                    logger.info("在本地列表找到该歌曲，继续尝试bilibili搜索")
                     try:
                         searchOnBili(search_content)
 
                         more_search_list = search_songList(search_content)
-                        print(f"bilibili获取 "
+                        logger.info(f"bilibili获取 "
                               f"{len(more_search_list) - len(main_search_list)} "
                               f"个有效视频数据:")
 
                         self.writeList(more_search_list)
                     except Exception as e:
-                        print(f"错误:{e};" + type(e).__name__)
+                        logger.error(f"错误:{e};" + type(e).__name__)
                         if type(main_search_list) != "NoneType":
-                            print("bilibili搜索失败,返回本地列表项")
+                            logger.warning("bilibili搜索失败,返回本地列表项")
                             self.writeList(main_search_list)
                 else:
                     # 暂时不可到达
                     # 直接写入列表
                     self.writeList(main_search_list)
         except TypeError:
-            print("搜索结果为空")
+            logger.error("搜索结果为空")
             InfoBar.error(
                 title='错误',
                 content="没有找到任何结果",
@@ -655,8 +662,8 @@ class SearchInterface(QWidget):
                 duration=2000,
                 parent=self
             )
-            print(f"错误:{e};" + type(e).__name__)
-        print("---搜索结束---\n")
+            logger.error(f"错误:{e};" + type(e).__name__)
+        logger.info("---搜索结束---\n")
         self.tableView.resizeColumnsToContents()
 
     # 当爬虫任务结束时
@@ -666,7 +673,7 @@ class SearchInterface(QWidget):
         self.GetVideoBtn.setEnabled(True)
         self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
 
-        print("获取歌曲列表完成！")
+        logger.info("获取歌曲列表完成！")
         self.stateTooltip.setContent('获取列表完成!!!')
         self.stateTooltip.setState(True)
         self.stateTooltip = None
@@ -677,8 +684,8 @@ class SearchInterface(QWidget):
 
         searchResult: 包含搜索结果的列表，每个元素是一个包含歌曲信息的列表
         """
-        print(f"总计获取 {len(searchResult)} 个有效视频数据:")
-        print(searchResult)
+        logger.info(f"总计获取 {len(searchResult)} 个有效视频数据:")
+        logger.info(searchResult)
         self.tableView.setRowCount(len(searchResult))
 
         for i, songInfo in enumerate(searchResult):
@@ -719,7 +726,7 @@ class SearchInterface(QWidget):
                 duration=2000,
                 parent=self
             )
-            print(f"[Error]{e}")
+            logger.error(f"[Error]{e}")
 
 
 class HomeInterface(QWidget):
@@ -840,6 +847,20 @@ if __name__ == '__main__':
         if hasattr(Qt.HighDpiScaleFactorRoundingPolicy, 'PassThrough'):
             QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
+    # 初始化
+    create_dir("data")
+    create_dir("log")
+
+    # 初始化日志
+    log_folder_name = datetime.now().strftime("%Y-%m-%d")
+    base_log_dir = Path("log")
+    daily_log_dir = base_log_dir / log_folder_name
+    log_file_name = "latest.log"
+    log_file_path = daily_log_dir / log_file_name
+
+    # 添加 sink，Loguru 会自动创建 "daily_logs/2025-06-09/" 这样的目录结构
+    logger.add(log_file_path, format="[{time:HH:mm:ss}]-[{level}]{message}")
+
     app = QApplication(sys.argv)
 
     # 设置初始主题
@@ -849,14 +870,5 @@ if __name__ == '__main__':
     cfg.set_main_window(window)
 
     window.show()
-
-    create_dir("data")
-
     sys.exit(app.exec())
 
-    # # 旧版GUI
-    # print(MAIN_PATH)
-    # app = QtWidgets.QApplication(sys.argv)
-    # main = MainWindow()
-    # main.show()
-    # sys.exit(app.exec())

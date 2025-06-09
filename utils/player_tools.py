@@ -1,6 +1,7 @@
 import os
 
 from PyQt6.QtCore import Qt, QUrl
+from loguru import logger
 from qfluentwidgets import InfoBar, InfoBarPosition
 
 import config
@@ -72,7 +73,7 @@ def nextSong():
             parent=InfoBar.desktopView()
         )
     except Exception as e:
-        print(e)
+        logger.error(e)
 
 def playSongByIndex():
     file_path = getMusicLocalStr(
@@ -84,7 +85,7 @@ def playSongByIndex():
 
     cfg.playing_now = remove_before_last_backslash(cfg.play_queue[cfg.play_queue_index])
 
-    print(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
+    logger.info(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
     open_info_tip()
 
 def getMusicLocal(fileName):

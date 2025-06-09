@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+from loguru import logger
 from qfluentwidgets import MessageBox
 from config import cfg
 from musicDownloader.downloader import download_music
@@ -36,12 +37,12 @@ def search_song(search_content):
                 find_flag = True
 
     if find_flag:
-        print("搜索结果:")
+        logger.info("搜索结果:")
         search_seq = 1
         for result in search_result:
-            print(f"{search_seq}.{result}")
+            logger.info(f"{search_seq}.{result}")
             search_seq += 1
-        # print(f"找到{len(search_result)}个结果，请选择第几个(请输入数字)")
+        # logger.info(f"找到{len(search_result)}个结果，请选择第几个(请输入数字)")
 
         """
         # 处理信息
@@ -54,7 +55,7 @@ def search_song(search_content):
         return search_result
 
     else:
-        print(f"没有找到包含{search_content}的歌曲")
+        logger.info(f"没有找到包含{search_content}的歌曲")
         return None
 
 
@@ -94,9 +95,9 @@ def run_download(index, fileType=""):
     bv = search_result[int(index)]["bv"]
     output_fileName = fileName_process(search_result[int(index)]["title"]).replace(' ', '').replace(
         '_', '', 1)
-    print(f"你选择了第{index + 1}个，开始下载歌曲")
-    print(f"BVID:{bv}")
-    print(f"title:{output_fileName}")
+    logger.info(f"你选择了第{index + 1}个，开始下载歌曲")
+    logger.info(f"BVID:{bv}")
+    logger.info(f"title:{output_fileName}")
 
     # 运行下载器(异步函数)
     os.chdir(MAIN_PATH)
@@ -120,7 +121,7 @@ def run_download(index, fileType=""):
         w.setDraggable(True)
 
         if not w.exec():
-            print("用户取消下载。")
+            logger.info("用户取消下载。")
             return
     
     if fileType:

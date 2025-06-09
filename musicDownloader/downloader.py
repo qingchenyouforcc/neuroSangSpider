@@ -2,6 +2,7 @@ import os
 
 # noinspection PyUnresolvedReferences
 from bilibili_api import video, Credential, HEADERS, get_client
+from loguru import logger
 
 from utils.file_tools import MAIN_PATH
 
@@ -14,7 +15,7 @@ FFMPEG_PATH = f"{MAIN_PATH}" + "\\ffmpeg\\bin\\ffmpeg.exe"
 
 
 async def download(url: str, out: str, intro: str):
-    print(FFMPEG_PATH)
+    logger.info(FFMPEG_PATH)
     dwn_id = await get_client().download_create(url, HEADERS)
     bts = 0
     tot = get_client().download_content_length(dwn_id)
@@ -25,7 +26,6 @@ async def download(url: str, out: str, intro: str):
             print(f"{intro} - {out} [{bts} / {tot}]", end="\r")
             if bts == tot:
                 break
-    print()
 
 
 # noinspection DuplicatedCode
@@ -54,5 +54,5 @@ async def download_music(bvid, title, fileType):
         # 删除临时文件
         os.remove("audio_temp.m4s")
 
-    print(f"已下载为：{title}.{fileType}")
+    logger.info(f"已下载为：{title}.{fileType}")
 

@@ -1,4 +1,5 @@
 from PyQt6.QtCore import Qt
+from loguru import logger
 from qfluentwidgets import InfoBar, FluentIcon, InfoBarPosition, TransparentToolButton
 from config import cfg
 
@@ -9,7 +10,7 @@ def open_info_tip():
 
     """打开正在播放提示"""
     if cfg.has_infoplayerbar:
-        print("检测到已经有了一个正在播放提示，正在关闭...")
+        logger.info("检测到已经有了一个正在播放提示，正在关闭...")
         config.info_bar.close()
         config.info_bar = InfoBar.new(
             icon=FluentIcon.MUSIC,
@@ -22,7 +23,7 @@ def open_info_tip():
             parent=InfoBar.desktopView()
         )
     else:
-        print(f"正在播放{cfg.playing_now}")
+        logger.info(f"正在播放{cfg.playing_now}")
         info = InfoBar.new(
             icon=FluentIcon.MUSIC,
             title='正在播放',
@@ -56,7 +57,7 @@ def open_info_tip():
         )
 
     except Exception as e:
-        print(e)
+        logger.error(e)
         InfoBar.error(
             "未知错误", "请复制日志反馈到github issue",
             duration=2000, parent=config.cfg.MAIN_WINDOW, position=InfoBarPosition.BOTTOM_RIGHT
@@ -70,7 +71,10 @@ def infoCloseBtnClicked():
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""
     cfg.PLAYER.togglePlayState()
+    update_info_tip()
 
+def update_info_tip():
+    """更新正在播放提示"""
     if cfg.PLAYER.player.isPlaying():
         config.info_bar_play_btn.setIcon(FluentIcon.PAUSE_BOLD)
     else:
