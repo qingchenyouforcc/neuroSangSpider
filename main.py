@@ -766,6 +766,15 @@ class SearchInterface(QWidget):
         index = self.tableView.currentRow()
         try:
             fileType = cfg.downloadType
+            InfoBar.info(
+                title='提示',
+                content="开始下载歌曲，请耐心等待",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=1500,
+                parent=self
+            )
             run_download(index, fileType)
             InfoBar.success(
                 title='完成',
