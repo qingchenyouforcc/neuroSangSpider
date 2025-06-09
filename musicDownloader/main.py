@@ -68,7 +68,8 @@ def search_songList(search_content):
     global search_result
     search_result = []
     str_result = []
-    filter_list = ["neuro", "歌", "手书", "切片", "熟肉", "[evil", "社区", "21"]
+    filter_list = ["neuro", "歌回", "手书", "切片", "熟肉", "[evil", "社区", "21",
+                   "歌曲", "vedal", "cerber"]
     black_list = ["李19"]
 
     search_resultlist = total_data
