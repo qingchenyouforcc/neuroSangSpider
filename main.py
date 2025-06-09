@@ -171,9 +171,10 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         super().togglePlayState()
 
         if config.info_bar is not None:
-            update_info_tip()
-
-
+            try:
+                update_info_tip()
+            except Exception as e:
+                logger.warning(e)
 
 
 def changeDownloadType(index):
@@ -628,8 +629,8 @@ class SearchInterface(QWidget):
 
                         more_search_list = search_songList(search_content)
                         logger.info(f"bilibili获取 "
-                              f"{len(more_search_list) - len(main_search_list)} "
-                              f"个有效视频数据:")
+                                    f"{len(more_search_list) - len(main_search_list)} "
+                                    f"个有效视频数据:")
 
                         self.writeList(more_search_list)
                     except Exception as e:
@@ -852,10 +853,11 @@ if __name__ == '__main__':
     create_dir("log")
 
     # 初始化日志
+    log_file_name_format = "%Y-%m-%d_%H-%M-%S"
     log_folder_name = datetime.now().strftime("%Y-%m-%d")
     base_log_dir = Path("log")
     daily_log_dir = base_log_dir / log_folder_name
-    log_file_name = "latest.log"
+    log_file_name = f"{log_file_name_format}.log"
     log_file_path = daily_log_dir / log_file_name
 
     # 添加 sink，Loguru 会自动创建 "daily_logs/2025-06-09/" 这样的目录结构
@@ -871,4 +873,3 @@ if __name__ == '__main__':
 
     window.show()
     sys.exit(app.exec())
-
