@@ -10,7 +10,7 @@ from pathlib import Path
 from mutagen import File
 
 from config import MAIN_PATH, cfg
-from infoManager.SongList import SongList
+from SongListManager.SongList import SongList
 from utils.bili_tools import url2bv
 
 

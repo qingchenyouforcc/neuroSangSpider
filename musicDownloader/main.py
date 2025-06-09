@@ -1,5 +1,6 @@
 import asyncio
 import os
+import warnings
 
 from loguru import logger
 from qfluentwidgets import MessageBox
@@ -8,13 +9,13 @@ from musicDownloader.downloader import download_music
 from text_tools import format_date_str
 from utils.file_tools import create_dir, MAIN_PATH, part2all, load_from_all_data
 from utils.text_tools import fileName_process
+from SongList import SongList
 
 create_dir("music")
-search_result = []
 bvid = ""
 title = ""
 
-
+@warnings.deprecated("被废弃的用法,对应的函数替换为`search_song_list`")
 def search_song(search_content):
     """从文件中搜索歌曲"""
     os.chdir(MAIN_PATH)
@@ -59,62 +60,65 @@ def search_song(search_content):
         return None
 
 
-def search_songList(search_content):
-    """重写的搜索方法,读取json文件搜索,存储search_result并返回标题列表"""
+def search_song_list(search_content):
+    """
+    重写的搜索方法
+
+    参数:
+        search_result(str):搜索的关键字
+
+    返回:
+        search_result_list:
+            (SongList):搜索结果
+            (None):未搜索到结果,返回空
+    """
     # 切换路径
     os.chdir(MAIN_PATH)
 
     total_data = load_from_all_data("data")
-    global search_result
-    search_result = []
-    str_result = []
-    filter_list = ["neuro", "歌回", "手书", "切片", "熟肉", "[evil", "社区", "21",
-                   "歌曲", "vedal", "cerber"]
-    black_list = ["李19"]
+    if total_data is None:
+        return None
+    filter_list = ["neuro", "歌", "手书", "切片", "熟肉", "evil", "社区", "21"]
+    black_author_list = ["李19"]
 
-    search_resultlist = total_data
-    search_resultlist.search_by_title(search_content)
+    search_result_list = total_data
+    search_result_list.search_by_title(search_content)
 
-    if len(search_resultlist.getData()) == 0:
+    search_result_list.unique_by_bv()
+    search_result_list.remove_blacklist(black_author_list, 1)
+    search_result_list.filter_data(filter_list, 0)
+
+    if len(search_result_list.get_data()) == 0:
         return None
 
-    search_resultlist.unique_by_bv()
-    search_result = search_resultlist.getData()
-    for item in search_result:
-        if any(blackWord in item['author'].lower() for blackWord in black_list):
-            continue
-        else:
-            if any(filterWord in item['title'].lower() for filterWord in filter_list):
-                tmp_str = [item['title'], item['author'].replace('\n', ''), format_date_str(item['date']), item['bv']]
-                str_result.append(tmp_str)
-
-    return str_result
+    return search_result_list
 
 
-def run_download(index, fileType=""):
+def run_download(index, search_list: SongList, file_type=""):
     """运行下载器"""
-    bv = search_result[int(index)]["bv"]
-    output_fileName = fileName_process(search_result[int(index)]["title"]).replace(' ', '').replace(
+    bv = search_list.select_info(index)["bv"]
+    file_name = search_list.select_info(index)["title"]
+    output_file_name = fileName_process(file_name).replace(' ', '').replace(
         '_', '', 1)
     logger.info(f"你选择了第{index + 1}个，开始下载歌曲")
     logger.info(f"BVID:{bv}")
-    logger.info(f"title:{output_fileName}")
+    logger.info(f"title:{output_file_name}")
 
     # 运行下载器(异步函数)
     os.chdir(MAIN_PATH)
     os.chdir("music")
-    
+
     # 检查文件是否已经存在
-    if fileType:
-        file_exists = os.path.exists(f"{output_fileName}.{fileType}")
+    if file_type:
+        file_exists = os.path.exists(f"{output_file_name}.{file_type}")
     else:
-        file_exists = os.path.exists(f"{output_fileName}.mp3")
-    
+        file_exists = os.path.exists(f"{output_file_name}.mp3")
+
     # 如果文件存在，弹出提示窗口
     if file_exists:
         w = MessageBox(
             '文件已存在',
-            f"文件 '{output_fileName}.{fileType or 'mp3'}' 已存在。是否覆盖？",
+            f"文件 '{output_file_name}.{file_type or 'mp3'}' 已存在。是否覆盖？",
             cfg.MAIN_WINDOW
         )
 
@@ -124,8 +128,8 @@ def run_download(index, fileType=""):
         if not w.exec():
             logger.info("用户取消下载。")
             return
-    
-    if fileType:
-        asyncio.run(download_music(bv, output_fileName, fileType))
+
+    if file_type:
+        asyncio.run(download_music(bv, output_file_name, file_type))
     else:
-        asyncio.run(download_music(bv, output_fileName, "mp3"))
+        asyncio.run(download_music(bv, output_file_name, "mp3"))
