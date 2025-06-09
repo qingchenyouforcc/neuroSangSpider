@@ -8,13 +8,13 @@ import config
 def open_info_tip():
 
     """打开正在播放提示"""
-    if cfg.HAS_INFOPLAYERBAR:
+    if cfg.has_infoplayerbar:
         print("检测到已经有了一个正在播放提示，正在关闭...")
         config.info_bar.close()
         config.info_bar = InfoBar.new(
             icon=FluentIcon.MUSIC,
             title='正在播放',
-            content=f"{config.playing_now}",
+            content=f"{cfg.playing_now}",
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -22,11 +22,11 @@ def open_info_tip():
             parent=InfoBar.desktopView()
         )
     else:
-        print(f"正在播放{config.playing_now}")
+        print(f"正在播放{cfg.playing_now}")
         info = InfoBar.new(
             icon=FluentIcon.MUSIC,
             title='正在播放',
-            content=f"{config.playing_now}",
+            content=f"{cfg.playing_now}",
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -36,7 +36,7 @@ def open_info_tip():
         info.setCustomBackgroundColor('white', '#202020')
 
         config.info_bar = info
-        cfg.HAS_INFOPLAYERBAR = True
+        cfg.has_infoplayerbar = True
     try:
         info = config.info_bar
 
@@ -65,7 +65,7 @@ def open_info_tip():
 def infoCloseBtnClicked():
     """悬浮栏关闭按钮事件"""
     config.info_bar.close()
-    cfg.HAS_INFOPLAYERBAR = False
+    cfg.has_infoplayerbar = False
 
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""

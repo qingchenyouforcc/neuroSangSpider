@@ -15,7 +15,7 @@ def open_player():
     
 def previousSong():
     """ 播放上一首 """
-    if config.play_queue_index <= 0:
+    if cfg.play_queue_index <= 0:
         InfoBar.info(
             "提示",
             "已经没有上一首了",
@@ -26,7 +26,7 @@ def previousSong():
         )
         return
     try:
-        config.play_queue_index = config.play_queue_index - 1
+        cfg.play_queue_index = cfg.play_queue_index - 1
         playSongByIndex()
 
     except IndexError:
@@ -43,8 +43,8 @@ def previousSong():
 
 def nextSong():
     """ 播放下一首 """
-    if config.play_mode == 1:
-        if config.play_queue_index >= len(config.play_queue) - 1:
+    if cfg.play_mode == 1:
+        if cfg.play_queue_index >= len(cfg.play_queue) - 1:
             InfoBar.info(
                 "提示",
                 "已经没有下一首了",
@@ -54,12 +54,12 @@ def nextSong():
                 parent=InfoBar.desktopView()
             )
             return
-    elif config.play_mode == 0:
-        if config.play_queue_index >= len(config.play_queue) - 1:
-            config.play_queue_index = -1
+    elif cfg.play_mode == 0:
+        if cfg.play_queue_index >= len(cfg.play_queue) - 1:
+            cfg.play_queue_index = -1
 
     try:
-        config.play_queue_index += 1
+        cfg.play_queue_index += 1
         playSongByIndex()
 
     except IndexError:
@@ -76,15 +76,15 @@ def nextSong():
 
 def playSongByIndex():
     file_path = getMusicLocalStr(
-        config.play_queue[config.play_queue_index])
+        cfg.play_queue[cfg.play_queue_index])
 
     url = QUrl.fromLocalFile(file_path)
     cfg.PLAYER.player.setSource(url)
     cfg.PLAYER.player.play()
 
-    config.playing_now = remove_before_last_backslash(config.play_queue[config.play_queue_index])
+    cfg.playing_now = remove_before_last_backslash(cfg.play_queue[cfg.play_queue_index])
 
-    print(f"当前播放歌曲队列位置：{config.play_queue_index}")
+    print(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
     open_info_tip()
 
 def getMusicLocal(fileName):

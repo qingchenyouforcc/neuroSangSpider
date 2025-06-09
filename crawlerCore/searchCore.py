@@ -1,10 +1,9 @@
 import random
 import time
-import config
-
 import requests
-from bs4 import BeautifulSoup
 
+from bs4 import BeautifulSoup
+from config import cfg
 from infoManager.SongList import SongList
 from utils.bili_tools import url2bv
 
@@ -199,7 +198,7 @@ def search_song_online(search_content, page):
 
 def searchOnBili(search_content):
     # 将搜索结果写入json
-    result_info = search_song_online(search_content, config.search_page)
+    result_info = search_song_online(search_content, cfg.search_page)
     temp_list = SongList()
     temp_list.append_list(result_info)
     temp_list.unique_by_bv()

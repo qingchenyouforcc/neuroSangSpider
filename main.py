@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
-    TransparentToolButton, CaptionLabel
+    TransparentToolButton, CaptionLabel, isDarkTheme
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
@@ -16,7 +16,6 @@ from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPositio
 from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
-import config
 from config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
 from musicDownloader.main import run_download, search_songList
@@ -117,11 +116,11 @@ class CustomMediaPlayBar(MediaPlayBarBase):
 
     @staticmethod
     def volumeChanged(value):
-        config.volume = value
+        cfg.volume = value
 
     def volumeSet(self):
         """ 音量设置 """
-        self.setVolume(config.volume)
+        self.setVolume(cfg.volume)
 
     def skipBack(self, ms: int):
         """ Back up for specified milliseconds """
@@ -135,14 +134,14 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         remainTime = self.player.duration() - position
 
         if remainTime == 0:
-            if config.play_mode == 0:
+            if cfg.play_mode == 0:
                 print("歌曲播放完毕，自动播放下一首。")
                 nextSong()
-            elif config.play_mode == 1:
-                if config.play_queue_index < len(config.play_queue):
+            elif cfg.play_mode == 1:
+                if cfg.play_queue_index < len(cfg.play_queue):
                     print("歌曲播放完毕，自动播放下一首。")
                     nextSong()
-            elif config.play_mode == 2:
+            elif cfg.play_mode == 2:
                 playSongByIndex()
 
     @staticmethod
@@ -154,18 +153,18 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         return f'{h}:{m:02}:{s:02}'
 
     def modeChange(self):
-        if config.play_mode >= 2:
-            config.play_mode = 0
+        if cfg.play_mode >= 2:
+            cfg.play_mode = 0
         else:
-            config.play_mode += 1
+            cfg.play_mode += 1
 
-        if config.play_mode == 0:
+        if cfg.play_mode == 0:
             self.modeChangeButton.setIcon(FluentIcon.SYNC)
             self.modeChangeButton.setToolTip('列表循环')
-        elif config.play_mode == 1:
+        elif cfg.play_mode == 1:
             self.modeChangeButton.setIcon(FluentIcon.MENU)
             self.modeChangeButton.setToolTip('顺序播放')
-        elif config.play_mode == 2:
+        elif cfg.play_mode == 2:
             self.modeChangeButton.setIcon(FluentIcon.ROTATE)
             self.modeChangeButton.setToolTip('单曲循环')
 
@@ -210,8 +209,10 @@ class SettinsCard(GroupHeaderCardWidget):
         self.themeSwitch.setOffText(self.tr("浅色"))
         self.themeSwitch.setOnText(self.tr("深色"))
         current_theme_is_dark = QApplication.instance().property("darkMode")
-        self.themeSwitch.setChecked(
-            current_theme_is_dark if current_theme_is_dark is not None else (Theme.DARK == Theme.DARK))  # 默认为深色
+        # 默认系统主题
+        if current_theme_is_dark is None:
+            current_theme_is_dark = isDarkTheme()
+        self.themeSwitch.setChecked(current_theme_is_dark)
         self.themeSwitch.checkedChanged.connect(on_theme_switched)
 
         self.fixMusic = PushButton("修复音频", self)
@@ -317,15 +318,15 @@ class PlayQueueInterface(QWidget):
         self.load_play_queue()
 
     def load_play_queue(self):
-        if not config.play_queue:
+        if not cfg.play_queue:
             return
 
         try:
-            self.tableView.setRowCount(len(config.play_queue))
+            self.tableView.setRowCount(len(cfg.play_queue))
             self.tableView.setColumnCount(1)
             self.tableView.setHorizontalHeaderLabels(['歌曲'])
 
-            for i, (song) in enumerate(config.play_queue):
+            for i, (song) in enumerate(cfg.play_queue):
                 song = remove_before_last_backslash(song)
                 self.tableView.setItem(i, 0, QTableWidgetItem(song))
 
@@ -336,31 +337,31 @@ class PlayQueueInterface(QWidget):
     def move_up(self):
         index = self.tableView.currentIndex().row()
         if index > 0:
-            config.play_queue[index - 1], config.play_queue[index] = config.play_queue[index], config.play_queue[
+            cfg.play_queue[index - 1], cfg.play_queue[index] = cfg.play_queue[index], cfg.play_queue[
                 index - 1]
             self.tableView.setCurrentIndex(self.tableView.model().index(index - 1, 0))
 
-            if config.play_queue_index == index:
-                config.play_queue_index -= 1
+            if cfg.play_queue_index == index:
+                cfg.play_queue_index -= 1
 
         self.load_play_queue()
 
     def move_down(self):
         index = self.tableView.currentIndex().row()
-        if index < len(config.play_queue) - 1:
-            config.play_queue[index + 1], config.play_queue[index] = config.play_queue[index], config.play_queue[
+        if index < len(cfg.play_queue) - 1:
+            cfg.play_queue[index + 1], cfg.play_queue[index] = cfg.play_queue[index], cfg.play_queue[
                 index + 1]
             self.tableView.setCurrentIndex(self.tableView.model().index(index + 1, 0))
 
-            if config.play_queue_index == index:
-                config.play_queue_index += 1
+            if cfg.play_queue_index == index:
+                cfg.play_queue_index += 1
 
         self.load_play_queue()
 
     def del_queue(self):
         index = self.tableView.currentIndex().row()
         if index > 0:
-            config.play_queue.pop(index)
+            cfg.play_queue.pop(index)
         self.load_play_queue()
 
 
@@ -446,13 +447,13 @@ class LocPlayerInterface(QWidget):
             self.main_window.player_bar.player.setSource(url)
             self.main_window.player_bar.player.play()
 
-            config.playing_now = item.text()
+            cfg.playing_now = item.text()
 
             open_info_tip()
 
             self.add_to_queue()
-            config.play_queue_index = config.play_queue.index(file_path)
-            print(f"当前播放歌曲队列位置：{config.play_queue_index}")
+            cfg.play_queue_index = cfg.play_queue.index(file_path)
+            print(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
         except Exception as e:
             print(e)
 
@@ -462,7 +463,7 @@ class LocPlayerInterface(QWidget):
         file_path = getMusicLocal(item)
 
         if file_path:
-            if file_path in config.play_queue:
+            if file_path in cfg.play_queue:
                 InfoBar.warning(
                     "已存在",
                     f"{item.text()}已存在播放列表",
@@ -473,7 +474,7 @@ class LocPlayerInterface(QWidget):
                 )
                 return
 
-            config.play_queue.append(file_path)
+            cfg.play_queue.append(file_path)
             InfoBar.success(
                 "成功",
                 f"已添加{item.text()}到播放列表",
@@ -482,7 +483,7 @@ class LocPlayerInterface(QWidget):
                 duration=1500,
                 parent=self.parent()
             )
-            print(f"当前播放列表:{config.play_queue}")
+            print(f"当前播放列表:{cfg.play_queue}")
         else:
             InfoBar.error(
                 "失败",
@@ -760,7 +761,7 @@ class DemoWindow(FluentWindow):
 
         self.player_bar = CustomMediaPlayBar()
         self.player_bar.setFixedSize(300, 120)
-        self.player_bar.player.setVolume(config.volume)
+        self.player_bar.player.setVolume(cfg.volume)
         self.player_bar.setWindowIcon(icon)
         self.player_bar.setWindowTitle("Player")
         self.player_bar.show()
