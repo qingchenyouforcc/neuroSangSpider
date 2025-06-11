@@ -6,20 +6,18 @@ from pathlib import Path
 from typing import cast
 
 from PyQt6 import QtGui
-from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl, QEasingCurve
-from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
 from loguru import logger
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
-    TransparentToolButton, CaptionLabel, isDarkTheme, MessageBox, FlowLayout, PrimaryPushButton, CardGroupWidget, \
-    PrimaryToolButton, ToolButton, MessageBoxBase, LineEdit
+    TransparentToolButton, CaptionLabel, isDarkTheme, MessageBox, FlowLayout, CardGroupWidget, \
+    ToolButton, MessageBoxBase, LineEdit
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
                             BodyLabel, TitleLabel, PushButton, SearchLineEdit, FluentIcon, GroupHeaderCardWidget,
                             TeachingTip, TeachingTipView)
-from qfluentwidgets.components.widgets.flyout import IconWidget
 from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
