@@ -237,7 +237,7 @@ class SearchSettingsCard(GroupHeaderCardWidget):
         self.addWordBtn.clicked.connect(self.add_filter_word)
         self.filterLayout.addWidget(self.addWordBtn)
 
-        self.filterInfo = CardGroupWidget(FluentIcon.SEARCH, '调整过滤器', '搜索结果只会显示符合过滤条件的歌曲', self)
+        self.filterInfo = CardGroupWidget(FluentIcon.SEARCH, '调整过滤器', '搜索结果只会显示符合过滤条件的歌曲(单击删除)', self)
         self.setStyleSheet('Demo{background: white} QPushButton{padding: 5px 10px; font:15px "Microsoft YaHei"}')
 
     def __init_widget(self):
@@ -258,9 +258,10 @@ class SearchSettingsCard(GroupHeaderCardWidget):
         except Exception as e:
             logger.error(e)
 
+    # noinspection PyTypeChecker
     def add_filter_word(self):
         try:
-            mbox = MessageBoxBase(self)
+            mbox = MessageBoxBase(cfg.MAIN_WINDOW)
 
             mbox.titleLabel = SubtitleLabel('添加过滤词', self)
             mbox.wordLineEdit = LineEdit(self)
@@ -268,14 +269,9 @@ class SearchSettingsCard(GroupHeaderCardWidget):
             mbox.wordLineEdit.setPlaceholderText('输入你要添加的过滤词')
             mbox.wordLineEdit.setClearButtonEnabled(True)
 
-            mbox.warningLabel = CaptionLabel("输入是不合法的")
-            mbox.warningLabel.setTextColor("#cf1010", QColor(255, 28, 32))
-
             # add widget to view layout
             mbox.viewLayout.addWidget(mbox.titleLabel)
             mbox.viewLayout.addWidget(mbox.wordLineEdit)
-            mbox.viewLayout.addWidget(mbox.warningLabel)
-            mbox.warningLabel.hide()
 
             # change the text of button
             mbox.yesButton.setText('添加')
@@ -284,14 +280,22 @@ class SearchSettingsCard(GroupHeaderCardWidget):
             mbox.setMinimumWidth(350)
 
             if mbox.exec():
-                word = mbox.wordLineEdit.text().strip()
+                word: str = mbox.wordLineEdit.text().strip()
                 if not word:
-                    mbox.warningLabel.show()
-                    mbox.warningLabel.setText("过滤词不能为空")
+                    InfoBar.error(
+                        "错误",
+                        "请输入要添加的过滤词",
+                        position=InfoBarPosition.BOTTOM_RIGHT,
+                        parent=cfg.MAIN_WINDOW
+                    )
                     return
                 if word in cfg.filter_list:
-                    mbox.warningLabel.show()
-                    mbox.warningLabel.setText("该过滤词已存在")
+                    InfoBar.error(
+                        "错误",
+                        "该过滤词已存在",
+                        position=InfoBarPosition.BOTTOM_RIGHT,
+                        parent=cfg.MAIN_WINDOW
+                    )
                     return
                 else:
                     cfg.filter_list.append(word)
@@ -299,6 +303,8 @@ class SearchSettingsCard(GroupHeaderCardWidget):
                     word_btn = PushButton(word)
                     word_btn.clicked.connect(self.remove_filter_word)
                     self.filterLayout.addWidget(word_btn)
+                    self.filterLayout.removeWidget(self.addWordBtn)
+                    self.filterLayout.addWidget(self.addWordBtn)
                     self.filterLayout.update()
                     self.update()
                     return
