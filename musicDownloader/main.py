@@ -77,8 +77,8 @@ def search_song_list(search_content):
     total_data = load_from_all_data("data")
     if total_data is None:
         return None
-    filter_list = ["neuro", "歌", "手书", "切片", "熟肉", "evil", "社区", "21"]
-    black_author_list = ["李19"]
+    filter_list = cfg.filter_list
+    black_author_list = cfg.black_author_list
 
     search_result_list = total_data
     search_result_list.search_by_title(search_content)

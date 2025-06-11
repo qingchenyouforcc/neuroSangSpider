@@ -1,21 +1,25 @@
 import os
 import sys
+import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import cast
 
 from PyQt6 import QtGui
-from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize, QUrl, QEasingCurve
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QTableWidgetItem, QHBoxLayout, \
     QAbstractItemView
 from loguru import logger
 from qfluentwidgets import FluentIcon as FIF, StateToolTip, InfoBarPosition, TableWidget, InfoBar, ComboBox, \
-    TransparentToolButton, CaptionLabel, isDarkTheme, MessageBox
+    TransparentToolButton, CaptionLabel, isDarkTheme, MessageBox, FlowLayout, PrimaryPushButton, CardGroupWidget, \
+    PrimaryToolButton, ToolButton, MessageBoxBase, LineEdit
 # 导入 PyQt-Fluent-Widgets 相关模块
 from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPosition,
                             SubtitleLabel, SwitchButton,
                             BodyLabel, TitleLabel, PushButton, SearchLineEdit, FluentIcon, GroupHeaderCardWidget,
                             TeachingTip, TeachingTipView)
+from qfluentwidgets.components.widgets.flyout import IconWidget
 from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
@@ -200,13 +204,117 @@ def changeDownloadType(index):
     )
 
 
+class SearchSettingsCard(GroupHeaderCardWidget):
+    """搜索设置卡片"""
+
+    # noinspection PyTypeChecker
+    def __init__(self):
+        super().__init__()
+        self.filterLayout = None
+        self.addWordBtn = None
+        self.filterInfo = None
+
+        self.setTitle("搜索设置")
+        self.flow_container = QWidget()
+
+        self.init_filter_card()
+        self.__init_widget()
+
+    def init_filter_card(self):
+        """初始化过滤器卡片"""
+        self.filterLayout = FlowLayout(self.flow_container, needAni=True)
+
+        self.filterLayout.setContentsMargins(30, 30, 30, 30)
+
+        for word in cfg.filter_list:
+            word_btn = PushButton(word)
+            word_btn.clicked.connect(self.remove_filter_word)
+
+            self.filterLayout.addWidget(word_btn)
+
+        self.addWordBtn = ToolButton()
+        self.addWordBtn.setIcon(FluentIcon.ADD)
+        self.addWordBtn.clicked.connect(self.add_filter_word)
+        self.filterLayout.addWidget(self.addWordBtn)
+
+        self.filterInfo = CardGroupWidget(FluentIcon.SEARCH, '调整过滤器', '搜索结果只会显示符合过滤条件的歌曲', self)
+        self.setStyleSheet('Demo{background: white} QPushButton{padding: 5px 10px; font:15px "Microsoft YaHei"}')
+
+    def __init_widget(self):
+        self.vBoxLayout.addWidget(self.filterInfo, Qt.AlignmentFlag.AlignTop)
+        self.vBoxLayout.addWidget(self.flow_container)
+
+    def remove_filter_word(self):
+        try:
+            word_btn = self.sender()
+            cfg.filter_list.remove(word_btn.text())
+            logger.info(f"当前过滤器列表为{cfg.filter_list}")
+            self.filterLayout.removeWidget(word_btn)
+            word_btn.deleteLater()
+
+            # 强制刷新布局，确保及时更新
+            self.filterLayout.update()
+            self.update()
+        except Exception as e:
+            logger.error(e)
+
+    def add_filter_word(self):
+        try:
+            mbox = MessageBoxBase(self)
+
+            mbox.titleLabel = SubtitleLabel('添加过滤词', self)
+            mbox.wordLineEdit = LineEdit(self)
+
+            mbox.wordLineEdit.setPlaceholderText('输入你要添加的过滤词')
+            mbox.wordLineEdit.setClearButtonEnabled(True)
+
+            mbox.warningLabel = CaptionLabel("输入是不合法的")
+            mbox.warningLabel.setTextColor("#cf1010", QColor(255, 28, 32))
+
+            # add widget to view layout
+            mbox.viewLayout.addWidget(mbox.titleLabel)
+            mbox.viewLayout.addWidget(mbox.wordLineEdit)
+            mbox.viewLayout.addWidget(mbox.warningLabel)
+            mbox.warningLabel.hide()
+
+            # change the text of button
+            mbox.yesButton.setText('添加')
+            mbox.cancelButton.setText('取消')
+
+            mbox.setMinimumWidth(350)
+
+            if mbox.exec():
+                word = mbox.wordLineEdit.text().strip()
+                if not word:
+                    mbox.warningLabel.show()
+                    mbox.warningLabel.setText("过滤词不能为空")
+                    return
+                if word in cfg.filter_list:
+                    mbox.warningLabel.show()
+                    mbox.warningLabel.setText("该过滤词已存在")
+                    return
+                else:
+                    cfg.filter_list.append(word)
+                    logger.info(f"当前过滤器列表为{cfg.filter_list}")
+                    word_btn = PushButton(word)
+                    word_btn.clicked.connect(self.remove_filter_word)
+                    self.filterLayout.addWidget(word_btn)
+                    self.filterLayout.update()
+                    self.update()
+                    return
+
+        except Exception as e:
+            logger.error(f"添加过滤词错误：错误内容:{e}，错误类型:{type(e)}\n错误位置:{traceback.format_exc()}")
+            return
+
+
+
 class SettingsCard(GroupHeaderCardWidget):
-    """设置卡片"""
+    """常规设置卡片"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.scrollWidget = QWidget()
-        self.setTitle("设置")
+        self.setTitle("基本设置")
 
         # self.setBorderRadius(8)
         self.setFixedHeight(240)
@@ -280,6 +388,8 @@ class SettingInterface(QWidget):
         self.layout.setSpacing(15)
 
         self.layout.addWidget(SettingsCard(), Qt.AlignmentFlag.AlignTop)
+        self.layout.setSpacing(30)
+        self.layout.addWidget(SearchSettingsCard())
         self.layout.addStretch(1)
 
 

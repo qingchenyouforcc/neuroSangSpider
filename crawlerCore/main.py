@@ -1,16 +1,15 @@
 import threading
 
-from crawlerCore.videosList import get_video_list, resolve_url_to_info
-from utils.file_tools import create_dir, load_from_all_data, load_extend
 from SongList import SongList
-
+from config import cfg
+from crawlerCore.videosList import get_video_list, resolve_url_to_info
+from utils.file_tools import create_dir, load_extend
 
 
 def create_video_list_file():
     """获得视频列表文件(多线程)"""
     # UP主列表 和 爬取视频需包含词
-    # up_list = [351692111]
-    up_list = [351692111, 1880487363, 22535350, 3546612622166788, 5971855, 483178955, 690857494]
+    up_list = cfg.up_list
     words_set = ["合唱", "歌回", "金曲"]
     threads = []
     bv_list = []
