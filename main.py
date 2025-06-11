@@ -991,6 +991,12 @@ class HomeInterface(QWidget):
             self
         )
 
+        # todo
+        # 实现主页显示player情况
+        # neuro主题  个性化元素
+        # 显示当前版本号
+        # 显示neuro直播时间表
+
         self.readmeLabel = SubtitleLabel("介绍", self)
         self.readmeInfoLabel = BodyLabel(
             "这是一个基于 Python 3.13 开发的程序，\n"
