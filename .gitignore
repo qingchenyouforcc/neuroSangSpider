@@ -8,9 +8,8 @@ venv/
 /build/
 __pycache__/
 *.pyc
-/crawlerCore/__pycache__/
 /data/
-*.log
+/logs
 
 # User-specific stuff
 .idea/**/workspace.xml
