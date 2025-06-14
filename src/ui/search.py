@@ -307,7 +307,7 @@ class SearchInterface(QWidget):
             parent=self,
         )
         try:
-            fileType = cfg.downloadType.value
+            fileType = cfg.download_type.value
             run_download(index, self.search_result, fileType)
             InfoBar.success(
                 title="完成",

@@ -14,7 +14,7 @@ from .videos import get_user_videos, resolve_url_to_info
 def create_video_list_file() -> None:
     """获得视频列表文件(多线程)"""
     # UP主列表 和 爬取视频需包含词
-    up_list = cfg.up_list
+    up_list = cfg.up_list.value
     words_set = ["合唱", "歌回", "金曲"]
     bv_list = []
 

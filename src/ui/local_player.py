@@ -104,6 +104,7 @@ class LocalPlayerInterface(QWidget):
             assert item is not None, "当前行没有歌曲信息"
 
             file_path = getMusicLocal(item)
+            assert file_path is not None, "无法获取音乐文件路径"
 
             url = QUrl.fromLocalFile(file_path and str(file_path))
             self.main_window.player_bar.player.setSource(url)
@@ -116,16 +117,15 @@ class LocalPlayerInterface(QWidget):
             self.add_to_queue()
             cfg.play_queue_index = cfg.play_queue.index(file_path)
             logger.info(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
-        except Exception as e:
-            logger.error(e)
+        except Exception:
+            logger.exception("播放选中歌曲失败")
 
     def add_to_queue(self):
         """添加到播放列表"""
         item = self.tableView.currentItem()
         assert item is not None, "当前行没有歌曲信息"
-        file_path = getMusicLocal(item)
 
-        if file_path:
+        if file_path := getMusicLocal(item):
             if file_path in cfg.play_queue:
                 InfoBar.warning(
                     "已存在",
@@ -154,7 +154,7 @@ class LocalPlayerInterface(QWidget):
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
                 duration=1500,
-                parent=cfg.MAIN_WINDOW,
+                parent=cfg.main_window,
             )
 
     def del_song(self):
@@ -187,6 +187,7 @@ class LocalPlayerInterface(QWidget):
                 item = self.tableView.item(i, 0)
                 assert item is not None, "当前行没有歌曲信息"
                 file_path = getMusicLocal(item)
+                assert file_path is not None, "无法获取音乐文件路径"
                 if file_path in cfg.play_queue:
                     InfoBar.warning(
                         "已存在",
@@ -214,6 +215,6 @@ class LocalPlayerInterface(QWidget):
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
                 duration=1500,
-                parent=cfg.MAIN_WINDOW,
+                parent=cfg.main_window,
             )
             logger.error(e)

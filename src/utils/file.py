@@ -247,7 +247,7 @@ def on_fix_music():
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
-            parent=cfg.MAIN_WINDOW,
+            parent=cfg.main_window,
         )
     except Exception as e:
         logger.error(e)
@@ -257,7 +257,7 @@ def on_fix_music():
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
-            parent=cfg.MAIN_WINDOW,
+            parent=cfg.main_window,
         )
 
 

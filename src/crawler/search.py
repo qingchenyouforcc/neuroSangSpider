@@ -38,7 +38,9 @@ async def search_page(search_content: str, page: int) -> list[dict]:
 async def search_on_bilibili(search_content: str) -> None:
     songs = SongList()
 
-    for data in await asyncio.gather(*[search_page(search_content, page) for page in range(1, cfg.search_page + 1)]):
+    for data in await asyncio.gather(
+        *[search_page(search_content, page) for page in range(1, cfg.search_page.value + 1)]
+    ):
         for item in data:
             songs.append_info(item)
 

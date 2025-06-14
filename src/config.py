@@ -4,64 +4,107 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from loguru import logger
-from qfluentwidgets import InfoBar, OptionsConfigItem, OptionsValidator, QConfig, ToolButton
+from qfluentwidgets import InfoBar, OptionsConfigItem, OptionsValidator, QConfig, ToolButton, setTheme
+from qfluentwidgets import Theme as QtTheme
+
+if TYPE_CHECKING:
+    from src.ui.main_window import MainWindow
+    from src.ui.media_player_bar import CustomMediaPlayBar
+
+from enum import Enum
+
+from qfluentwidgets import ConfigItem
 
 if TYPE_CHECKING:
     from src.ui.main_window import MainWindow
     from src.ui.media_player_bar import CustomMediaPlayBar
 
 
+class PlayMode(int, Enum):
+    """播放模式枚举"""
+
+    LIST_LOOP = 0  # 列表循环
+    SEQUENTIAL = 1  # 顺序播放
+    SINGLE_LOOP = 2  # 单曲循环
+    RANDOM = 3  # 随机播放
+
+
+class Theme(str, Enum):
+    """主题枚举"""
+
+    AUTO = "Auto"
+    LIGHT = "Light"
+    DARK = "Dark"
+
+
+_DEFAULT_UP_LIST = [
+    351692111,
+    1880487363,
+    22535350,
+    3546612622166788,
+    5971855,
+    483178955,
+    690857494,
+]
+_DEFAULT_BLACKLIST = ["李19"]
+_DEFAULT_FILTER_WORDS = [
+    "neuro",
+    "歌回",
+    "手书",
+    "切片",
+    "熟肉",
+    "evil",
+    "社区",
+    "21",
+    "歌曲",
+    "歌切",
+]
+
+
 class Config(QConfig):
-    downloadType = OptionsConfigItem(
+    """应用程序配置类"""
+
+    # 持久化配置项
+    download_type = OptionsConfigItem(
         "Download",
-        "downloadType",
+        "Type",
         "mp3",
         OptionsValidator(["mp3", "ogg", "wav"]),
-        restart=False,
+    )
+    volume = ConfigItem("Player", "Volume", 50)
+    play_mode = ConfigItem("Player", "Mode", PlayMode.LIST_LOOP)
+    search_page = ConfigItem("Search", "PageCount", 3)
+    up_list = ConfigItem("Search", "UpList", _DEFAULT_UP_LIST.copy())
+    black_author_list = ConfigItem("Search", "BlackList", _DEFAULT_BLACKLIST.copy())
+    filter_list = ConfigItem("Search", "FilterWords", _DEFAULT_FILTER_WORDS.copy())
+    theme_mode = ConfigItem(
+        "Appearance",
+        "ThemeMode",
+        Theme.AUTO,
+        OptionsValidator([Theme.AUTO, Theme.LIGHT, Theme.DARK]),
     )
 
-    def __init__(self):
+    def __init__(self, path: Path):
+        # 指定配置文件路径
         super().__init__()
-        self.playing_now: str | None = None
-        self.volume = 50
-        self.play_queue = []
-        self.play_queue_index = 0
-        self.play_mode = 0  # 播放模式 0是列表循环 1是顺序播放 2是单曲循环 3是随机播放
-        self.search_page = 3
-        self.up_list = [
-            351692111,
-            1880487363,
-            22535350,
-            3546612622166788,
-            5971855,
-            483178955,
-            690857494,
-        ]
-        self.black_author_list = ["李19"]
-        self.filter_list = [
-            "neuro",
-            "歌回",
-            "手书",
-            "切片",
-            "熟肉",
-            "evil",
-            "社区",
-            "21",
-            "歌曲",
-            "歌切",
-        ]
+        self.file = DATA_DIR / "config.json"
 
-        self.MAIN_WINDOW: "MainWindow | None" = None
-        self.PLAYER: "CustomMediaPlayBar | None" = None
+        # 运行时状态
+        self.playing_now: str | None = None
+        self.play_queue: list[Path] = []
+        self.play_queue_index: int = 0
+        self.main_window: "MainWindow | None" = None
+        self.player: "CustomMediaPlayBar | None" = None
         self.info_bar: InfoBar | None = None
         self.info_bar_play_btn: ToolButton | None = None
 
-    def set_main_window(self, window: "MainWindow"):
-        self.MAIN_WINDOW = window
+        setTheme(QtTheme(self.theme_mode.value.value))
 
-    # 这个是播放器类，player在这个里面
-    def set_player(self, Player: "CustomMediaPlayBar"):
-        self.PLAYER = Player
+    def set_theme(self, theme: Theme) -> None:
+        """设置主题"""
+        self.theme_mode.value = theme
+        setTheme(QtTheme(theme.value))
+        self.save()
 
 
 def detect_ffmpeg():
@@ -109,6 +152,10 @@ VIDEO_DIR.mkdir(exist_ok=True, parents=True)
 ASSETS_DIR = get_assets_path()
 FFMPEG_PATH = detect_ffmpeg()
 
-cfg = Config()
+CONFIG_PATH = DATA_DIR / "config.json"
+cfg = Config(CONFIG_PATH)
+if CONFIG_PATH.exists():
+    cfg.load()
+
 
 VERSION = "1.1.4"

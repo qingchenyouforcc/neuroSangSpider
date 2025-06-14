@@ -39,7 +39,7 @@ def open_info_tip():
             "错误",
             "没有正在播放的音乐",
             duration=1000,
-            parent=cfg.MAIN_WINDOW,
+            parent=cfg.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
 
@@ -49,7 +49,7 @@ def open_info_tip():
             "未知错误",
             "请复制日志反馈到github issue",
             duration=2000,
-            parent=cfg.MAIN_WINDOW,
+            parent=cfg.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
 
@@ -63,14 +63,14 @@ def infoCloseBtnClicked():
 
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""
-    assert cfg.PLAYER is not None, "播放器未初始化"
-    cfg.PLAYER.togglePlayState()
+    assert cfg.player is not None, "播放器未初始化"
+    cfg.player.togglePlayState()
     update_info_tip()
 
 
 def update_info_tip():
     """更新正在播放提示"""
-    assert cfg.PLAYER and cfg.info_bar_play_btn, "播放器或播放按钮未初始化"
+    assert cfg.player and cfg.info_bar_play_btn, "播放器或播放按钮未初始化"
 
-    icon = FluentIcon.PLAY_SOLID if cfg.PLAYER.player.isPlaying() else FluentIcon.PLAY_SOLID
+    icon = FluentIcon.PLAY_SOLID if cfg.player.player.isPlaying() else FluentIcon.PLAY_SOLID
     cfg.info_bar_play_btn.setIcon(icon)

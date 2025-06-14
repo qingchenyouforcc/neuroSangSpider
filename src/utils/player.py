@@ -6,16 +6,15 @@ from loguru import logger
 from PyQt6.QtCore import Qt, QUrl
 from qfluentwidgets import InfoBar, InfoBarPosition
 
-from src.config import MUSIC_DIR, cfg
+from src.config import MUSIC_DIR, PlayMode, cfg
 
-from .text import remove_before_last_backslash
 from .tipbar import open_info_tip
 
 
 def open_player() -> None:
     """打开播放器"""
-    if cfg.PLAYER is not None:
-        cfg.PLAYER.show()
+    if cfg.player is not None:
+        cfg.player.show()
 
 
 def previousSong():
@@ -49,7 +48,7 @@ def previousSong():
 
 def nextSong():
     """播放下一首"""
-    if cfg.play_mode == 1:
+    if cfg.play_mode.value == PlayMode.SEQUENTIAL:
         if cfg.play_queue_index >= len(cfg.play_queue) - 1:
             InfoBar.info(
                 "提示",
@@ -60,10 +59,10 @@ def nextSong():
                 parent=InfoBar.desktopView(),
             )
             return
-    elif cfg.play_mode == 0:
+    elif cfg.play_mode.value == PlayMode.LIST_LOOP:
         if cfg.play_queue_index >= len(cfg.play_queue) - 1:
             cfg.play_queue_index = -1
-    elif cfg.play_mode == 3:
+    elif cfg.play_mode.value == PlayMode.RANDOM:
         getRandomIndex()
         playSongByIndex()
         return
@@ -92,19 +91,19 @@ def playSongByIndex():
             "错误",
             "播放队列为空",
             duration=2000,
-            parent=cfg.MAIN_WINDOW,
+            parent=cfg.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
         return
 
-    file_path = getMusicLocalStr(cfg.play_queue[cfg.play_queue_index])
+    file_path = getMusicLocalStr(cfg.play_queue[cfg.play_queue_index].name)
 
     url = QUrl.fromLocalFile(file_path and str(file_path))
-    assert cfg.PLAYER is not None, "播放器未初始化"
-    cfg.PLAYER.player.setSource(url)
-    cfg.PLAYER.player.play()
+    assert cfg.player is not None, "播放器未初始化"
+    cfg.player.player.setSource(url)
+    cfg.player.player.play()
 
-    cfg.playing_now = remove_before_last_backslash(cfg.play_queue[cfg.play_queue_index])
+    cfg.playing_now = cfg.play_queue[cfg.play_queue_index].name
 
     logger.info(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
     open_info_tip()
@@ -142,7 +141,7 @@ def summonMusicLocal(file_name: str) -> Path | None:
             "错误",
             f"找不到文件: {file_name}",
             duration=2000,
-            parent=cfg.MAIN_WINDOW,
+            parent=cfg.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
         return None
@@ -161,7 +160,7 @@ def getRandomIndex() -> None:
 def sequencePlay() -> None:
     """顺序播放"""
     try:
-        cfg.play_mode = 0
+        cfg.play_mode.value = PlayMode.LIST_LOOP
         playSongByIndex()
     except Exception:
         logger.exception("顺序播放时发生错误")

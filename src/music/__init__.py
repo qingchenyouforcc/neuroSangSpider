@@ -26,8 +26,8 @@ def search_song_list(search_content: str) -> SongList | None:
     total_data = load_from_all_data(VIDEO_DIR)
     if total_data is None:
         return None
-    filter_list = cfg.filter_list
-    black_author_list = cfg.black_author_list
+    filter_list = cfg.filter_list.value
+    black_author_list = cfg.black_author_list.value
 
     search_result_list = total_data
     search_result_list.search_by_title(search_content)
@@ -61,7 +61,7 @@ def run_download(index, search_list: SongList, file_type: str = "mp3") -> None:
         w = MessageBox(
             "文件已存在",
             f"文件 '{output_file.relative_to(MAIN_PATH)}' 已存在。是否覆盖？",
-            cfg.MAIN_WINDOW,
+            cfg.main_window,
         )
 
         w.setClosableOnMaskClicked(True)

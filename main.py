@@ -4,7 +4,6 @@ from datetime import datetime
 from loguru import logger
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
-from qfluentwidgets import Theme, setTheme
 
 from src.config import cfg
 from src.ui import MainWindow
@@ -44,8 +43,9 @@ if __name__ == "__main__":
     setup_logger()
 
     app = QApplication(sys.argv)
-    setTheme(Theme.AUTO)
-    window = MainWindow()
-    cfg.set_main_window(window)
+    # setTheme(cfg.themeMode.value)
+    # # print(cfg.themeMode.value)
+
+    window = cfg.main_window = MainWindow()
     window.show()
     sys.exit(app.exec())

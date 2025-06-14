@@ -26,11 +26,11 @@ class MainWindow(FluentWindow):
 
         self.player_bar = CustomMediaPlayBar()
         self.player_bar.setFixedSize(300, 120)
-        self.player_bar.player.setVolume(cfg.volume)
+        self.player_bar.player.setVolume(cfg.volume.value)
         self.player_bar.setWindowIcon(icon)
         self.player_bar.setWindowTitle("Player")
         self.player_bar.show()
-        cfg.set_player(self.player_bar)
+        cfg.player = self.player_bar
 
         # 添加子界面
         self.addSubInterface(
@@ -75,7 +75,8 @@ class MainWindow(FluentWindow):
             self.resize(QSize(680, 530))
 
         # 设置默认音频格式
-        cfg.downloadType.value = "mp3"
+        cfg.download_type.value = "mp3"
+        cfg.save()
 
     def closeEvent(self, event):  # pyright: ignore[reportIncompatibleMethodOverride]
         try:

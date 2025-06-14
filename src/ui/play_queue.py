@@ -6,7 +6,6 @@ from qfluentwidgets import FluentWindow, InfoBar, InfoBarPosition, TableWidget, 
 
 from src.config import cfg
 from src.utils.player import playSongByIndex, sequencePlay
-from src.utils.text import remove_before_last_backslash
 
 
 class PlayQueueInterface(QWidget):
@@ -86,9 +85,8 @@ class PlayQueueInterface(QWidget):
             self.tableView.setColumnCount(1)
             self.tableView.setHorizontalHeaderLabels(["歌曲"])
 
-            for i, (song) in enumerate(cfg.play_queue):
-                song = remove_before_last_backslash(song)
-                self.tableView.setItem(i, 0, QTableWidgetItem(song))
+            for i, song in enumerate(cfg.play_queue):
+                self.tableView.setItem(i, 0, QTableWidgetItem(song.name))
 
             self.tableView.resizeColumnsToContents()
         except Exception as e:
