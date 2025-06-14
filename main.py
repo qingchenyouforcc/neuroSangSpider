@@ -14,12 +14,14 @@ def setup_logger() -> None:
     logger.remove()
     format = "<g>{time:HH:mm:ss}</g> [<lvl>{level}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
 
-    logger.add(
-        sys.stdout,
-        format=format,
-        level="DEBUG",
-        colorize=True,
-    )
+    # pyinstaller 打包并禁用控制台后, sys.stdout 为 None
+    if sys.stdout:
+        logger.add(
+            sys.stdout,
+            format=format,
+            level="DEBUG",
+            colorize=True,
+        )
 
     now = datetime.now()
     logger.add(
