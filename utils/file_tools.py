@@ -9,7 +9,7 @@ from tqdm import tqdm
 from pathlib import Path
 from mutagen import File
 
-from config import MAIN_PATH, cfg
+from common.config import MAIN_PATH, cfg
 from SongListManager.SongList import SongList
 from utils.bili_tools import url2bv
 

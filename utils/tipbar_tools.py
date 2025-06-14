@@ -1,9 +1,9 @@
 from PyQt6.QtCore import Qt
 from loguru import logger
 from qfluentwidgets import InfoBar, FluentIcon, InfoBarPosition, TransparentToolButton
-from config import cfg
+from common.config import cfg
 
-import config
+import common.config
 
 
 def open_info_tip():

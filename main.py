@@ -21,15 +21,15 @@ from qfluentwidgets import (setTheme, Theme, FluentWindow, NavigationItemPositio
 from qfluentwidgets.multimedia import MediaPlayer, MediaPlayBarButton, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
-import config
+import common.config
 from SongListManager.SongList import SongList
-from config import cfg, MAIN_PATH
+from common.config import cfg, MAIN_PATH
 from crawlerCore.main import create_video_list_file
 from musicDownloader.main import run_download, search_song_list
-from player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal, sequencePlay
-from searchCore import searchOnBili
-from text_tools import remove_before_last_backslash, format_date_str
-from tipbar_tools import open_info_tip, update_info_tip
+from utils.player_tools import open_player, nextSong, previousSong, playSongByIndex, getMusicLocal, sequencePlay
+from crawlerCore.searchCore import searchOnBili
+from utils.text_tools import remove_before_last_backslash, format_date_str
+from utils.tipbar_tools import open_info_tip, update_info_tip
 from utils.file_tools import read_all_audio_info, create_dir, on_fix_music
 
 global window

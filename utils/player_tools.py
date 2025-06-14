@@ -5,10 +5,10 @@ from PyQt6.QtCore import Qt, QUrl
 from loguru import logger
 from qfluentwidgets import InfoBar, InfoBarPosition
 
-import config
-from config import MAIN_PATH, cfg
-from text_tools import remove_before_last_backslash
-from tipbar_tools import open_info_tip
+import common.config
+from common.config import MAIN_PATH, cfg
+from utils.text_tools import remove_before_last_backslash
+from utils.tipbar_tools import open_info_tip
 
 
 def open_player():

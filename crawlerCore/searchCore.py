@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from config import cfg
+from common.config import cfg
 from SongListManager.SongList import SongList
 from utils.bili_tools import url2bv
 

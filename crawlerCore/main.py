@@ -1,7 +1,7 @@
 import threading
 
-from SongList import SongList
-from config import cfg
+from SongListManager.SongList import SongList
+from common.config import cfg
 from crawlerCore.videosList import get_video_list, resolve_url_to_info
 from utils.file_tools import create_dir, load_extend
 
