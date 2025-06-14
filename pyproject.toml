@@ -12,7 +12,6 @@ dependencies = [
     "pyqt6>=6.8.1",
     "pyqt6-fluent-widgets[full]>=1.8.1",
     "requests>=2.32.3",
-    "selenium>=4.30.0",
     "tqdm>=4.67.1",
 ]
 
