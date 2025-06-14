@@ -43,9 +43,6 @@ if __name__ == "__main__":
     setup_logger()
 
     app = QApplication(sys.argv)
-    # setTheme(cfg.themeMode.value)
-    # # print(cfg.themeMode.value)
-
     window = cfg.main_window = MainWindow()
     window.show()
     sys.exit(app.exec())
