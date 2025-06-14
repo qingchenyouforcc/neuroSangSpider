@@ -48,6 +48,7 @@ class CrawlerWorkerThread(QThread):
         self.task_finished.emit("获取歌曲列表完成！")
 
 
+# noinspection PyArgumentList,PyTypeHints
 class CustomMediaPlayBar(MediaPlayBarBase):
     """自定义播放栏"""
 
@@ -127,6 +128,7 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         """ Back up for specified milliseconds """
         self.player.setPosition(self.player.position() - ms)
 
+    # noinspection PyProtectedMember
     def _onPositionChanged(self, position: int):
         super()._onPositionChanged(position)
         self.currentTimeLabel.setText(self._formatTime(position))
@@ -202,6 +204,7 @@ def changeDownloadType(index):
     )
 
 
+# noinspection PyArgumentList
 class SearchSettingsCard(GroupHeaderCardWidget):
     """搜索设置卡片"""
 
@@ -312,7 +315,7 @@ class SearchSettingsCard(GroupHeaderCardWidget):
             return
 
 
-
+# noinspection PyArgumentList
 class SettingsCard(GroupHeaderCardWidget):
     """常规设置卡片"""
 
@@ -526,6 +529,7 @@ class PlayQueueInterface(QWidget):
             logger.error(e)
 
 
+# noinspection PyArgumentList
 class LocPlayerInterface(QWidget):
     """ 本地播放器GUI """
 
@@ -726,6 +730,7 @@ class LocPlayerInterface(QWidget):
             logger.error(e)
 
 
+# noinspection PyArgumentList
 class SearchInterface(QWidget):
     """ 搜索GUI """
 
@@ -1017,6 +1022,7 @@ class HomeInterface(QWidget):
         self.layout.addStretch(1)
 
 
+# noinspection PyArgumentList
 class DemoWindow(FluentWindow):
     """全新GUI"""
 
@@ -1108,11 +1114,14 @@ if __name__ == '__main__':
     # 新版GUI开发中
     # --- 启用高 DPI 支持 ---
     if hasattr(Qt.ApplicationAttribute, 'AA_EnableHighDpiScaling'):
+        # noinspection PyArgumentList
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
     if hasattr(Qt.ApplicationAttribute, 'AA_UseHighDpiPixmaps'):
+        # noinspection PyArgumentList
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
     if hasattr(Qt, 'HighDpiScaleFactorRoundingPolicy'):  # Qt.HighDpiScaleFactorRoundingPolicy 枚举本身
         if hasattr(Qt.HighDpiScaleFactorRoundingPolicy, 'PassThrough'):
+            # noinspection PyArgumentList
             QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     # 初始化
