@@ -36,8 +36,8 @@ def part2all(input_folder: str, output_file: str):
                         f.write(line)
             except UnicodeDecodeError:
                 logger.info(f"跳过非文本文件: {path.name}")
-            except Exception:
-                logger.exception(f"处理文件 {path.name} 时出错")
+            except Exception as e:
+                logger.exception(f"处理文件 {path.name} 时出错 {e}")
 
     logger.info(f"所有文件内容已合并到 {output_file_path}")
 
