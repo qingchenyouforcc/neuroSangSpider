@@ -1,5 +1,5 @@
 from bilibili_api import Credential
-from bilibili_api.clients.CurlCFFIClient import CurlCFFIClient as CurlCFFIClient
+# from bilibili_api.clients.CurlCFFIClient import CurlCFFIClient as CurlCFFIClient
 
 from src.config import cfg
 

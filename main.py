@@ -33,15 +33,16 @@ def setup_logger() -> None:
 
 if __name__ == "__main__":
     # --- 启用高 DPI 支持 ---
-    if attr := getattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling", None):
+    if hasattr(Qt.ApplicationAttribute, 'AA_EnableHighDpiScaling'):
         # noinspection PyArgumentList
-        QApplication.setAttribute(attribute=attr)
-    if attr := getattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps", None):
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
+    if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps"):
         # noinspection PyArgumentList
-        QApplication.setAttribute(attribute=attr)
-    if attr := getattr(getattr(Qt, "HighDpiScaleFactorRoundingPolicy", None), "PassThrough", None):
-        # noinspection PyArgumentList
-        QApplication.setHighDpiScaleFactorRoundingPolicy(policy=attr)
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+    if hasattr(Qt, 'HighDpiScaleFactorRoundingPolicy'):  # Qt.HighDpiScaleFactorRoundingPolicy 枚举本身
+        if hasattr(Qt.HighDpiScaleFactorRoundingPolicy, "PassThrough"):
+            # noinspection PyArgumentList
+            QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     setup_logger()
 

@@ -3,9 +3,9 @@ name = "neurosangspider"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
+    "aiohttp>=3.12.13",
     "beautifulsoup4>=4.13.3",
     "bilibili-api-python~=17.2.0",
-    "curl-cffi>=0.11.3",
     "darkdetect~=0.8.0",
     "loguru~=0.7.3",
     "mutagen>=1.47.0",

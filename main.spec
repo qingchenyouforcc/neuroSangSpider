@@ -13,8 +13,6 @@ a = Analysis(
         "ssl",
         "idna",
         "urllib3",
-        "curl_cffi",
-        "bilibili_api.clients.CurlCFFIClient",
         "bilibili_api.clients.base",
         "PyQt6.QtMultimedia",
         "PyQt6.QtNetwork",
