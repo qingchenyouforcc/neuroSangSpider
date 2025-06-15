@@ -50,8 +50,9 @@ class SettingInterface(QWidget):
                 background-color: {bg_color};
             }}
         """)
-
-    def paintEvent(self, a0):
-        """重写绘制事件以更新样式"""
-        super().paintEvent(a0)
-        self._update_style()
+    #
+    # # noinspection PyMethodOverriding
+    # # def paintEvent(self, a0):
+    # #     """重写绘制事件以更新样式"""
+    # #     super().paintEvent(a0)
+    # #     # self._update_style()
