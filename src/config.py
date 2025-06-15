@@ -108,7 +108,7 @@ class Config(QConfig):
 
 
 class _SubprocessOptions(TypedDict):
-    startupinfo: NotRequired[subprocess.STARTUPINFO]
+    startupinfo: NotRequired["subprocess.STARTUPINFO"]
     creationflags: NotRequired[int]
 
 
@@ -149,9 +149,8 @@ def get_assets_path() -> Path:
     """获取资源文件路径"""
     if getattr(sys, "frozen", False):
         # 打包后的环境
-        # pyright:ignore[reportAttributeAccessIssue]
         # noinspection PyProtectedMember
-        return Path(sys._MEIPASS) / "assets"
+        return Path(sys._MEIPASS) / "assets"  # type: ignore
     else:
         # 开发环境
         return Path(__file__).parent / "assets"
