@@ -35,10 +35,10 @@ if __name__ == "__main__":
     # --- 启用高 DPI 支持 ---
     if hasattr(Qt.ApplicationAttribute, 'AA_EnableHighDpiScaling'):
         # noinspection PyArgumentList
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling) # type: ignore
     if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps"):
         # noinspection PyArgumentList
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps) # type: ignore
     if hasattr(Qt, 'HighDpiScaleFactorRoundingPolicy'):  # Qt.HighDpiScaleFactorRoundingPolicy 枚举本身
         if hasattr(Qt.HighDpiScaleFactorRoundingPolicy, "PassThrough"):
             # noinspection PyArgumentList
