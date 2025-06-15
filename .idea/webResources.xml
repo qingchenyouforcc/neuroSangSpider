@@ -5,8 +5,6 @@
       <entry url="file://$PROJECT_DIR$">
         <entryData>
           <resourceRoots>
-            <path value="file://$PROJECT_DIR$/ExtendPack" />
-            <path value="file://$PROJECT_DIR$/data" />
             <path value="file://$PROJECT_DIR$/src/assets" />
           </resourceRoots>
         </entryData>
