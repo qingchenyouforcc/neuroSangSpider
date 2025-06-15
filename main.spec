@@ -1,48 +1,32 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-py_files = [
-    'main.py', 
-    'crawlerCore\\main.py', 'crawlerCore\\videosList.py', 'crawlerCore\\searchCore.py',
-    'musicDownloader\\main.py', 'musicDownloader\\downloader.py', 
-    'utils\\bili_tools.py', 'utils\\file_tools.py', 'utils\\text_tools.py', 'utils\\textbroswer_tools.py',
-    'utils\\tipbar_tools.py', 'utils\\player_tools.py',
-    'infoManager\\main.py','infoManager\\SongList.py',
-    'common\\config.py'
-]
-
 
 a = Analysis(
-    py_files,
-    pathex=['.'],
+    ["main.py"],
+    pathex=[],
     binaries=[],
     datas=[
-        ('res\\main.ico', 'images'),
+        ("src/assets", "assets"),
     ],
     hiddenimports=[
-        'socket', 
-        'ssl', 
-        'idna', 
-        'urllib3', 
-        'httpx', 
-        'httpx._transports', 
-        'aiohttp', 
-        'aiohttp',
-        'bilibili_api.clients.AioHTTPClient',
-        'bilibili_api.clients.httpx_client',
-        'bilibili_api.clients.requests_client',
-        'bilibili_api.clients.base',
-        'PyQt6.QtMultimedia',
-        'PyQt6.QtNetwork',
-        'qfluentwidgets.common.icon',
-        'qfluentwidgets.components.widgets.flyout',
-        'qfluentwidgets.multimedia.media_play_bar',
-        'qfluentwidgets.window.fluent_window',
+        "socket",
+        "ssl",
+        "idna",
+        "urllib3",
+        "bilibili_api.clients.base",
+        "PyQt6.QtMultimedia",
+        "PyQt6.QtNetwork",
+        "qfluentwidgets.common.icon",
+        "qfluentwidgets.components.widgets.flyout",
+        "qfluentwidgets.multimedia.media_play_bar",
+        "qfluentwidgets.window.fluent_window",
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    optimize=0,
 )
 pyz = PYZ(a.pure)
 
@@ -51,20 +35,19 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='NeuroSongSpider',
-    icon='.\\res\\main.ico',
+    name="NeuroSongSpider",
+    icon="src/assets/main.ico",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
 )
-
 coll = COLLECT(
     exe,
     a.binaries,
@@ -72,5 +55,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='NeuroSongSpider',
+    name="NeuroSongSpider",
 )
