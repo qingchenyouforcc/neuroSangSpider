@@ -1,7 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from loguru import logger
 from qfluentwidgets import InfoBar, OptionsConfigItem, OptionsValidator, QConfig, ToolButton, setTheme
@@ -18,6 +18,8 @@ from qfluentwidgets import ConfigItem
 if TYPE_CHECKING:
     from src.ui.main_window import MainWindow
     from src.ui.media_player_bar import CustomMediaPlayBar
+
+IS_WINDOWS = sys.platform == "win32"
 
 
 class PlayMode(int, Enum):
@@ -112,16 +114,34 @@ class Config(QConfig):
         self.save()
 
 
+class _SubprocessOptions(TypedDict):
+    startupinfo: NotRequired[subprocess.STARTUPINFO]
+    creationflags: NotRequired[int]
+
+
+def subprocess_options() -> _SubprocessOptions:
+    if not IS_WINDOWS:
+        return {}
+
+    # 在 Windows 下使用 pyinstaller console=False 打包时
+    # 隐藏启动 subprocess 的控制台窗口
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+    creationflags = subprocess.CREATE_NO_WINDOW
+    return {"startupinfo": startupinfo, "creationflags": creationflags}
+
+
 def detect_ffmpeg() -> Path:
-    if sys.platform == "win32" and (fp := MAIN_PATH / "ffmpeg" / "bin" / "ffmpeg.exe").exists():
+    if IS_WINDOWS and (fp := MAIN_PATH / "ffmpeg" / "bin" / "ffmpeg.exe").exists():
         return fp
 
-    if sys.platform == "win32":
+    if IS_WINDOWS:
         cmd = ["cmd.exe", "/c", "where ffmpeg"]
     else:
         cmd = ["which", "ffmpeg"]
 
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, **subprocess_options())
     stdout, _ = p.communicate()
     if p.returncode == 0:
         ffmpeg_path = stdout.decode().strip()

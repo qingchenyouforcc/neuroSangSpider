@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
-from src.config import FFMPEG_PATH, MUSIC_DIR, cfg
+from src.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
 from src.song_list import SongList
 
 from .bili import url2bv
@@ -181,7 +181,13 @@ def clean_audio_file(input_path, output_path, target_format="mp3"):
     ]
 
     try:
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        subprocess.run(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+            **subprocess_options(),
+        )
         return True
     except subprocess.CalledProcessError:
         logger.exception(f"❌ 处理失败: {input_path}")
