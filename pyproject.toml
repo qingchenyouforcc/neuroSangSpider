@@ -1,0 +1,41 @@
+[project]
+name = "neurosangspider"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.13.3",
+    "bilibili-api-python~=17.2.0",
+    "curl-cffi>=0.11.3",
+    "darkdetect~=0.8.0",
+    "loguru~=0.7.3",
+    "mutagen>=1.47.0",
+    "pyqt6>=6.8.1",
+    "pyqt6-fluent-widgets[full]>=1.8.1",
+    "requests>=2.32.3",
+    "tqdm>=4.67.1",
+]
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.29.0",
+    "pre-commit>=4.2.0",
+    "pyinstaller>=6.14.0",
+    "ruff>=0.11.0",
+]
+
+[tool.pyright]
+pythonVersion = "3.13"
+pythonPlatform = "All"
+typeCheckingMode = "standard"
+reportShadowedImports = false
+disableBytesTypePromotions = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
