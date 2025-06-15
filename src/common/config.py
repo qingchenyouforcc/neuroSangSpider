@@ -1,19 +1,12 @@
 import subprocess
 import sys
+from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from loguru import logger
-from qfluentwidgets import InfoBar, OptionsConfigItem, OptionsValidator, QConfig, ToolButton, setTheme
+from qfluentwidgets import ConfigItem, InfoBar, OptionsConfigItem, OptionsValidator, QConfig, ToolButton, setTheme
 from qfluentwidgets import Theme as QtTheme
-
-if TYPE_CHECKING:
-    from src.ui.main_window import MainWindow
-    from src.ui.media_player_bar import CustomMediaPlayBar
-
-from enum import Enum
-
-from qfluentwidgets import ConfigItem
 
 if TYPE_CHECKING:
     from src.ui.main_window import MainWindow

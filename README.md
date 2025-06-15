@@ -64,16 +64,11 @@ git clone https://github.com/qingchenyouforcc/neuroSangSpider
 # 进入目录
 cd neuroSangSpider
 
-# 初始化虚拟环境（推荐）
-python3.13 -m venv venv
-venv\\Scripts\\activate
-
 # 安装依赖
-pip install -r requirements.txt
-pip install bilibili-api-python
+uv sync
 
 # 运行
-python main.py
+uv run main.py
 ```
 
 ---

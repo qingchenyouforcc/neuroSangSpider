@@ -7,7 +7,7 @@ from bilibili_api import HEADERS, get_client, sync, video
 from loguru import logger
 from qfluentwidgets import MessageBox
 
-from src.config import CACHE_DIR, FFMPEG_PATH, MAIN_PATH, MUSIC_DIR, VIDEO_DIR, cfg, subprocess_options
+from common.config import CACHE_DIR, FFMPEG_PATH, MAIN_PATH, MUSIC_DIR, VIDEO_DIR, cfg, subprocess_options
 from src.song_list import SongList
 from src.utils.file import load_from_all_data
 from src.utils.text import fix_filename

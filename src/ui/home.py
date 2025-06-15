@@ -2,7 +2,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QVBoxLayout, QWidget
 from qfluentwidgets import BodyLabel, SubtitleLabel, TitleLabel
 
-from src.config import VERSION
+from common.config import VERSION
 
 
 class HomeInterface(QWidget):

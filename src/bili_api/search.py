@@ -5,7 +5,7 @@ from bilibili_api.search import SearchObjectType, search_by_type
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from src.config import VIDEO_DIR, cfg
+from common.config import VIDEO_DIR, cfg
 from src.song_list import SongList
 
 

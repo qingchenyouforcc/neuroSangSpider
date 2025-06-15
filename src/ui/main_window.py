@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import QApplication
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
 
-from src.config import ASSETS_DIR, cfg
+from common.config import ASSETS_DIR, cfg
 
 from .home import HomeInterface
 from .local_player import LocalPlayerInterface

@@ -6,12 +6,12 @@ from pathlib import Path
 from typing import Any
 
 from loguru import logger
-from mutagen import File  # pyright:ignore[reportPrivateImportUsage]
+from mutagen import File 
 from PyQt6.QtCore import Qt
 from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
-from src.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
+from common.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
 from src.song_list import SongList
 
 from .bili import url2bv

@@ -18,7 +18,7 @@ from qfluentwidgets import (
 )
 
 from src.bili_api import get_up_name, get_up_names
-from src.config import cfg
+from common.config import cfg
 
 
 class ListEditWidget(CardGroupWidget):

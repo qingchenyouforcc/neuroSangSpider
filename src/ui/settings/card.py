@@ -15,7 +15,7 @@ from qfluentwidgets import (
     SubtitleLabel,
 )
 
-from src.config import PlayMode, Theme, cfg
+from common.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music
 
 
