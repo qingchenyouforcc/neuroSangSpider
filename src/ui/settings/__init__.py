@@ -1,6 +1,8 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QVBoxLayout, QWidget, QLabel
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 from qfluentwidgets import ScrollArea, isDarkTheme
+
+from src.config import cfg
 
 from .card import SettingsCard
 from .search_card import SearchSettingsCard
@@ -37,6 +39,8 @@ class SettingInterface(QWidget):
         # 将滚动区域添加到主布局
         self._layout.addWidget(scroll_area)
 
+        cfg.theme_mode.valueChanged.connect(self._update_style)
+
     def _update_style(self):
         """更新控件样式"""
         # 根据主题设置背景色
@@ -51,9 +55,3 @@ class SettingInterface(QWidget):
                 background-color: {bg_color};
             }}
         """)
-    #
-    # # noinspection PyMethodOverriding
-    # # def paintEvent(self, a0):
-    # #     """重写绘制事件以更新样式"""
-    # #     super().paintEvent(a0)
-    # #     # self._update_style()

@@ -102,8 +102,8 @@ class Config(QConfig):
 
     def set_theme(self, theme: Theme) -> None:
         """设置主题"""
-        self.theme_mode.value = theme
         setTheme(QtTheme(theme.value))
+        self.theme_mode.value = theme
         self.save()
 
 
