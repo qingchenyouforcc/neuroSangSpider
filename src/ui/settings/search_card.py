@@ -1,4 +1,3 @@
-import contextlib
 from collections.abc import Iterable
 
 from loguru import logger
@@ -34,7 +33,7 @@ class ListEditWidget(CardGroupWidget):
 
         flow_container = QWidget(self)
         self._layout = FlowLayout(flow_container, needAni=True)
-        self._layout.setContentsMargins(30, 30, 30, 30)
+        self._layout.setContentsMargins(30, 10, 30, 30)
         self.vBoxLayout.addWidget(flow_container)
 
         for item in initial_content:
@@ -65,8 +64,7 @@ class ListEditWidget(CardGroupWidget):
         self._layout.addWidget(btn)
 
     def refresh_layout(self):
-        with contextlib.suppress(Exception):
-            self._layout.removeWidget(self.addWordBtn)
+        self._layout.removeWidget(self.addWordBtn)
         self._layout.addWidget(self.addWordBtn)
         self._layout.update()
         self.update()

@@ -1,12 +1,10 @@
 import json
-
-# import os
 import subprocess
 from pathlib import Path
 from typing import Any
 
 from loguru import logger
-from mutagen import File 
+from mutagen import File
 from PyQt6.QtCore import Qt
 from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
