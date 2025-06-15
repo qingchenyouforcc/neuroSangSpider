@@ -1,12 +1,9 @@
-name: Build & Release
+name: Build
 
 on:
   push:
     tags:
       - "v*"
-  pull_request:
-    branches:
-      - master
   workflow_dispatch:
 
 jobs:
@@ -15,9 +12,9 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
           - ubuntu-22.04
           - windows-latest
+          # - macos-latest
         python-version:
           - "3.13"
 
