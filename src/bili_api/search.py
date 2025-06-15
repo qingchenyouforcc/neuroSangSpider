@@ -20,19 +20,19 @@ async def search_page(search_content: str, page: int) -> list[dict]:
     except Exception:
         logger.opt(exception=True).warning(f"搜索 {search_content} 第 {page} 页时发生错误")
         return []
-    else:
-        result = [
-            {
-                "title": BeautifulSoup(item["title"], "html.parser").get_text(strip=True),
-                "author": item["author"],
-                "date": datetime.fromtimestamp(item["pubdate"]).strftime("%Y-%m-%d %H:%M:%S"),
-                "url": f"https://www.bilibili.com/video/{item['bvid']}/",
-                "bv": item["bvid"],
-            }
-            for item in page_data["result"]
-        ]
-        logger.info(f"搜索 {search_content} 第 {page} 页成功，找到 {len(result)} 条结果")
-        return result
+
+    result = [
+        {
+            "title": BeautifulSoup(item["title"], "html.parser").get_text(strip=True),
+            "author": item["author"],
+            "date": datetime.fromtimestamp(item["pubdate"]).strftime("%Y-%m-%d %H:%M:%S"),
+            "url": f"https://www.bilibili.com/video/{item['bvid']}/",
+            "bv": item["bvid"],
+        }
+        for item in page_data["result"]
+    ]
+    logger.info(f"搜索 {search_content} 第 {page} 页成功，找到 {len(result)} 条结果")
+    return result
 
 
 async def search_on_bilibili(search_content: str) -> None:

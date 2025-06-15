@@ -1,12 +1,25 @@
 from loguru import logger
 from PyQt6.QtCore import Qt
-from qfluentwidgets import ComboBox, FluentIcon, GroupHeaderCardWidget, InfoBar, InfoBarPosition, PushButton, SpinBox
+from PyQt6.QtWidgets import QWidget
+from qfluentwidgets import (
+    ComboBox,
+    FluentIcon,
+    GroupHeaderCardWidget,
+    HyperlinkButton,
+    InfoBar,
+    InfoBarPosition,
+    LineEdit,
+    MessageBoxBase,
+    PushButton,
+    SpinBox,
+    SubtitleLabel,
+)
 
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music
 
 
-def changeDownloadType(selected_type: str):
+def changeDownloadType(selected_type: str) -> None:
     cfg.download_type.value = selected_type
     cfg.save()
     InfoBar.success(
@@ -24,15 +37,80 @@ THEME_DISPLAY = {
     Theme.LIGHT: "浅色",
     Theme.DARK: "深色",
 }
+THEME_DISPLAY_REVERSE = {v: k for k, v in THEME_DISPLAY.items()}
 
 
-def on_theme_switched(checked):
+def on_theme_switched(current_text: str) -> None:
     """切换主题"""
-    theme = Theme.DARK if checked else Theme.LIGHT
+    theme = THEME_DISPLAY_REVERSE[current_text]
     try:
         cfg.set_theme(theme)
-    except Exception as e:
-        logger.error(f"不是哥们你这怎么报错的？{e}")
+    except Exception:
+        logger.exception("不是哥们你这怎么报错的？")
+
+
+class BiliApiDialog(MessageBoxBase):
+    """Bilibili API 参数设置对话框"""
+
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.setWindowTitle("Bilibili API 参数设置")
+
+        self.descriptionLabel = SubtitleLabel("Bilibili API 参数设置\n用于请求 Bilibili API 时避免触发反爬", self)
+        self.viewLayout.addWidget(self.descriptionLabel)
+
+        self.helpLink = HyperlinkButton(
+            "https://nemo2011.github.io/bilibili-api/#/get-credential",
+            "查看获取方式",
+            self,
+        )
+        self.viewLayout.addWidget(self.helpLink)
+
+        # SESSDATA 输入框
+        self.sessdataEdit = LineEdit(self)
+        self.sessdataEdit.setPlaceholderText("SESSDATA")
+        self.sessdataEdit.setText(cfg.bili_sessdata.value)
+        self.viewLayout.addWidget(self.sessdataEdit)
+
+        # bili_jct 输入框
+        self.jctEdit = LineEdit(self)
+        self.jctEdit.setPlaceholderText("bili_jct")
+        self.jctEdit.setText(cfg.bili_jct.value)
+        self.viewLayout.addWidget(self.jctEdit)
+
+        # buvid3 输入框
+        self.buvid3Edit = LineEdit(self)
+        self.buvid3Edit.setPlaceholderText("buvid3")
+        self.buvid3Edit.setText(cfg.bili_buvid3.value)
+        self.viewLayout.addWidget(self.buvid3Edit)
+
+        # 设置按钮文本
+        self.yesButton.setText("保存")
+        self.cancelButton.setText("取消")
+
+    def accept(self) -> None:
+        """保存设置"""
+        # 获取输入值
+        sessdata = self.sessdataEdit.text().strip()
+        jct = self.jctEdit.text().strip()
+        buvid3 = self.buvid3Edit.text().strip()
+
+        # 更新配置
+        cfg.bili_sessdata.value = sessdata
+        cfg.bili_jct.value = jct
+        cfg.bili_buvid3.value = buvid3
+        cfg.save()
+
+        # 显示成功提示
+        InfoBar.success(
+            "保存成功",
+            "Bilibili API 参数已更新",
+            duration=1500,
+            parent=cfg.main_window,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+        )
+
+        super().accept()
 
 
 class SettingsCard(GroupHeaderCardWidget):
@@ -55,7 +133,7 @@ class SettingsCard(GroupHeaderCardWidget):
         self.themeComboBox = ComboBox(self)
         self.themeComboBox.addItems(theme_items)
         self.themeComboBox.setCurrentText(THEME_DISPLAY[cfg.theme_mode.value])
-        self.themeComboBox.currentTextChanged.connect(lambda t: cfg.set_theme(Theme(t)))
+        self.themeComboBox.currentTextChanged.connect(on_theme_switched)
 
         # 播放模式设置
         play_mode_items = {
@@ -75,6 +153,10 @@ class SettingsCard(GroupHeaderCardWidget):
         self.searchPageSpinBox.setRange(1, 10)
         self.searchPageSpinBox.setValue(cfg.search_page.value)
         self.searchPageSpinBox.valueChanged.connect(self.change_search_page)
+
+        # Bilibili API 参数设置
+        self.biliApiBtn = PushButton("Bilibili API 设置", self)
+        self.biliApiBtn.clicked.connect(lambda: BiliApiDialog(self).exec())
 
         # 修复音频按钮
         self.fixMusicBtn = PushButton("修复音频", self)
@@ -104,6 +186,12 @@ class SettingsCard(GroupHeaderCardWidget):
             "搜索页数",
             "设置每次搜索的页数 (1-10)",
             self.searchPageSpinBox,
+        )
+        self.addGroup(
+            FluentIcon.SETTING,
+            "Bilibili API 设置",
+            "设置 Bilibili API 的访问参数",
+            self.biliApiBtn,
         )
         self.addGroup(
             FluentIcon.MUSIC,

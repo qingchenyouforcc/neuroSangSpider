@@ -1,5 +1,5 @@
-from collections.abc import Iterable
 import contextlib
+from collections.abc import Iterable
 
 from loguru import logger
 from PyQt6.QtWidgets import QWidget
@@ -17,6 +17,7 @@ from qfluentwidgets import (
     ToolButton,
 )
 
+from src.bili_api import get_up_name, get_up_names
 from src.config import cfg
 
 
@@ -83,7 +84,7 @@ class ListEditWidget(CardGroupWidget):
 
         mbox.yesButton.setText("确定")
         mbox.cancelButton.setText("取消")
-        mbox.setMinimumWidth(350)
+        mbox.setMinimumWidth(600)
         return mbox, lineEdit
 
     def remove_item(self, item: str) -> None:
@@ -113,7 +114,7 @@ class FilterEditWidget(ListEditWidget):
 
     def add_item(self) -> str | None:
         try:
-            mbox, line_edit = self.create_mbox("添加过滤词", "输入你要添加的过滤词")
+            mbox, line_edit = self.create_mbox("添加搜索结果过滤词", "输入添加的过滤词")
             if not mbox.exec():
                 return None
             word = line_edit.text().strip()
@@ -145,25 +146,28 @@ class FilterEditWidget(ListEditWidget):
 
 class UpListEditWidget(ListEditWidget):
     def __init__(self, parent: QWidget) -> None:
+        self.names = get_up_names(cfg.up_list.value)
         super().__init__(
             FluentIcon.PEOPLE,
             "UP主列表",
             "获取歌曲列表时查找的UP主列表（单击删除）",
             parent,
-            cfg.up_list.value,
+            self.names.values(),
         )
 
     def remove_item(self, item: str) -> None:
         try:
-            cfg.up_list.value.remove(int(item))
+            user_id = next(uid for uid, name in self.names.items() if name == item)
+            cfg.up_list.value.remove(user_id)
             cfg.save()
-            logger.info(f"当前UP主列表为 {cfg.up_list}")
+            del self.names[user_id]
+            logger.info(f"当前UP主列表为 {cfg.up_list.value}")
         except Exception:
             logger.exception("删除UP主错误")
 
     def add_item(self) -> str | None:
         try:
-            mbox, line_edit = self.create_mbox("添加UP主", "输入需要添加的UP主UID")
+            mbox, line_edit = self.create_mbox("添加获取歌曲列表时查找的UP主", "输入添加的UP主UID")
             if not mbox.exec():
                 return None
 
@@ -187,11 +191,14 @@ class UpListEditWidget(ListEditWidget):
                     parent=cfg.main_window,
                 )
                 return None
+
             if uid not in cfg.up_list.value:
                 cfg.up_list.value.append(uid)
             cfg.save()
             logger.info(f"当前UP主列表为 {cfg.up_list.value}")
-            return text
+
+            self.names[uid] = get_up_name(uid)
+            return self.names[uid]
         except Exception:
             logger.exception("添加UP主错误")
             return None
@@ -217,7 +224,7 @@ class BlackListEditWidget(ListEditWidget):
 
     def add_item(self) -> str | None:
         try:
-            mbox, line_edit = self.create_mbox("添加黑名单UP主", "输入需要添加的UP主关键词")
+            mbox, line_edit = self.create_mbox("添加搜索黑名单UP主", "输入UP主关键词")
             if not mbox.exec():
                 return None
 

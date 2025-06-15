@@ -84,10 +84,15 @@ class Config(QConfig):
         OptionsValidator([Theme.AUTO, Theme.LIGHT, Theme.DARK]),
     )
 
+    # bilibili-api-python
+    bili_sessdata = ConfigItem("Bilibili", "SESSDATA", "")
+    bili_jct = ConfigItem("Bilibili", "BILI_JCT", "")
+    bili_buvid3 = ConfigItem("Bilibili", "BUVID3", "")
+
     def __init__(self, path: Path):
         # 指定配置文件路径
         super().__init__()
-        self.file = DATA_DIR / "config.json"
+        self.file = path
 
         # 运行时状态
         self.playing_now: str | None = None
@@ -107,9 +112,8 @@ class Config(QConfig):
         self.save()
 
 
-def detect_ffmpeg():
-    fp = MAIN_PATH / "ffmpeg" / "bin" / "ffmpeg.exe"
-    if fp.exists():
+def detect_ffmpeg() -> Path:
+    if sys.platform == "win32" and (fp := MAIN_PATH / "ffmpeg" / "bin" / "ffmpeg.exe").exists():
         return fp
 
     if sys.platform == "win32":
@@ -124,8 +128,8 @@ def detect_ffmpeg():
         if (fp := Path(ffmpeg_path)).exists():
             return fp
 
-    logger.error("FFMPEG not found in PATH or specified directory.")
-    raise FileNotFoundError("FFMPEG not found. Please install FFMPEG and set the path correctly.")
+    logger.error("未找到 FFMPEG，请安装 FFMPEG 并正确设置路径。")
+    raise FileNotFoundError
 
 
 def get_assets_path() -> Path:

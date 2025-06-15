@@ -17,7 +17,7 @@ class HomeInterface(QWidget):
         self._layout.setSpacing(15)
 
         # 实现主页文字
-        self.titleLabel = TitleLabel("NeuroSangSpider 1.1", self)
+        self.titleLabel = TitleLabel(f"NeuroSangSpider {VERSION}", self)
         self.subTitleLabel = SubtitleLabel("全新的NeuroSangSpider", self)
         self.infoLabel = BodyLabel(
             "- 更加智能的搜索机制 \n- 更多的参数设定 \n- 更现代化的GUI \n- 更丰富的功能 \n",

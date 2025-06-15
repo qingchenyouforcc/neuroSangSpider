@@ -17,9 +17,8 @@ from qfluentwidgets import (
     TitleLabel,
 )
 
+from src.bili_api import create_video_list_file, run_music_download, search_on_bilibili, search_song_list
 from src.config import ASSETS_DIR, cfg
-from src.crawler import create_video_list_file, search_on_bilibili
-from src.music import run_download, search_song_list
 from src.song_list import SongList
 from src.utils.text import format_date_str
 
@@ -308,7 +307,7 @@ class SearchInterface(QWidget):
         )
         try:
             fileType = cfg.download_type.value
-            run_download(index, self.search_result, fileType)
+            run_music_download(index, self.search_result, fileType)
             InfoBar.success(
                 title="完成",
                 content="歌曲下载完成",
