@@ -7,7 +7,7 @@ from qfluentwidgets import CaptionLabel, FluentIcon
 from qfluentwidgets.multimedia import MediaPlayBarButton, MediaPlayer, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
-from common.config import PlayMode, cfg
+from src.config import PlayMode, cfg
 from src.utils.player import nextSong, playSongByIndex, previousSong
 from src.utils.tipbar import update_info_tip
 

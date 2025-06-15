@@ -1,7 +1,7 @@
 from bilibili_api import Credential
 # from bilibili_api.clients.CurlCFFIClient import CurlCFFIClient as CurlCFFIClient
 
-from common.config import cfg
+from src.config import cfg
 
 
 def get_credential() -> Credential:

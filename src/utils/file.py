@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
-from common.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
+from src.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
 from src.song_list import SongList
 
 from .bili import url2bv

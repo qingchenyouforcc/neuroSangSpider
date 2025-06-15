@@ -6,7 +6,7 @@ from loguru import logger
 from PyQt6.QtCore import Qt, QUrl
 from qfluentwidgets import InfoBar, InfoBarPosition
 
-from common.config import MUSIC_DIR, PlayMode, cfg
+from src.config import MUSIC_DIR, PlayMode, cfg
 
 from .tipbar import open_info_tip
 

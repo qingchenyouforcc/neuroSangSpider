@@ -149,7 +149,9 @@ def get_assets_path() -> Path:
     """获取资源文件路径"""
     if getattr(sys, "frozen", False):
         # 打包后的环境
-        return Path(sys._MEIPASS) / "assets"  # pyright:ignore[reportAttributeAccessIssue]
+        # pyright:ignore[reportAttributeAccessIssue]
+        # noinspection PyProtectedMember
+        return Path(sys._MEIPASS) / "assets"
     else:
         # 开发环境
         return Path(__file__).parent / "assets"
