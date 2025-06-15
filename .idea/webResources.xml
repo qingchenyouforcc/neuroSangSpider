@@ -7,7 +7,6 @@
           <resourceRoots>
             <path value="file://$PROJECT_DIR$/ExtendPack" />
             <path value="file://$PROJECT_DIR$/data" />
-            <path value="file://$PROJECT_DIR$/music" />
           </resourceRoots>
         </entryData>
       </entry>
