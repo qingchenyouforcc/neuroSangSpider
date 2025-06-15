@@ -11,13 +11,13 @@ from src.ui import MainWindow
 
 def setup_logger() -> None:
     logger.remove()
-    format = "<g>{time:HH:mm:ss}</g> [<lvl>{level}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
+    log_format = "<g>{time:HH:mm:ss}</g> [<lvl>{level}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
 
     # pyinstaller 打包并禁用控制台后, sys.stdout 为 None
     if sys.stdout:
         logger.add(
             sys.stdout,
-            format=format,
+            format=log_format,
             level="DEBUG",
             colorize=True,
         )
@@ -25,7 +25,7 @@ def setup_logger() -> None:
     now = datetime.now()
     logger.add(
         f"logs/{now:%Y-%m-%d}/{now:%Y-%m-%d_%H-%M-%S}.log",
-        format=format,
+        format=log_format,
         level="DEBUG",
         diagnose=True,
     )
@@ -34,11 +34,14 @@ def setup_logger() -> None:
 if __name__ == "__main__":
     # --- 启用高 DPI 支持 ---
     if attr := getattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling", None):
-        QApplication.setAttribute(attr)
+        # noinspection PyArgumentList
+        QApplication.setAttribute(attribute=attr)
     if attr := getattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps", None):
-        QApplication.setAttribute(attr)
+        # noinspection PyArgumentList
+        QApplication.setAttribute(attribute=attr)
     if attr := getattr(getattr(Qt, "HighDpiScaleFactorRoundingPolicy", None), "PassThrough", None):
-        QApplication.setHighDpiScaleFactorRoundingPolicy(attr)
+        # noinspection PyArgumentList
+        QApplication.setHighDpiScaleFactorRoundingPolicy(policy=attr)
 
     setup_logger()
 
