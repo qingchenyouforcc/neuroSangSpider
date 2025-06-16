@@ -1,4 +1,5 @@
 from collections.abc import Callable
+import asyncio
 
 from bilibili_api import sync
 from loguru import logger
@@ -54,6 +55,8 @@ class SearchInterface(QWidget):
 
     def __init__(self, parent, main_window: FluentWindow):
         super().__init__(parent=parent)
+        self._search_ = None
+        self._search_thread = None
         self.main_window = main_window
 
         self.stateTooltip = None
@@ -152,15 +155,10 @@ class SearchInterface(QWidget):
                     logger.error(f"错误:{e};" + type(e).__name__)
                 else:
                     if main_search_list is None:
-                        logger.error("bilibili搜索结果为空")
-                        InfoBar.error(
-                            title="错误",
-                            content="没有找到任何结果",
-                            orient=Qt.Orientation.Horizontal,
-                            isClosable=True,
-                            position=InfoBarPosition.TOP_RIGHT,
-                            duration=2000,
-                        )
+                        try:
+                            logger.warning("bilibili搜索结果为空")
+                        except Exception as e:
+                            logger.error(f"{e}")
             else:
                 logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
                 logger.info(main_search_list.get_data())
@@ -169,7 +167,7 @@ class SearchInterface(QWidget):
                 logger.info("在本地列表找到该歌曲，继续尝试bilibili搜索")
                 try:
                     # searchOnBili(search_content)
-                    sync(search_on_bilibili(search_content))
+                    asyncio.run(search_on_bilibili(search_content))
                     if more_search_list := search_song_list(search_content):
                         logger.info(
                             f"bilibili获取 "
@@ -190,18 +188,20 @@ class SearchInterface(QWidget):
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
+                parent=cfg.main_window,
                 duration=2000,
             )
             logger.exception("未知错误")
         else:
             if main_search_list is None:
-                logger.error("搜索结果为空")
-                InfoBar.error(
-                    title="错误",
+                logger.warning("搜索结果为空")
+                InfoBar.warning(
+                    title="警告",
                     content="没有找到任何结果",
                     orient=Qt.Orientation.Horizontal,
                     isClosable=True,
-                    position=InfoBarPosition.TOP_RIGHT,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    parent=cfg.main_window,
                     duration=2000,
                 )
             return main_search_list
@@ -224,7 +224,6 @@ class SearchInterface(QWidget):
             self.loading = None
 
         self.main_window.setEnabled(True)
-        self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
 
         logger.info("搜索完成！")
         if self.search_tip is not None:
@@ -244,11 +243,8 @@ class SearchInterface(QWidget):
         self.tableView.setHorizontalHeaderLabels(["标题", "UP主", "日期", "BV号"])
         self.search_result.clear()
 
-        # 设置主窗口不可操作
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
         # 显示加载动画
         self.loading = showLoading(self.searchLine)
-        self.main_window.setEnabled(False)
 
         tip = StateToolTip("正在搜索歌曲...", "请耐心等待<3", self)
         tip.move(tip.getSuitablePos())
@@ -259,9 +255,9 @@ class SearchInterface(QWidget):
 
         logger.info("---搜索开始---")
         search_content = self.searchLine.text().lower()
-        self._search_thread = SimpleThread(lambda: self.do_search(search_content))
-        self._search_thread.task_finished.connect(self.on_search_finished)
-        self._search_thread.start()
+        self._search_= self.do_search(search_content)
+        self.on_search_finished(self._search_)
+
 
     # 当爬虫任务结束时
     def on_c_task_finished(self):
