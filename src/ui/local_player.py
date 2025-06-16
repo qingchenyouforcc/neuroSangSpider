@@ -10,6 +10,7 @@ from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, Tr
 from src.config import MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info
 from src.utils.player import getMusicLocal, open_player
+from src.utils.text import escape_tag
 from src.utils.tipbar import open_info_tip
 
 if TYPE_CHECKING:
@@ -94,8 +95,8 @@ class LocalPlayerInterface(QWidget):
                 self.tableView.setItem(i, 1, QTableWidgetItem(f"{duration}s"))
 
             self.tableView.resizeColumnsToContents()
-        except Exception as e:
-            logger.error("加载本地歌曲失败:", e)
+        except Exception:
+            logger.exception("加载本地歌曲失败")
 
     def play_selected_song(self, row):
         """双击播放指定行的歌曲"""
@@ -104,9 +105,18 @@ class LocalPlayerInterface(QWidget):
             assert item is not None, "当前行没有歌曲信息"
 
             file_path = getMusicLocal(item)
-            assert file_path is not None, "无法获取音乐文件路径"
+            if file_path is None or not file_path.exists():
+                InfoBar.error(
+                    "播放失败",
+                    "未找到本地歌曲文件",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=500,
+                    parent=self.parent(),
+                )
+                return
 
-            url = QUrl.fromLocalFile(file_path and str(file_path))
+            url = QUrl.fromLocalFile(str(file_path))
             self.main_window.player_bar.player.setSource(url)
             self.main_window.player_bar.player.play()
 
@@ -144,7 +154,7 @@ class LocalPlayerInterface(QWidget):
                 "失败",
                 "添加失败！",
                 orient=Qt.Orientation.Horizontal,
-                position=InfoBarPosition.BOTTOM_RIGHT,
+                position=InfoBarPosition.TOP,
                 duration=1500,
                 parent=cfg.main_window,
             )
@@ -169,17 +179,26 @@ class LocalPlayerInterface(QWidget):
             )
             self.load_local_songs()
 
-        except Exception as e:
-            logger.error(e)
+        except Exception:
+            logger.exception("删除歌曲失败")
 
     def add_all_to_queue(self):
         """添加列表所有歌曲到播放列表"""
         try:
             for i in range(self.tableView.rowCount()):
                 item = self.tableView.item(i, 0)
-                assert item is not None, "当前行没有歌曲信息"
+                if item is None:
+                    logger.warning(f"第 {i} 行没有歌曲信息，跳过")
+                    continue
+
                 file_path = getMusicLocal(item)
-                assert file_path is not None, "无法获取音乐文件路径"
+                if file_path is None or not file_path.exists():
+                    # TODO: 可能需要处理文件失效
+                    logger.opt(colors=True).warning(
+                        f"第 {i} 行的文件路径 <y><u>{escape_tag(str(file_path))}</u></y> 无效，跳过"
+                    )
+                    continue
+
                 if file_path in cfg.play_queue:
                     InfoBar.warning(
                         "已存在",
@@ -189,8 +208,11 @@ class LocalPlayerInterface(QWidget):
                         duration=500,
                         parent=self.parent(),
                     )
-                else:
-                    cfg.play_queue.append(file_path)
+                    continue
+
+                cfg.play_queue.append(file_path)
+                logger.success(f"已添加 {item.text()} 到播放列表")
+
             InfoBar.success(
                 "成功",
                 "已添加所有歌曲到播放列表",
@@ -200,13 +222,14 @@ class LocalPlayerInterface(QWidget):
                 parent=self.parent(),
             )
             logger.info(f"当前播放列表:{cfg.play_queue}")
-        except Exception as e:
+
+        except Exception as exc:
             InfoBar.error(
                 "添加失败",
-                f"{e}",
+                str(exc),
                 orient=Qt.Orientation.Horizontal,
-                position=InfoBarPosition.BOTTOM_RIGHT,
+                position=InfoBarPosition.TOP,
                 duration=1500,
                 parent=cfg.main_window,
             )
-            logger.error(e)
+            logger.exception("添加所有歌曲到播放列表失败")

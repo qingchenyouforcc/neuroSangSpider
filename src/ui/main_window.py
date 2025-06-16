@@ -104,5 +104,5 @@ class MainWindow(FluentWindow):
                 logger.info("用户取消了退出操作。")
                 event.ignore()
 
-        except Exception as e:
-            logger.error(f"在退出确认过程中发生错误: {e}")
+        except Exception:
+            logger.exception("在退出确认过程中发生错误")

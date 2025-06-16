@@ -38,21 +38,22 @@ def resolve_url_to_info(url, words_set=None):
             video_author = video_author.getText()  # 调用 getText 方法获取实际文本
             video_author = video_author.strip()
         else:
-            # print("未找到作者名:",url)
+            logger.debug(f"未找到作者名: {url}")
             video_author = "Unknown"
         # 获取发布时间
         video_date = soup.find("div", class_="pubdate-ip-text")
         if video_date is not None:
             video_date = video_date.getText()  # 调用 getText 方法获取实际文本
         else:
-            # print("未找到发布日期:",url)
+            logger.debug(f"未找到发布日期: {url}")
             video_date = "Unknown"
 
         if words_set is None or contain_text(words_set, video_title):
             return {"title": video_title, "author": video_author, "date": video_date}
         else:
-            # print("未识别到关键词:",url)
+            logger.debug(f"未识别到关键词: {url}")
             return None
+
     except Exception:
         logger.exception("提取信息时出错")
         return None

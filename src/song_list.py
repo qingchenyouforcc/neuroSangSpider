@@ -50,8 +50,8 @@ class SongList:
         """保存文件到指定的路径和文件名下"""
         try:
             path.write_text(json.dumps(self.dictInfo, ensure_ascii=False, indent=2), encoding="utf-8")
-        except Exception as e:
-            logger.warning("json文件保存错误:", e)
+        except Exception:
+            logger.opt(exception=True).warning("json文件保存错误")
 
     def load_list(self, path: Path):
         """从指定的路径和文件名下载入文件"""
@@ -60,16 +60,16 @@ class SongList:
 
         try:
             self.dictInfo = json.loads(path.read_text(encoding="utf-8"))
-        except Exception as e:
-            logger.warning("json文件读取错误:", e)
+        except Exception:
+            logger.opt(exception=True).warning("json文件读取错误:")
 
     def unique_by_bv(self):
         """根据bv号进行去重"""
         try:
             result = {songInfo["bv"]: songInfo for songInfo in self.get_data()}
             self.dictInfo = {"data": list(result.values())}
-        except Exception as e:
-            logger.warning("去重模块错误:", e)
+        except Exception:
+            logger.opt(exception=True).warning("去重模块错误:")
 
     def search_by_title(self, title: str):
         """仅保留标题包含关键字的video项"""
@@ -97,6 +97,7 @@ class SongList:
         words = [words] if not isinstance(words, list) else words
         if any(not isinstance(word, str) for word in words):
             raise TypeError("words参数类型错误")
+
         key = "author" if types == 1 else "title"
         try:
             result_list = []
@@ -105,8 +106,8 @@ class SongList:
                     result_list.append(songInfo)
             self.dictInfo = {"data": result_list}
             return 0
-        except Exception as e:
-            logger.warning("排除模块错误:", e)
+        except Exception:
+            logger.opt(exception=True).warning("排除模块错误")
             return 1
 
     def filter_data(self, words: str | list[str], types: Literal[0, 1] = 0):
@@ -137,5 +138,5 @@ class SongList:
             self.dictInfo = {"data": result_list}
             return 0
         except Exception:
-            logger.exception("过滤模块错误")
+            logger.opt(exception=True).warning("过滤模块错误")
             return 1

@@ -80,8 +80,8 @@ def nextSong():
             duration=1000,
             parent=InfoBar.desktopView(),
         )
-    except Exception as e:
-        logger.error(e)
+    except Exception:
+        logger.exception("播放下一首时发生错误")
 
 
 # noinspection PyTypeChecker

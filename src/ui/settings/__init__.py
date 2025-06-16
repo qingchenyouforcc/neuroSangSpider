@@ -13,7 +13,7 @@ class SettingInterface(QWidget):
         super().__init__(parent=parent)
         self.setObjectName("settingInterface")
         self.settingLabel = TitleLabel("设置", self)
-        
+
         # 设置背景透明属性
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
@@ -60,5 +60,3 @@ class SettingInterface(QWidget):
                 background-color: transparent;
             }
         """)
-        
-    

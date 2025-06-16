@@ -148,12 +148,12 @@ class SettingsCard(GroupHeaderCardWidget):
         current_mode = play_mode_items[cfg.play_mode.value]
         self.playModeComboBox.setCurrentText(current_mode)
         self.playModeComboBox.currentTextChanged.connect(lambda t: self.change_play_mode(t, play_mode_items))
-        
+
         # 播放悬浮栏设置
         self.playerBarSwitch = SwitchButton(parent=self)
         self.playerBarSwitch.setChecked(cfg.enable_player_bar.value)
         self.playerBarSwitch.checkedChanged.connect(self.on_player_bar_switch_changed)
-    
+
         # 搜索页数设置
         self.searchPageSpinBox = SpinBox(self)
         self.searchPageSpinBox.setRange(1, 10)

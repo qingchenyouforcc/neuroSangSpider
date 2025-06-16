@@ -29,6 +29,7 @@ pythonPlatform = "All"
 typeCheckingMode = "standard"
 reportShadowedImports = false
 disableBytesTypePromotions = true
+include = ["src", "main.py"]
 
 [tool.ruff]
 line-length = 120
