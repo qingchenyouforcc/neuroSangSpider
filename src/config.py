@@ -179,4 +179,4 @@ else:
     cfg.set_theme(Theme.AUTO)
 
 
-VERSION = "1.1.4"
+VERSION = "1.1.5"
