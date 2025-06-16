@@ -8,16 +8,17 @@ from PyQt6.QtWidgets import QApplication
 from src.config import cfg
 from src.ui import MainWindow
 
+LOG_FORMAT = "<g>{time:HH:mm:ss}</g> [<lvl>{level:<7}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
+
 
 def setup_logger() -> None:
     logger.remove()
-    log_format = "<g>{time:HH:mm:ss}</g> [<lvl>{level}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
 
     # pyinstaller 打包并禁用控制台后, sys.stdout 为 None
     if sys.stdout:
         logger.add(
             sys.stdout,
-            format=log_format,
+            format=LOG_FORMAT,
             level="DEBUG",
             colorize=True,
         )
@@ -25,7 +26,7 @@ def setup_logger() -> None:
     now = datetime.now()
     logger.add(
         f"logs/{now:%Y-%m-%d}/{now:%Y-%m-%d_%H-%M-%S}.log",
-        format=log_format,
+        format=LOG_FORMAT,
         level="DEBUG",
         diagnose=True,
     )
@@ -33,13 +34,13 @@ def setup_logger() -> None:
 
 if __name__ == "__main__":
     # --- 启用高 DPI 支持 ---
-    if hasattr(Qt.ApplicationAttribute, 'AA_EnableHighDpiScaling'):
+    if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling"):
         # noinspection PyArgumentList
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling) # type: ignore
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)  # type: ignore
     if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps"):
         # noinspection PyArgumentList
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps) # type: ignore
-    if hasattr(Qt, 'HighDpiScaleFactorRoundingPolicy'):  # Qt.HighDpiScaleFactorRoundingPolicy 枚举本身
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)  # type: ignore
+    if hasattr(Qt, "HighDpiScaleFactorRoundingPolicy"):  # Qt.HighDpiScaleFactorRoundingPolicy 枚举本身
         if hasattr(Qt.HighDpiScaleFactorRoundingPolicy, "PassThrough"):
             # noinspection PyArgumentList
             QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)

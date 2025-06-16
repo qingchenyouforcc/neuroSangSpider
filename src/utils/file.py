@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from loguru import logger
-from mutagen import File
+from mutagen._file import File
 from PyQt6.QtCore import Qt
 from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
@@ -34,8 +34,8 @@ def part2all(input_folder: str, output_file: str):
                         f.write(line)
             except UnicodeDecodeError:
                 logger.info(f"跳过非文本文件: {path.name}")
-            except Exception as e:
-                logger.exception(f"处理文件 {path.name} 时出错 {e}")
+            except Exception:
+                logger.exception(f"处理文件 {path.name} 时出错")
 
     logger.info(f"所有文件内容已合并到 {output_file_path}")
 
@@ -53,8 +53,8 @@ def load_from_all_data(input_folder: Path, exclude_file: list[str] | None = None
             continue
         try:
             total_list.append_list(SongList(fp))
-        except Exception as e:
-            logger.error(f"处理文件 {fp} 时出错: {str(e)}")
+        except Exception:
+            logger.exception(f"处理文件 {fp} 时出错")
             return None
     total_list.unique_by_bv()
     return total_list
@@ -73,8 +73,8 @@ def load_extend(input_folder: Path):
                 dict_info = json.load(f)
             for video in dict_info["video"]:
                 bv_list.append(video["bv"])
-        except Exception as e:
-            logger.error(f"处理扩展包 {fp} 时出错: {str(e)}")
+        except Exception:
+            logger.exception(f"处理扩展包 {fp} 时出错")
             return None
     return {"bv": bv_list}
 
@@ -93,8 +93,8 @@ def convert_old2new(input_folder: Path):
                 json.dumps(json_dict, ensure_ascii=False, indent=4),
                 encoding="utf-8",
             )
-        except Exception as e:
-            logger.error(f"处理文件 {fp} 时出错: {str(e)}")
+        except Exception:
+            logger.exception(f"处理文件 {fp} 时出错")
 
 
 def get_audio_duration(file_path: Path):
@@ -120,7 +120,7 @@ def get_audio_duration(file_path: Path):
         return file_path.name, duration
 
     except Exception as e:
-        raise RuntimeError(f"无法读取音频信息: {e}")
+        raise RuntimeError(f"无法读取音频信息: {e}") from e
 
 
 def read_all_audio_info(
@@ -149,8 +149,8 @@ def read_all_audio_info(
             try:
                 info = get_audio_duration(fp)
                 results.append(info)
-            except Exception as e:
-                logger.error(f"跳过文件: {fp.relative_to(directory)} - 原因: {e}")
+            except Exception:
+                logger.exception(f"跳过文件: {fp.relative_to(directory)}")
 
     return results
 
@@ -253,8 +253,8 @@ def on_fix_music():
             duration=1500,
             parent=cfg.main_window,
         )
-    except Exception as e:
-        logger.error(e)
+    except Exception:
+        logger.exception("修复音乐文件时发生错误")
         InfoBar.error(
             "修复失败",
             "修复失败！",
