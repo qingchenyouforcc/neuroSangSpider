@@ -1,0 +1,39 @@
+name: Sync master to Other
+
+on:
+  push:
+    branches:
+        - "master"
+  workflow_dispatch:
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check sync status
+        id: check
+        run: |
+          git fetch origin Other:Other
+
+          OTHER_AHEAD=$(git rev-list --count master..Other)
+          git merge-tree $(git merge-base master Other) Other master > /dev/null
+          MERGE_STATUS=$?
+
+          if [ $OTHER_AHEAD -gt 0 ] || [ $MERGE_STATUS -ne 0 ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Sync master to Other
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          git checkout Other
+          git merge --ff-only master
+          git push origin Other
