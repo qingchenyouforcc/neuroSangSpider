@@ -8,7 +8,7 @@ from src.config import cfg
 def open_info_tip():
     """打开正在播放提示"""
     if not cfg.enable_player_bar.value:
-        logger.info(f"悬浮播放栏已禁用，不显示正在播放提示")
+        logger.info("悬浮播放栏已禁用，不显示正在播放提示")
         return
     if cfg.info_bar is not None:
         logger.info("检测到已经有了一个正在播放提示，正在关闭...")
