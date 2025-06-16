@@ -303,16 +303,16 @@ class SearchInterface(QWidget):
 
         try:
             fileType = cfg.download_type.value
-            run_music_download(index, self.search_result, fileType)
-            InfoBar.success(
-                title="完成",
-                content="歌曲下载完成",
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=2000,
-                parent=self,
-            )
+            if run_music_download(index, self.search_result, fileType):
+                InfoBar.success(
+                    title="完成",
+                    content="歌曲下载完成",
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=2000,
+                    parent=self,
+                )
         except IndexError:
             InfoBar.error(
                 title="错误",

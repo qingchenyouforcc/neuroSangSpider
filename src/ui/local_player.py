@@ -105,9 +105,18 @@ class LocalPlayerInterface(QWidget):
             assert item is not None, "当前行没有歌曲信息"
 
             file_path = getMusicLocal(item)
-            assert file_path is not None, "无法获取音乐文件路径"
+            if file_path is None or not file_path.exists():
+                InfoBar.error(
+                    "播放失败",
+                    "未找到本地歌曲文件",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=500,
+                    parent=self.parent(),
+                )
+                return
 
-            url = QUrl.fromLocalFile(file_path and str(file_path))
+            url = QUrl.fromLocalFile(str(file_path))
             self.main_window.player_bar.player.setSource(url)
             self.main_window.player_bar.player.play()
 
@@ -145,7 +154,7 @@ class LocalPlayerInterface(QWidget):
                 "失败",
                 "添加失败！",
                 orient=Qt.Orientation.Horizontal,
-                position=InfoBarPosition.BOTTOM_RIGHT,
+                position=InfoBarPosition.TOP,
                 duration=1500,
                 parent=cfg.main_window,
             )
@@ -219,7 +228,7 @@ class LocalPlayerInterface(QWidget):
                 "添加失败",
                 str(exc),
                 orient=Qt.Orientation.Horizontal,
-                position=InfoBarPosition.BOTTOM_RIGHT,
+                position=InfoBarPosition.TOP,
                 duration=1500,
                 parent=cfg.main_window,
             )
