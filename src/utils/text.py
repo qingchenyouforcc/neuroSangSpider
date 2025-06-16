@@ -1,7 +1,6 @@
 import re
 import time
 from collections.abc import Iterable
-from pathlib import Path
 
 from loguru import logger
 
@@ -58,13 +57,19 @@ def format_date_str(date: str) -> str:
         else:
             res = res.group(1, 2, 3)
             res = f"{res[0]}-{int(res[1])}-{int(res[2])}"
-        # print(res)
+
         return res
-    except Exception as search_e:
-        logger.error(f"日期格式化错误: {search_e}")
+    except Exception:
+        logger.opt(exception=True).warning("日期格式化错误")
         return date
 
 
-def remove_before_last_backslash(path: str) -> str:
-    """删除路径中的最后一个斜杠之前的部分"""
-    return Path(path).name
+def escape_tag(s: str) -> str:
+    """用于记录带颜色日志时转义 `<tag>` 类型特殊标签
+
+    参考: [loguru color 标签](https://loguru.readthedocs.io/en/stable/api/logger.html#color)
+
+    参数:
+        s: 需要转义的字符串
+    """
+    return re.sub(r"</?((?:[fb]g\s)?[^<>\s]*)>", r"\\\g<0>", s)

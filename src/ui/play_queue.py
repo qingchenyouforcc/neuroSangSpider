@@ -89,8 +89,8 @@ class PlayQueueInterface(QWidget):
                 self.tableView.setItem(i, 0, QTableWidgetItem(song.name))
 
             self.tableView.resizeColumnsToContents()
-        except Exception as e:
-            logger.error("加载歌曲列表失败:", e)
+        except Exception:
+            logger.exception("加载歌曲列表失败")
 
     def move_up(self):
         index = self.tableView.currentIndex().row()
@@ -126,11 +126,11 @@ class PlayQueueInterface(QWidget):
         index = self.tableView.currentIndex().row()
         if index >= 0:
             try:
-                logger.info(f"删除了歌曲: {cfg.play_queue[index]}, 位置: {index}")
+                logger.info(f"删除歌曲: {cfg.play_queue[index]}, 位置: {index}")
                 cfg.play_queue.pop(index)
                 self.load_play_queue()
-            except Exception as e:
-                logger.error(e)
+            except Exception:
+                logger.exception("删除歌曲失败")
 
     @staticmethod
     def play_selected_song(row):
@@ -138,5 +138,5 @@ class PlayQueueInterface(QWidget):
         try:
             cfg.play_queue_index = row
             playSongByIndex()
-        except Exception as e:
-            logger.error(e)
+        except Exception:
+            logger.exception(f"播放 {row=} 的歌曲时出错")

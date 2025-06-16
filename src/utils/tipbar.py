@@ -44,10 +44,10 @@ def open_info_tip():
         )
 
     except Exception as e:
-        logger.error(e)
+        logger.warning("打开播放提示栏时发生未知错误")
         InfoBar.error(
             "未知错误",
-            "请复制日志反馈到github issue",
+            f"请在github上提交issue并上传日志文件:\n{e!r}",
             duration=2000,
             parent=cfg.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
