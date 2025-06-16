@@ -38,12 +38,16 @@ async def search_page(search_content: str, page: int) -> list[dict]:
 async def search_on_bilibili(search_content: str) -> None:
     songs = SongList()
 
-    for data in await asyncio.gather(
-        *[search_page(search_content, page) for page in range(1, cfg.search_page.value + 1)]
-    ):
-        for item in data:
-            songs.append_info(item)
+    try:
+        for data in await asyncio.gather(
+            *[search_page(search_content, page) for page in range(1, cfg.search_page.value + 1)]
+        ):
+            for item in data:
+                songs.append_info(item)
 
-    songs.append_list(SongList(VIDEO_DIR / "search_data.json"))
-    songs.unique_by_bv()
-    songs.save_list(VIDEO_DIR / "search_data.json")
+        songs.append_list(SongList(VIDEO_DIR / "search_data.json"))
+        songs.unique_by_bv()
+        songs.save_list(VIDEO_DIR / "search_data.json")
+    except Exception as e:
+        logger.opt(exception=True).error(f"搜索 {search_content} 失败: {e}")
+        return

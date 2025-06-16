@@ -54,6 +54,7 @@ class SearchInterface(QWidget):
 
     def __init__(self, parent, main_window: FluentWindow):
         super().__init__(parent=parent)
+        self._search_ = None
         self.main_window = main_window
 
         self.stateTooltip = None
@@ -151,15 +152,7 @@ class SearchInterface(QWidget):
                     logger.exception("bilibili搜索失败")
                 else:
                     if main_search_list is None:
-                        logger.error("bilibili搜索结果为空")
-                        InfoBar.error(
-                            title="错误",
-                            content="没有找到任何结果",
-                            orient=Qt.Orientation.Horizontal,
-                            isClosable=True,
-                            position=InfoBarPosition.TOP_RIGHT,
-                            duration=2000,
-                        )
+                        logger.warning("bilibili搜索结果为空")
 
             else:
                 logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
@@ -185,19 +178,21 @@ class SearchInterface(QWidget):
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
+                parent=cfg.main_window,
                 duration=2000,
             )
             logger.exception("执行搜索时发生未知错误")
 
         else:
             if main_search_list is None:
-                logger.error("搜索结果为空")
-                InfoBar.error(
-                    title="错误",
+                logger.warning("搜索结果为空")
+                InfoBar.warning(
+                    title="警告",
                     content="没有找到任何结果",
                     orient=Qt.Orientation.Horizontal,
                     isClosable=True,
-                    position=InfoBarPosition.TOP_RIGHT,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    parent=cfg.main_window,
                     duration=2000,
                 )
             return main_search_list
@@ -219,15 +214,12 @@ class SearchInterface(QWidget):
             self.loading = None
 
         self.main_window.setEnabled(True)
-        self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
 
         logger.success("搜索完成！")
         if self.search_tip is not None:
             self.search_tip.setContent("搜索完成")
             self.search_tip.setState(True)
             self.search_tip = None
-
-        del self._search_thread
 
     def search_btn(self):
         """实现搜索按钮功能"""
@@ -239,11 +231,8 @@ class SearchInterface(QWidget):
         self.tableView.setHorizontalHeaderLabels(["标题", "UP主", "日期", "BV号"])
         self.search_result.clear()
 
-        # 设置主窗口不可操作
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
         # 显示加载动画
         self.loading = showLoading(self.searchLine)
-        self.main_window.setEnabled(False)
 
         tip = StateToolTip("正在搜索歌曲...", "请耐心等待<3", self)
         tip.move(tip.getSuitablePos())
@@ -254,9 +243,8 @@ class SearchInterface(QWidget):
 
         logger.info("---搜索开始---")
         search_content = self.searchLine.text().lower()
-        self._search_thread = SimpleThread(lambda: self.do_search(search_content))
-        self._search_thread.task_finished.connect(self.on_search_finished)
-        self._search_thread.start()
+        self._search_ = self.do_search(search_content)
+        self.on_search_finished(self._search_)
 
     # 当爬虫任务结束时
     def on_c_task_finished(self):
@@ -273,8 +261,6 @@ class SearchInterface(QWidget):
             self.stateTooltip.setContent("获取列表完成!!!")
             self.stateTooltip.setState(True)
             self.stateTooltip = None
-
-        del self._thread
 
     def writeList(self):
         """将搜索结果写入表格"""
