@@ -59,11 +59,15 @@ class ListEditWidget(CardGroupWidget):
             self.refresh_layout()
 
     def add_btn(self, text: str):
-        btn = PushButton(text)
-        btn.clicked.connect(lambda: self.on_remove_item(btn))
-        self._layout.addWidget(btn)
+        try:
+            btn = PushButton(text)
+            btn.clicked.connect(lambda: self.on_remove_item(btn))
+            self._layout.addWidget(btn)
+        except Exception as e:
+            logger.error(f"添加按钮失败: {e}")
 
     def refresh_layout(self):
+        logger.info("布局已更新")
         self._layout.removeWidget(self.addWordBtn)
         self._layout.addWidget(self.addWordBtn)
         self._layout.update()
@@ -136,6 +140,8 @@ class FilterEditWidget(ListEditWidget):
                 cfg.filter_list.value.append(word)
                 cfg.save()
                 logger.info(f"当前过滤器列表为 {cfg.filter_list.value}")
+                super().add_btn(word)
+                super().refresh_layout()
                 return word
         except Exception:
             logger.exception("添加过滤词时发生错误")
@@ -196,6 +202,8 @@ class UpListEditWidget(ListEditWidget):
             logger.info(f"当前UP主列表为 {cfg.up_list.value}")
 
             self.names[uid] = get_up_name(uid)
+            super().add_btn(self.names[uid])
+            super().refresh_layout()
             return self.names[uid]
         except Exception:
             logger.exception("添加UP主时发生错误")
@@ -240,6 +248,8 @@ class BlackListEditWidget(ListEditWidget):
                 cfg.black_author_list.value.append(text)
             cfg.save()
             logger.info(f"当前黑名单列表为 {cfg.black_author_list.value}")
+            super().add_btn(text)
+            super().refresh_layout()
             return text
         except Exception:
             logger.exception("添加黑名单UP主时发生错误")

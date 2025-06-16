@@ -13,6 +13,7 @@ from qfluentwidgets import (
     PushButton,
     SpinBox,
     SubtitleLabel,
+    SwitchButton,
 )
 
 from src.config import PlayMode, Theme, cfg
@@ -147,7 +148,12 @@ class SettingsCard(GroupHeaderCardWidget):
         current_mode = play_mode_items[cfg.play_mode.value]
         self.playModeComboBox.setCurrentText(current_mode)
         self.playModeComboBox.currentTextChanged.connect(lambda t: self.change_play_mode(t, play_mode_items))
-
+        
+        # 播放悬浮栏设置
+        self.playerBarSwitch = SwitchButton(parent=self)
+        self.playerBarSwitch.setChecked(cfg.enable_player_bar.value)
+        self.playerBarSwitch.checkedChanged.connect(self.on_player_bar_switch_changed)
+    
         # 搜索页数设置
         self.searchPageSpinBox = SpinBox(self)
         self.searchPageSpinBox.setRange(1, 10)
@@ -180,6 +186,12 @@ class SettingsCard(GroupHeaderCardWidget):
             "播放模式",
             "设置默认播放模式",
             self.playModeComboBox,
+        )
+        self.addGroup(
+            FluentIcon.LABEL,
+            "播放悬浮栏",
+            "开启或关闭播放悬浮栏",
+            self.playerBarSwitch,
         )
         self.addGroup(
             FluentIcon.SEARCH,
@@ -221,6 +233,17 @@ class SettingsCard(GroupHeaderCardWidget):
         InfoBar.success(
             "设置成功",
             f"已将搜索页数设为 {value}",
+            parent=cfg.main_window,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+        )
+
+    def on_player_bar_switch_changed(self, checked: bool) -> None:
+        cfg.enable_player_bar.value = checked
+        cfg.save()
+        InfoBar.success(
+            "设置成功",
+            f"已将播放悬浮栏设为 {'开启' if checked else '关闭'}",
             parent=cfg.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,

@@ -67,6 +67,7 @@ class Config(QConfig):
         OptionsValidator(["mp3", "ogg", "wav"]),
     )
     volume = ConfigItem("Player", "Volume", 50)
+    enable_player_bar = ConfigItem("Player", "EnablePlayerBar", True)
     play_mode = ConfigItem("Player", "Mode", PlayMode.LIST_LOOP)
     search_page = ConfigItem("Search", "PageCount", 3)
     up_list = ConfigItem("Search", "UpList", _DEFAULT_UP_LIST.copy())
