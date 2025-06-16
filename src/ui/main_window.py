@@ -3,7 +3,8 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import QApplication
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
+from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition, setTheme
+from qfluentwidgets import Theme as QtTheme
 
 from src.config import ASSETS_DIR, cfg
 
@@ -23,14 +24,6 @@ class MainWindow(FluentWindow):
 
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
-
-        self.player_bar = CustomMediaPlayBar()
-        self.player_bar.setFixedSize(300, 120)
-        self.player_bar.player.setVolume(cfg.volume.value)
-        self.player_bar.setWindowIcon(icon)
-        self.player_bar.setWindowTitle("Player")
-        self.player_bar.show()
-        cfg.player = self.player_bar
 
         # 添加子界面
         self.addSubInterface(
@@ -73,6 +66,21 @@ class MainWindow(FluentWindow):
             # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
         else:  # 如果获取不到主屏幕信息，给一个默认大小
             self.resize(QSize(680, 530))
+        
+        self.player_bar = CustomMediaPlayBar()
+        self.player_bar.setFixedSize(300, 120)
+        self.player_bar.player.setVolume(cfg.volume.value)
+        self.player_bar.setWindowIcon(icon)
+        self.player_bar.setWindowTitle("Player")
+        self.player_bar.show()
+        cfg.player = self.player_bar
+        
+        try:
+            logger.info(f"正在设置{cfg.theme.value}主题...")
+            setTheme(QtTheme(cfg.theme.value))
+            cfg.save()
+        except Exception as e:
+            logger.exception(f"{e} | 不是哥们你这怎么报错的？")
 
         # 设置默认音频格式
         cfg.download_type.value = "mp3"
