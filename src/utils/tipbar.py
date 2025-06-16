@@ -11,7 +11,7 @@ def open_info_tip():
         logger.info("悬浮播放栏已禁用，不显示正在播放提示")
         InfoBar.info(
             "提示",
-            f"你已关闭悬浮播放栏，将不显示播放提示",
+            "你已关闭悬浮播放栏，将不显示播放提示",
             parent=cfg.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
