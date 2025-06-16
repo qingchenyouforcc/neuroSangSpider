@@ -99,8 +99,6 @@ class Config(QConfig):
         self.info_bar: InfoBar | None = None
         self.info_bar_play_btn: ToolButton | None = None
 
-        setTheme(QtTheme(self.theme_mode.value.value))
-
     def set_theme(self, theme: Theme) -> None:
         """设置主题"""
         setTheme(QtTheme(theme.value))
