@@ -38,7 +38,13 @@
 
 ~~因为最开始写成neuroSongSpider了，所以请勿使用neuroSangSpider作为项目文件夹名称~~
 
-**请注意，如果你要拉取仓库，请拉取master仓库！如果你要提交代码，请PR到Other仓库！请确保你的代码没有问题后再提交到master仓库！**
+> [!important] 
+> 
+> **请注意，如果你要拉取仓库，请拉取master仓库！**
+> 
+> **如果你要提交代码，请PR到Other仓库！**
+> 
+> **请确保你的代码没有问题后再提交到master仓库！**
 
 首先你需要将ffmpeg扔到ffmpeg文件夹，因为这个软件需要ffmpeg
 
