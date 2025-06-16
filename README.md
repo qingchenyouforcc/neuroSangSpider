@@ -1,4 +1,4 @@
-# ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/this_32.png)NeuroSongSpider
+# ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/this_32.png)NeuroSangSpider
 
 
 
@@ -47,7 +47,7 @@
 git clone https://github.com/qingchenyouforcc/neuroSangSpider
 
 # 进入目录
-cd neuroSangSpider
+cd neuroSongSpider
 
 # 安装依赖
 uv sync
