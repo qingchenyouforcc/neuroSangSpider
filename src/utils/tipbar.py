@@ -7,6 +7,9 @@ from src.config import cfg
 
 def open_info_tip():
     """打开正在播放提示"""
+    if not cfg.enable_player_bar.value:
+        logger.info(f"悬浮播放栏已禁用，不显示正在播放提示")
+        return
     if cfg.info_bar is not None:
         logger.info("检测到已经有了一个正在播放提示，正在关闭...")
         cfg.info_bar.close()
@@ -70,6 +73,8 @@ def infoPlayBtnClicked():
 
 def update_info_tip():
     """更新正在播放提示"""
+    if not cfg.enable_player_bar.value:
+        return
     assert cfg.player and cfg.info_bar_play_btn, "播放器或播放按钮未初始化"
 
     icon = FluentIcon.PLAY_SOLID if cfg.player.player.isPlaying() else FluentIcon.PLAY_SOLID
