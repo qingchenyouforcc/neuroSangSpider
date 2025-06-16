@@ -271,8 +271,6 @@ class SearchInterface(QWidget):
             self.stateTooltip.setState(True)
             self.stateTooltip = None
 
-        del self._thread
-
     def writeList(self):
         """将搜索结果写入表格"""
         search_result = self.search_result
