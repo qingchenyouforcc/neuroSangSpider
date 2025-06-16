@@ -1,5 +1,4 @@
 from collections.abc import Callable
-import asyncio
 
 from bilibili_api import sync
 from loguru import logger
