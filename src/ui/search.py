@@ -55,7 +55,6 @@ class SearchInterface(QWidget):
     def __init__(self, parent, main_window: FluentWindow):
         super().__init__(parent=parent)
         self._search_ = None
-        self._search_thread = None
         self.main_window = main_window
 
         self.stateTooltip = None
@@ -229,8 +228,6 @@ class SearchInterface(QWidget):
             self.search_tip.setContent("搜索完成")
             self.search_tip.setState(True)
             self.search_tip = None
-
-        del self._search_thread
 
     def search_btn(self):
         """实现搜索按钮功能"""
