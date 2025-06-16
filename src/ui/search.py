@@ -167,7 +167,7 @@ class SearchInterface(QWidget):
                 logger.info("在本地列表找到该歌曲，继续尝试bilibili搜索")
                 try:
                     # searchOnBili(search_content)
-                    asyncio.run(search_on_bilibili(search_content))
+                    sync(search_on_bilibili(search_content))
                     if more_search_list := search_song_list(search_content):
                         logger.info(
                             f"bilibili获取 "
