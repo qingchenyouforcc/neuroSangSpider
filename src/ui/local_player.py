@@ -127,14 +127,6 @@ class LocalPlayerInterface(QWidget):
 
         if file_path := getMusicLocal(item):
             if file_path in cfg.play_queue:
-                InfoBar.warning(
-                    "已存在",
-                    f"{item.text()}已存在播放列表",
-                    orient=Qt.Orientation.Horizontal,
-                    position=InfoBarPosition.TOP,
-                    duration=1500,
-                    parent=self.parent(),
-                )
                 return
 
             cfg.play_queue.append(file_path)
