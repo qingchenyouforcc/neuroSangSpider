@@ -2,9 +2,9 @@ from loguru import logger
 from PyQt6 import QtGui
 from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import QApplication
+from qfluentwidgets import SplashScreen
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition, setTheme
-from qfluentwidgets import Theme as QtTheme
+from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
 
 from src.config import ASSETS_DIR, cfg
 
@@ -13,7 +13,7 @@ from .local_player import LocalPlayerInterface
 from .media_player_bar import CustomMediaPlayBar
 from .play_queue import PlayQueueInterface
 from .search import SearchInterface
-from .settings import SettingInterface
+from .settings import SettingInterface   
 
 
 class MainWindow(FluentWindow):
@@ -24,6 +24,21 @@ class MainWindow(FluentWindow):
 
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
+        
+        # 创建启动页面
+        self.splashScreen = SplashScreen(self.windowIcon(), self)
+        self.splashScreen.setIconSize(QSize(64, 64))
+        
+        # 设置初始窗口大小
+        desktop = QApplication.primaryScreen()
+        if desktop:  # 确保 desktop 对象不是 None
+            self.resize(QSize(680, 530)) 
+        # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
+        else:  # 如果获取不到主屏幕信息，给一个默认大小
+            self.resize(QSize(680, 530))
+
+        # 在创建其他子页面前先显示主界面
+        self.show()
 
         # 添加子界面
         self.addSubInterface(
@@ -58,14 +73,6 @@ class MainWindow(FluentWindow):
         )
 
         self.setWindowTitle("NeuroSangSpider")
-
-        # 设置初始窗口大小
-        desktop = QApplication.primaryScreen()
-        if desktop:  # 确保 desktop 对象不是 None
-            self.resize(QSize(680, 530))
-            # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
-        else:  # 如果获取不到主屏幕信息，给一个默认大小
-            self.resize(QSize(680, 530))
         
         self.player_bar = CustomMediaPlayBar()
         self.player_bar.setFixedSize(300, 120)
@@ -74,17 +81,13 @@ class MainWindow(FluentWindow):
         self.player_bar.setWindowTitle("Player")
         self.player_bar.show()
         cfg.player = self.player_bar
-        
-        try:
-            logger.info(f"正在设置{cfg.theme.value}主题...")
-            setTheme(QtTheme(cfg.theme.value))
-            cfg.save()
-        except Exception as e:
-            logger.exception(f"{e} | 不是哥们你这怎么报错的？")
 
         # 设置默认音频格式
         cfg.download_type.value = "mp3"
         cfg.save()
+
+        # 隐藏启动页面
+        self.splashScreen.finish()
 
     def closeEvent(self, event):  # pyright: ignore[reportIncompatibleMethodOverride]
         try:

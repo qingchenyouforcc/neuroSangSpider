@@ -173,8 +173,12 @@ FFMPEG_PATH = detect_ffmpeg()
 
 CONFIG_PATH = DATA_DIR / "config.json"
 cfg = Config(CONFIG_PATH)
+
 if CONFIG_PATH.exists():
     cfg.load()
+    setTheme(QtTheme(cfg.theme_mode.value))
+else:
+    cfg.set_theme(Theme.AUTO)
 
 
 VERSION = "1.1.4"
