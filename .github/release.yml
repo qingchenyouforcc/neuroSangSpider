@@ -1,0 +1,26 @@
+# .github/release.yml
+
+changelog:
+  categories:
+    - title: "🚀 新功能"
+      labels:
+        - "feature"
+        - "enhancement"
+    - title: "🐛 修复bug"
+      labels:
+        - "bug"
+        - "fix"
+        - "bugfix"
+    - title: "🧰 维护和重构"
+      labels:
+        - "chore"
+        - "refactor"
+        - "maintenance"
+    - title: "📖 文档更新"
+      labels:
+        - "documentation"
+  
+  # 排除某些标签的 PR
+  exclude:
+    labels:
+      - "skip-changelog"
