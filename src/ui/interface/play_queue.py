@@ -5,7 +5,7 @@ from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
 from src.config import cfg
-from src.utils.player import playSongByIndex, sequencePlay
+from src.core.player import playSongByIndex, sequencePlay
 
 
 class PlayQueueInterface(QWidget):

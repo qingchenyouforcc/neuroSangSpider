@@ -8,8 +8,8 @@ from qfluentwidgets.multimedia import MediaPlayBarButton, MediaPlayer, MediaPlay
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
 from src.config import PlayMode, cfg
-from src.utils.player import nextSong, playSongByIndex, previousSong
-from src.utils.tipbar import update_info_tip
+from src.core.player import nextSong, playSongByIndex, previousSong
+from ui.widgets.tipbar import update_info_tip
 
 
 class CustomMediaPlayBar(MediaPlayBarBase):

@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
 from src.config import VIDEO_DIR, cfg
-from src.song_list import SongList
-from src.utils.file import load_extend
+from core.song_list import SongList
+from src.core.data_io import load_extend
 from src.utils.text import contain_text
 
 from .common import get_credential

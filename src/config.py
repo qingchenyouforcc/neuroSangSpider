@@ -9,8 +9,7 @@ from qfluentwidgets import ConfigItem, InfoBar, OptionsConfigItem, OptionsValida
 from qfluentwidgets import Theme as QtTheme
 
 if TYPE_CHECKING:
-    from src.ui.main_window import MainWindow
-    from src.ui.media_player_bar import CustomMediaPlayBar
+    pass
 
 IS_WINDOWS = sys.platform == "win32"
 

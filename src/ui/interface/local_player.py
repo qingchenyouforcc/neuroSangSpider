@@ -9,12 +9,12 @@ from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, Tr
 
 from src.config import MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info
-from src.utils.player import getMusicLocal, open_player
+from src.core.player import getMusicLocal, open_player
 from src.utils.text import escape_tag
-from src.utils.tipbar import open_info_tip
+from ui.widgets.tipbar import open_info_tip
 
 if TYPE_CHECKING:
-    from .main_window import MainWindow
+    from ui.main_window import MainWindow
 
 
 class LocalPlayerInterface(QWidget):

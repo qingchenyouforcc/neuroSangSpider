@@ -8,12 +8,12 @@ from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
 
 from src.config import ASSETS_DIR, cfg
 
-from .home import HomeInterface
-from .local_player import LocalPlayerInterface
-from .media_player_bar import CustomMediaPlayBar
-from .play_queue import PlayQueueInterface
-from .search import SearchInterface
-from .settings import SettingInterface   
+from ui.interface.home import HomeInterface
+from ui.interface.local_player import LocalPlayerInterface
+from ui.widgets.media_player_bar import CustomMediaPlayBar
+from ui.interface.play_queue import PlayQueueInterface
+from ui.interface.search import SearchInterface
+from ui.interface.settings import SettingInterface
 
 
 class MainWindow(FluentWindow):
