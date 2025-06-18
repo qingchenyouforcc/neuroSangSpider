@@ -8,7 +8,7 @@ from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
 from src.app_context import app_context
-from src.config import MUSIC_DIR, cfg
+from src.config import MUSIC_DIR
 from src.utils.file import read_all_audio_info
 from src.core.player import getMusicLocal, open_player
 from src.utils.text import escape_tag

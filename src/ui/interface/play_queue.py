@@ -4,7 +4,6 @@ from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QV
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
-from src.config import cfg
 from src.core.player import playSongByIndex, sequencePlay
 from src.app_context import app_context
 

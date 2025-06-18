@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from loguru import logger
-from qfluentwidgets import ConfigItem, InfoBar, OptionsConfigItem, OptionsValidator, QConfig, ToolButton, setTheme
+from qfluentwidgets import ConfigItem, OptionsConfigItem, OptionsValidator, QConfig, setTheme
 from qfluentwidgets import Theme as QtTheme
 
 if TYPE_CHECKING:
