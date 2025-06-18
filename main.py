@@ -5,7 +5,7 @@ from loguru import logger
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
 
-from src.config import cfg
+from src.app_context import app_context
 from src.ui import MainWindow
 
 LOG_FORMAT = "<g>{time:HH:mm:ss}</g> [<lvl>{level:<7}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
@@ -48,6 +48,6 @@ if __name__ == "__main__":
     setup_logger()
 
     app = QApplication(sys.argv)
-    window = cfg.main_window = MainWindow()
+    window = app_context.main_window = MainWindow()
     window.show()
     sys.exit(app.exec())

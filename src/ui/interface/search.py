@@ -17,6 +17,7 @@ from qfluentwidgets import (
     TitleLabel,
 )
 
+from src.app_context import app_context
 from src.bili_api import create_video_list_file, run_music_download, search_on_bilibili, search_song_list
 from src.config import ASSETS_DIR, cfg
 from core.song_list import SongList
@@ -178,7 +179,7 @@ class SearchInterface(QWidget):
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
-                parent=cfg.main_window,
+                parent=app_context.main_window,
                 duration=2000,
             )
             logger.exception("执行搜索时发生未知错误")
@@ -192,7 +193,7 @@ class SearchInterface(QWidget):
                     orient=Qt.Orientation.Horizontal,
                     isClosable=True,
                     position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=cfg.main_window,
+                    parent=app_context.main_window,
                     duration=2000,
                 )
             return main_search_list

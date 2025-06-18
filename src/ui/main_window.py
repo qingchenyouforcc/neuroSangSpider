@@ -7,6 +7,7 @@ from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
 
 from src.config import ASSETS_DIR, cfg
+from src.app_context import app_context
 
 from ui.interface.home import HomeInterface
 from ui.interface.local_player import LocalPlayerInterface
@@ -80,7 +81,7 @@ class MainWindow(FluentWindow):
         self.player_bar.setWindowIcon(icon)
         self.player_bar.setWindowTitle("Player")
         self.player_bar.show()
-        cfg.player = self.player_bar
+        app_context.player = self.player_bar
 
         # 设置默认音频格式
         cfg.download_type.value = "mp3"

@@ -6,6 +6,7 @@ from loguru import logger
 from PyQt6.QtCore import Qt, QUrl
 from qfluentwidgets import InfoBar, InfoBarPosition
 
+from src.app_context import app_context
 from src.config import MUSIC_DIR, PlayMode, cfg
 
 from ui.widgets.tipbar import open_info_tip
@@ -13,13 +14,13 @@ from ui.widgets.tipbar import open_info_tip
 
 def open_player() -> None:
     """打开播放器"""
-    if cfg.player is not None:
-        cfg.player.show()
+    if app_context.player is not None:
+        app_context.player.show()
 
 
 def previousSong():
     """播放上一首"""
-    if cfg.play_queue_index <= 0:
+    if app_context.play_queue_index <= 0:
         InfoBar.info(
             "提示",
             "已经没有上一首了",
@@ -30,7 +31,7 @@ def previousSong():
         )
         return
     try:
-        cfg.play_queue_index = cfg.play_queue_index - 1
+        app_context.play_queue_index = app_context.play_queue_index - 1
         playSongByIndex()
 
     except IndexError:
@@ -49,7 +50,7 @@ def previousSong():
 def nextSong():
     """播放下一首"""
     if cfg.play_mode.value == PlayMode.SEQUENTIAL:
-        if cfg.play_queue_index >= len(cfg.play_queue) - 1:
+        if app_context.play_queue_index >= len(app_context.play_queue) - 1:
             InfoBar.info(
                 "提示",
                 "已经没有下一首了",
@@ -60,15 +61,15 @@ def nextSong():
             )
             return
     elif cfg.play_mode.value == PlayMode.LIST_LOOP:
-        if cfg.play_queue_index >= len(cfg.play_queue) - 1:
-            cfg.play_queue_index = -1
+        if app_context.play_queue_index >= len(app_context.play_queue) - 1:
+            app_context.play_queue_index = -1
     elif cfg.play_mode.value == PlayMode.RANDOM:
         getRandomIndex()
         playSongByIndex()
         return
 
     try:
-        cfg.play_queue_index += 1
+        app_context.play_queue_index += 1
         playSongByIndex()
 
     except IndexError:
@@ -86,26 +87,26 @@ def nextSong():
 
 # noinspection PyTypeChecker
 def playSongByIndex():
-    if not cfg.play_queue:
+    if not app_context.play_queue:
         InfoBar.error(
             "错误",
             "播放队列为空",
             duration=2000,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
         return
 
-    file_path = getMusicLocalStr(cfg.play_queue[cfg.play_queue_index].name)
+    file_path = getMusicLocalStr(app_context.play_queue[app_context.play_queue_index].name)
 
     url = QUrl.fromLocalFile(file_path and str(file_path))
-    assert cfg.player is not None, "播放器未初始化"
-    cfg.player.player.setSource(url)
-    cfg.player.player.play()
+    assert app_context.player is not None, "播放器未初始化"
+    app_context.player.player.setSource(url)
+    app_context.player.player.play()
 
-    cfg.playing_now = cfg.play_queue[cfg.play_queue_index].name
+    app_context.playing_now = app_context.play_queue[app_context.play_queue_index].name
 
-    logger.info(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
+    logger.info(f"当前播放歌曲队列位置：{app_context.play_queue_index}")
     open_info_tip()
 
 
@@ -141,7 +142,7 @@ def summonMusicLocal(file_name: str) -> Path | None:
             "错误",
             f"找不到文件: {file_name}",
             duration=2000,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
         return None
@@ -151,10 +152,10 @@ def summonMusicLocal(file_name: str) -> Path | None:
 
 def getRandomIndex() -> None:
     """当处于随机模式时，获取随机的歌曲"""
-    index = random.randint(0, len(cfg.play_queue) - 1)
-    while index == cfg.play_queue_index:
-        index = random.randint(0, len(cfg.play_queue) - 1)
-    cfg.play_queue_index = index
+    index = random.randint(0, len(app_context.play_queue) - 1)
+    while index == app_context.play_queue_index:
+        index = random.randint(0, len(app_context.play_queue) - 1)
+    app_context.play_queue_index = index
 
 
 def sequencePlay() -> None:

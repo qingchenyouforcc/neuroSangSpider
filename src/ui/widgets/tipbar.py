@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import FluentIcon, InfoBar, InfoBarPosition, TransparentToolButton
 
 from src.config import cfg
-
+from src.app_context import app_context
 
 def open_info_tip():
     """打开正在播放提示"""
@@ -12,21 +12,21 @@ def open_info_tip():
         InfoBar.info(
             "提示",
             "你已关闭悬浮播放栏，将不显示播放提示",
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
         )
         return
-    if cfg.info_bar is not None:
+    if app_context.info_bar is not None:
         logger.info("检测到已经有了一个正在播放提示，正在关闭...")
-        cfg.info_bar.close()
+        app_context.info_bar.close()
     else:
-        logger.info(f"正在播放{cfg.playing_now}")
+        logger.info(f"正在播放{app_context.playing_now}")
 
     info = InfoBar.new(
         icon=FluentIcon.MUSIC,
         title="正在播放",
-        content=f"{cfg.playing_now}",
+        content=f"{app_context.playing_now}",
         orient=Qt.Orientation.Horizontal,
         isClosable=True,
         position=InfoBarPosition.TOP,
@@ -34,7 +34,7 @@ def open_info_tip():
         parent=InfoBar.desktopView(),
     )
     info.setCustomBackgroundColor("white", "#202020")
-    cfg.info_bar = info
+    app_context.info_bar = info
 
     try:
         playBtn = TransparentToolButton(FluentIcon.PAUSE, info)
@@ -42,14 +42,14 @@ def open_info_tip():
         playBtn.setToolTip("暂停/播放")
         playBtn.clicked.connect(infoPlayBtnClicked)
         info.closeButton.clicked.connect(infoCloseBtnClicked)
-        cfg.info_bar_play_btn = playBtn
+        app_context.info_bar_play_btn = playBtn
 
     except AttributeError:
         InfoBar.error(
             "错误",
             "没有正在播放的音乐",
             duration=1000,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
 
@@ -59,22 +59,22 @@ def open_info_tip():
             "未知错误",
             f"请在github上提交issue并上传日志文件:\n{e!r}",
             duration=2000,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
 
 
 def infoCloseBtnClicked():
     """悬浮栏关闭按钮事件"""
-    if cfg.info_bar is not None:
-        cfg.info_bar.close()
-        cfg.info_bar = None
+    if app_context.info_bar is not None:
+        app_context.info_bar.close()
+        app_context.info_bar = None
 
 
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""
-    assert cfg.player is not None, "播放器未初始化"
-    cfg.player.togglePlayState()
+    assert app_context.player is not None, "播放器未初始化"
+    app_context.player.togglePlayState()
     update_info_tip()
 
 
@@ -82,7 +82,7 @@ def update_info_tip():
     """更新正在播放提示"""
     if not cfg.enable_player_bar.value:
         return
-    assert cfg.player and cfg.info_bar_play_btn, "播放器或播放按钮未初始化"
+    assert app_context.player and app_context.info_bar_play_btn, "播放器或播放按钮未初始化"
 
-    icon = FluentIcon.PAUSE if cfg.player.player.isPlaying() else FluentIcon.PLAY_SOLID
-    cfg.info_bar_play_btn.setIcon(icon)
+    icon = FluentIcon.PAUSE if app_context.player.player.isPlaying() else FluentIcon.PLAY_SOLID
+    app_context.info_bar_play_btn.setIcon(icon)

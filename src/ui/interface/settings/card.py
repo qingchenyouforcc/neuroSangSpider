@@ -16,6 +16,7 @@ from qfluentwidgets import (
     SwitchButton,
 )
 
+from src.app_context import app_context
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music
 
@@ -29,7 +30,7 @@ def changeDownloadType(selected_type: str) -> None:
         orient=Qt.Orientation.Horizontal,
         position=InfoBarPosition.BOTTOM_RIGHT,
         duration=1500,
-        parent=cfg.main_window,
+        parent=app_context.main_window,
     )
 
 
@@ -107,7 +108,7 @@ class BiliApiDialog(MessageBoxBase):
             "保存成功",
             "Bilibili API 参数已更新",
             duration=1500,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
 
@@ -221,7 +222,7 @@ class SettingsCard(GroupHeaderCardWidget):
         InfoBar.success(
             "设置成功",
             f"已将播放模式设为 {text}",
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
         )
@@ -233,7 +234,7 @@ class SettingsCard(GroupHeaderCardWidget):
         InfoBar.success(
             "设置成功",
             f"已将搜索页数设为 {value}",
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
         )
@@ -244,7 +245,7 @@ class SettingsCard(GroupHeaderCardWidget):
         InfoBar.success(
             "设置成功",
             f"已将播放悬浮栏设为 {'开启' if checked else '关闭'}",
-            parent=cfg.main_window,
+            parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
         )

@@ -8,6 +8,7 @@ from bilibili_api import HEADERS, get_client, sync, video
 from loguru import logger
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
 
+from app_context import app_context
 from src.config import CACHE_DIR, FFMPEG_PATH, MAIN_PATH, MUSIC_DIR, VIDEO_DIR, cfg, subprocess_options
 from core.song_list import SongList
 from src.core.data_io import load_from_all_data
@@ -112,7 +113,7 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.TOP_RIGHT,
             duration=1500,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
         )
         return False
 
@@ -130,7 +131,7 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
         w = MessageBox(
             "文件已存在",
             f"文件 '{output_file.relative_to(MAIN_PATH)}' 已存在。是否覆盖？",
-            cfg.main_window,
+            app_context.main_window,
         )
 
         w.setClosableOnMaskClicked(True)

@@ -16,6 +16,7 @@ from qfluentwidgets import (
     ToolButton,
 )
 
+from src.app_context import app_context
 from src.bili_api import get_up_name, get_up_names
 from src.config import cfg
 
@@ -75,7 +76,7 @@ class ListEditWidget(CardGroupWidget):
 
     def create_mbox(self, title: str, message: str):
         """创建一个消息框"""
-        mbox = MessageBoxBase(cfg.main_window)
+        mbox = MessageBoxBase(app_context.main_window)
         titleLabel = SubtitleLabel(title, self)
         mbox.viewLayout.addWidget(titleLabel)
 
@@ -125,7 +126,7 @@ class FilterEditWidget(ListEditWidget):
                     "错误",
                     "请输入要添加的过滤词",
                     position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=cfg.main_window,
+                    parent=app_context.main_window,
                 )
                 return None
             if word in cfg.filter_list.value:
@@ -133,7 +134,7 @@ class FilterEditWidget(ListEditWidget):
                     "错误",
                     "该过滤词已存在",
                     position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=cfg.main_window,
+                    parent=app_context.main_window,
                 )
                 return None
             else:
@@ -181,7 +182,7 @@ class UpListEditWidget(ListEditWidget):
                     "错误",
                     "请输入要添加的UP主UID",
                     position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=cfg.main_window,
+                    parent=app_context.main_window,
                 )
                 return None
 
@@ -192,7 +193,7 @@ class UpListEditWidget(ListEditWidget):
                     "错误",
                     "请输入正确的UID格式",
                     position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=cfg.main_window,
+                    parent=app_context.main_window,
                 )
                 return None
 
@@ -240,7 +241,7 @@ class BlackListEditWidget(ListEditWidget):
                     "错误",
                     "请输入要添加的UP主关键词",
                     position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=cfg.main_window,
+                    parent=app_context.main_window,
                 )
                 return None
 

@@ -83,20 +83,11 @@ class Config(QConfig):
     bili_sessdata = ConfigItem("Bilibili", "SESSDATA", "")
     bili_jct = ConfigItem("Bilibili", "BILI_JCT", "")
     bili_buvid3 = ConfigItem("Bilibili", "BUVID3", "")
-
+    
     def __init__(self, path: Path):
         # 指定配置文件路径
         super().__init__()
         self.file = path
-
-        # 运行时状态
-        self.playing_now: str | None = None
-        self.play_queue: list[Path] = []
-        self.play_queue_index: int = 0
-        self.main_window: 'MainWindow | None' = None
-        self.player: 'CustomMediaPlayBar | None' = None
-        self.info_bar: InfoBar | None = None
-        self.info_bar_play_btn: ToolButton | None = None
 
     def set_theme(self, theme: Theme) -> None:
         """设置主题"""
@@ -174,6 +165,7 @@ cfg = Config(CONFIG_PATH)
 if CONFIG_PATH.exists():
     cfg.load()
     setTheme(QtTheme(cfg.theme_mode.value))
+    logger.info(f"已找到配置文件，正在加载配置文件主题{cfg.theme_mode.value}")
 else:
     cfg.set_theme(Theme.AUTO)
 

@@ -7,6 +7,7 @@ from qfluentwidgets import CaptionLabel, FluentIcon
 from qfluentwidgets.multimedia import MediaPlayBarButton, MediaPlayer, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
+from src.app_context import app_context
 from src.config import PlayMode, cfg
 from src.core.player import nextSong, playSongByIndex, previousSong
 from ui.widgets.tipbar import update_info_tip
@@ -101,7 +102,7 @@ class CustomMediaPlayBar(MediaPlayBarBase):
                     logger.info("歌曲播放完毕，自动播放下一首。")
                     nextSong()
                 case PlayMode.SEQUENTIAL:
-                    if cfg.play_queue_index < len(cfg.play_queue):
+                    if app_context.play_queue_index < len(app_context.play_queue):
                         logger.info("歌曲播放完毕，自动播放下一首。")
                         nextSong()
                 case PlayMode.SINGLE_LOOP:
@@ -142,7 +143,7 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         """toggle the play state of media player"""
         super().togglePlayState()
 
-        if cfg.info_bar is not None:
+        if app_context.info_bar is not None:
             try:
                 update_info_tip()
             except Exception as e:

@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QV
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
+from src.app_context import app_context
 from src.config import MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info
 from src.core.player import getMusicLocal, open_player
@@ -120,13 +121,13 @@ class LocalPlayerInterface(QWidget):
             self.main_window.player_bar.player.setSource(url)
             self.main_window.player_bar.player.play()
 
-            cfg.playing_now = item.text()
+            app_context.playing_now = item.text()
 
             open_info_tip()
 
             self.add_to_queue()
-            cfg.play_queue_index = cfg.play_queue.index(file_path)
-            logger.info(f"当前播放歌曲队列位置：{cfg.play_queue_index}")
+            app_context.play_queue_index = app_context.play_queue.index(file_path)
+            logger.info(f"当前播放歌曲队列位置：{app_context.play_queue_index}")
         except Exception:
             logger.exception("播放选中歌曲失败")
 
@@ -136,10 +137,10 @@ class LocalPlayerInterface(QWidget):
         assert item is not None, "当前行没有歌曲信息"
 
         if file_path := getMusicLocal(item):
-            if file_path in cfg.play_queue:
+            if file_path in app_context.play_queue:
                 return
 
-            cfg.play_queue.append(file_path)
+            app_context.play_queue.append(file_path)
             InfoBar.success(
                 "成功",
                 f"已添加{item.text()}到播放列表",
@@ -148,7 +149,7 @@ class LocalPlayerInterface(QWidget):
                 duration=1500,
                 parent=self.parent(),
             )
-            logger.info(f"当前播放列表:{cfg.play_queue}")
+            logger.info(f"当前播放列表:{app_context.play_queue}")
         else:
             InfoBar.error(
                 "失败",
@@ -156,7 +157,7 @@ class LocalPlayerInterface(QWidget):
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
                 duration=1500,
-                parent=cfg.main_window,
+                parent=app_context.main_window,
             )
 
     def del_song(self):
@@ -166,8 +167,8 @@ class LocalPlayerInterface(QWidget):
             if (file_path := getMusicLocal(item)) and (fp := Path(file_path)).exists():
                 fp.unlink()
 
-            if file_path in cfg.play_queue:
-                cfg.play_queue.remove(file_path)
+            if file_path in app_context.play_queue:
+                app_context.play_queue.remove(file_path)
 
             InfoBar.success(
                 "完成",
@@ -199,7 +200,7 @@ class LocalPlayerInterface(QWidget):
                     )
                     continue
 
-                if file_path in cfg.play_queue:
+                if file_path in app_context.play_queue:
                     InfoBar.warning(
                         "已存在",
                         f"{item.text()}已存在播放列表",
@@ -210,7 +211,7 @@ class LocalPlayerInterface(QWidget):
                     )
                     continue
 
-                cfg.play_queue.append(file_path)
+                app_context.play_queue.append(file_path)
                 logger.success(f"已添加 {item.text()} 到播放列表")
 
             InfoBar.success(
@@ -221,7 +222,7 @@ class LocalPlayerInterface(QWidget):
                 duration=1500,
                 parent=self.parent(),
             )
-            logger.info(f"当前播放列表:{cfg.play_queue}")
+            logger.info(f"当前播放列表:{app_context.play_queue}")
 
         except Exception as exc:
             InfoBar.error(
@@ -230,6 +231,6 @@ class LocalPlayerInterface(QWidget):
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
                 duration=1500,
-                parent=cfg.main_window,
+                parent=app_context.main_window,
             )
             logger.exception("添加所有歌曲到播放列表失败")

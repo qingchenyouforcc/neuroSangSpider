@@ -6,6 +6,7 @@ from qfluentwidgets import FluentWindow, InfoBar, InfoBarPosition, TableWidget, 
 
 from src.config import cfg
 from src.core.player import playSongByIndex, sequencePlay
+from src.app_context import app_context
 
 
 class PlayQueueInterface(QWidget):
@@ -68,7 +69,7 @@ class PlayQueueInterface(QWidget):
         self.load_play_queue()
 
     def load_play_queue(self):
-        if not cfg.play_queue:
+        if not app_context.play_queue:
             InfoBar.warning(
                 "提示",
                 "播放列表为空",
@@ -81,11 +82,11 @@ class PlayQueueInterface(QWidget):
             return
 
         try:
-            self.tableView.setRowCount(len(cfg.play_queue))
+            self.tableView.setRowCount(len(app_context.play_queue))
             self.tableView.setColumnCount(1)
             self.tableView.setHorizontalHeaderLabels(["歌曲"])
 
-            for i, song in enumerate(cfg.play_queue):
+            for i, song in enumerate(app_context.play_queue):
                 self.tableView.setItem(i, 0, QTableWidgetItem(song.name))
 
             self.tableView.resizeColumnsToContents()
@@ -95,30 +96,30 @@ class PlayQueueInterface(QWidget):
     def move_up(self):
         index = self.tableView.currentIndex().row()
         if index > 0:
-            cfg.play_queue[index - 1], cfg.play_queue[index] = (
-                cfg.play_queue[index],
-                cfg.play_queue[index - 1],
+            app_context.play_queue[index - 1], app_context.play_queue[index] = (
+                app_context.play_queue[index],
+                app_context.play_queue[index - 1],
             )
             if model := self.tableView.model():
                 self.tableView.setCurrentIndex(model.index(index - 1, 0))
 
-            if cfg.play_queue_index == index:
-                cfg.play_queue_index -= 1
+            if app_context.play_queue_index == index:
+                app_context.play_queue_index -= 1
 
         self.load_play_queue()
 
     def move_down(self):
         index = self.tableView.currentIndex().row()
-        if index < len(cfg.play_queue) - 1:
-            cfg.play_queue[index + 1], cfg.play_queue[index] = (
-                cfg.play_queue[index],
-                cfg.play_queue[index + 1],
+        if index < len(app_context.play_queue) - 1:
+            app_context.play_queue[index + 1], app_context.play_queue[index] = (
+                app_context.play_queue[index],
+                app_context.play_queue[index + 1],
             )
             if model := self.tableView.model():
                 self.tableView.setCurrentIndex(model.index(index + 1, 0))
 
-            if cfg.play_queue_index == index:
-                cfg.play_queue_index += 1
+            if app_context.play_queue_index == index:
+                app_context.play_queue_index += 1
 
         self.load_play_queue()
 
@@ -126,8 +127,8 @@ class PlayQueueInterface(QWidget):
         index = self.tableView.currentIndex().row()
         if index >= 0:
             try:
-                logger.info(f"删除歌曲: {cfg.play_queue[index]}, 位置: {index}")
-                cfg.play_queue.pop(index)
+                logger.info(f"删除歌曲: {app_context.play_queue[index]}, 位置: {index}")
+                app_context.play_queue.pop(index)
                 self.load_play_queue()
             except Exception:
                 logger.exception("删除歌曲失败")
@@ -136,7 +137,7 @@ class PlayQueueInterface(QWidget):
     def play_selected_song(row):
         """双击播放指定行的歌曲"""
         try:
-            cfg.play_queue_index = row
+            app_context.play_queue_index = row
             playSongByIndex()
         except Exception:
             logger.exception(f"播放 {row=} 的歌曲时出错")
