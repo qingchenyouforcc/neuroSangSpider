@@ -46,7 +46,7 @@ if __name__ == "__main__":
             QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     setup_logger()
-
+    
     app = QApplication(sys.argv)
     window = app_context.main_window = MainWindow()
     window.show()

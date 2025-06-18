@@ -12,7 +12,7 @@ from src.config import MUSIC_DIR
 from src.utils.file import read_all_audio_info
 from src.core.player import getMusicLocal, open_player
 from src.utils.text import escape_tag
-from ui.widgets.tipbar import open_info_tip
+from src.ui.widgets.tipbar import open_info_tip
 
 if TYPE_CHECKING:
     from ui.main_window import MainWindow

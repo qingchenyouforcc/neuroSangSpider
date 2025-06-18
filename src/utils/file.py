@@ -10,8 +10,7 @@ from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
 from src.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
-
-from bili_api.converters import url2bv
+from src.bili_api.converters import url2bv
 
 
 def create_dir(dir_name: str) -> None:

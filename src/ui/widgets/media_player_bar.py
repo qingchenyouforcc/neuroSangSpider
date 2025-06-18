@@ -10,7 +10,7 @@ from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 from src.app_context import app_context
 from src.config import PlayMode, cfg
 from src.core.player import nextSong, playSongByIndex, previousSong
-from ui.widgets.tipbar import update_info_tip
+from src.ui.widgets.tipbar import update_info_tip
 
 
 class CustomMediaPlayBar(MediaPlayBarBase):

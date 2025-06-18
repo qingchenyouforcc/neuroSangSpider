@@ -20,7 +20,7 @@ from qfluentwidgets import (
 from src.app_context import app_context
 from src.bili_api import create_video_list_file, run_music_download, search_on_bilibili, search_song_list
 from src.config import ASSETS_DIR, cfg
-from core.song_list import SongList
+from src.core.song_list import SongList
 from src.utils.text import format_date_str
 
 

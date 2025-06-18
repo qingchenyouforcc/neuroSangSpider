@@ -6,15 +6,15 @@ from qfluentwidgets import SplashScreen
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
 
-from src.config import ASSETS_DIR, cfg
+from src.config import ASSETS_DIR, auto_change_theme, cfg
 from src.app_context import app_context
 
-from ui.interface.home import HomeInterface
-from ui.interface.local_player import LocalPlayerInterface
-from ui.widgets.media_player_bar import CustomMediaPlayBar
-from ui.interface.play_queue import PlayQueueInterface
-from ui.interface.search import SearchInterface
-from ui.interface.settings import SettingInterface
+from src.ui.interface.home import HomeInterface
+from src.ui.interface.local_player import LocalPlayerInterface
+from src.ui.widgets.media_player_bar import CustomMediaPlayBar
+from src.ui.interface.play_queue import PlayQueueInterface
+from src.ui.interface.search import SearchInterface
+from src.ui.interface.settings import SettingInterface
 
 
 class MainWindow(FluentWindow):
@@ -39,7 +39,9 @@ class MainWindow(FluentWindow):
             self.resize(QSize(680, 530))
 
         # 在创建其他子页面前先显示主界面
-        self.show()
+        self.show()   
+        
+        auto_change_theme() 
 
         # 添加子界面
         self.addSubInterface(
@@ -84,6 +86,7 @@ class MainWindow(FluentWindow):
         app_context.player = self.player_bar
 
         # 设置默认音频格式
+        
         cfg.download_type.value = "mp3"
         cfg.save()
 

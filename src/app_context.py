@@ -2,7 +2,7 @@ from pathlib import Path
 from qfluentwidgets import QConfig, InfoBar, ToolButton
 from typing import TYPE_CHECKING
 
-from config import DATA_DIR
+from src.config import DATA_DIR
 if TYPE_CHECKING:
     from src.ui.main_window import MainWindow
     from src.ui.widgets.media_player_bar import CustomMediaPlayBar

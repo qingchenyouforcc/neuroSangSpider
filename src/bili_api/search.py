@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 from src.config import VIDEO_DIR, cfg
-from core.song_list import SongList
+from src.core.song_list import SongList
 
 
 async def search_page(search_content: str, page: int) -> list[dict]:
