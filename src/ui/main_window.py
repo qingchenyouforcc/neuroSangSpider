@@ -5,8 +5,9 @@ from PyQt6.QtWidgets import QApplication
 from qfluentwidgets import SplashScreen
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
+from qfluentwidgets import setTheme, Theme as QtTheme
 
-from src.config import ASSETS_DIR, auto_change_theme, cfg
+from src.config import ASSETS_DIR, cfg, Theme
 from src.app_context import app_context
 
 from src.ui.interface.home import HomeInterface
@@ -37,11 +38,12 @@ class MainWindow(FluentWindow):
         # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
         else:  # 如果获取不到主屏幕信息，给一个默认大小
             self.resize(QSize(680, 530))
+            
+        # TODO 实现按照配置文件主题切换，bug没修好
+        cfg.set_theme(Theme.DARK) 
+        logger.info("应用默认主题: DARK")
 
-        # 在创建其他子页面前先显示主界面
         self.show()   
-        
-        auto_change_theme() 
 
         # 添加子界面
         self.addSubInterface(

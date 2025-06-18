@@ -162,27 +162,25 @@ FFMPEG_PATH = detect_ffmpeg()
 CONFIG_PATH = DATA_DIR / "config.json"
 cfg = Config(CONFIG_PATH)
 
-def auto_change_theme() -> None:
-    if CONFIG_PATH.exists():
-        cfg.load()
-        logger.info(f"已找到配置文件，正在加载配置文件主题{cfg.theme_mode.value}")
-        cfg.set_theme(Theme.AUTO) 
-        setTheme(QtTheme.AUTO)
-        # setTheme(QtTheme(cfg.theme_mode.value))
-        # match cfg.theme_mode.value:
-        #     case "AUTO":
-        #         cfg.set_theme(Theme.AUTO)
-        #         logger.info("应用主题: AUTO")
-        #     case "Light":
-        #         cfg.set_theme(Theme.LIGHT)
-        #         logger.info("应用主题: LIGHT")
-        #     case "Dark":
-        #         cfg.set_theme(Theme.DARK) 
-        #         logger.info("应用主题: DARK")
-    else:
-        logger.info("未找到配置文件，正在应用默认主题: AUTO")
-        cfg.set_theme(Theme.AUTO) 
-        setTheme(QtTheme.AUTO)     
+
+if CONFIG_PATH.exists():
+    cfg.load()
+    logger.info(f"已找到配置文件，正在加载配置文件主题{cfg.theme_mode.value}")
+    match cfg.theme_mode.value:
+        case Theme.AUTO:
+            cfg.set_theme(Theme.AUTO)
+            logger.info("应用主题: AUTO")
+        case Theme.LIGHT: 
+            cfg.set_theme(Theme.LIGHT)
+            logger.info("应用主题: LIGHT")
+        case Theme.DARK: 
+            cfg.set_theme(Theme.DARK) 
+            logger.info("应用主题: DARK")
+    
+else:
+    logger.info("未找到配置文件，正在应用默认主题: AUTO")
+    cfg.set_theme(Theme.AUTO) 
+    setTheme(QtTheme.AUTO)     
 
 
 VERSION = "1.1.5"

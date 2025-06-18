@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from loguru import logger
-from core.song_list import SongList
+from src.core.song_list import SongList
 
 
 def load_from_all_data(input_folder: Path, exclude_file: list[str] | None = None):
