@@ -10,7 +10,6 @@ from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
 from src.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
-from core.song_list import SongList
 
 from bili_api.converters import url2bv
 

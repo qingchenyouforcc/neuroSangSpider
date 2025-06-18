@@ -93,8 +93,8 @@ class Config(QConfig):
         self.playing_now: str | None = None
         self.play_queue: list[Path] = []
         self.play_queue_index: int = 0
-        self.main_window: "MainWindow | None" = None
-        self.player: "CustomMediaPlayBar | None" = None
+        self.main_window: 'MainWindow | None' = None
+        self.player: 'CustomMediaPlayBar | None' = None
         self.info_bar: InfoBar | None = None
         self.info_bar_play_btn: ToolButton | None = None
 
