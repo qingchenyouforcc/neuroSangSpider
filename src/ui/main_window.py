@@ -4,7 +4,7 @@ from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import QApplication
 from qfluentwidgets import SplashScreen
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition
+from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition, SystemThemeListener
 
 from src.config import ASSETS_DIR, cfg, Theme
 from src.app_context import app_context
@@ -20,6 +20,10 @@ from src.ui.interface.settings import SettingInterface
 class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
+        
+        # 系统主题监听器
+        self.themeListener = SystemThemeListener(self)
+        
         self.setObjectName("demoWindow")
         icon = QtGui.QIcon(str(ASSETS_DIR / "main.ico"))
 
@@ -39,8 +43,9 @@ class MainWindow(FluentWindow):
             self.resize(QSize(680, 530))
             
         # TODO 实现按照配置文件主题切换，bug没修好
-        cfg.set_theme(Theme.DARK) 
-        logger.info("应用默认主题: DARK")
+        # 临时方案：按照系统主题修改
+        cfg.set_theme(Theme.AUTO) 
+        logger.info("应用默认主题: AUTO")
 
         self.show()   
 
@@ -104,6 +109,8 @@ class MainWindow(FluentWindow):
             if w.exec():
                 logger.info("用户确认退出，程序即将关闭。")
                 event.accept()
+                self.themeListener.terminate()
+                self.themeListener.deleteLater()
                 QApplication.quit()
             else:
                 logger.info("用户取消了退出操作。")

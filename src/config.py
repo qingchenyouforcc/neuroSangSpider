@@ -165,17 +165,17 @@ cfg = Config(CONFIG_PATH)
 
 if CONFIG_PATH.exists():
     cfg.load()
-    logger.info(f"已找到配置文件，正在加载配置文件主题{cfg.theme_mode.value}")
-    match cfg.theme_mode.value:
-        case Theme.AUTO:
-            cfg.set_theme(Theme.AUTO)
-            logger.info("应用主题: AUTO")
-        case Theme.LIGHT: 
-            cfg.set_theme(Theme.LIGHT)
-            logger.info("应用主题: LIGHT")
-        case Theme.DARK: 
-            cfg.set_theme(Theme.DARK) 
-            logger.info("应用主题: DARK")
+    # logger.info(f"已找到配置文件，正在加载配置文件主题{cfg.theme_mode.value}")
+    # match cfg.theme_mode.value:
+    #     case Theme.AUTO:
+    #         cfg.set_theme(Theme.AUTO)
+    #         logger.info("应用主题: AUTO")
+    #     case Theme.LIGHT: 
+    #         cfg.set_theme(Theme.LIGHT)
+    #         logger.info("应用主题: LIGHT")
+    #     case Theme.DARK: 
+    #         cfg.set_theme(Theme.DARK) 
+    #         logger.info("应用主题: DARK")
     
 else:
     logger.info("未找到配置文件，正在应用默认主题: AUTO")
