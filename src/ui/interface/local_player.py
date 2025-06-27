@@ -240,3 +240,8 @@ class LocalPlayerInterface(QWidget):
                 parent=app_context.main_window,
             )
             logger.exception("添加所有歌曲到播放列表失败")
+
+    def showEvent(self, a0):
+        """当页面显示时触发刷新"""
+        super().showEvent(a0)
+        self.load_local_songs()

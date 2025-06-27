@@ -140,3 +140,8 @@ class PlayQueueInterface(QWidget):
             playSongByIndex()
         except Exception:
             logger.exception(f"播放 {row=} 的歌曲时出错")
+            
+    def showEvent(self, a0):
+        """当页面显示时触发刷新"""
+        super().showEvent(a0)
+        self.load_play_queue()
