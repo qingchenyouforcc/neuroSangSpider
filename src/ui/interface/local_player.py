@@ -8,7 +8,7 @@ from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
 from src.app_context import app_context
-from src.config import MUSIC_DIR
+from src.config import MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info
 from src.core.player import getMusicLocal, open_player
 from src.utils.text import escape_tag
@@ -35,6 +35,7 @@ class LocalPlayerInterface(QWidget):
         self._layout.setSpacing(15)
 
         self.tableView.setBorderVisible(True)
+        self.tableView.setSortingEnabled(True) 
         self.tableView.setBorderRadius(8)
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -88,13 +89,18 @@ class LocalPlayerInterface(QWidget):
         try:
             songs = read_all_audio_info(MUSIC_DIR)
             self.tableView.setRowCount(len(songs))
-            self.tableView.setColumnCount(2)
-            self.tableView.setHorizontalHeaderLabels(["文件名", "时长"])
+            self.tableView.setColumnCount(3)
+            self.tableView.setHorizontalHeaderLabels(["文件名", "时长", "播放次数"])
 
             for i, (filename, duration) in enumerate(songs):
                 self.tableView.setItem(i, 0, QTableWidgetItem(filename))
                 self.tableView.setItem(i, 1, QTableWidgetItem(f"{duration}s"))
-
+            
+                # 从配置中获取播放次数
+                play_count = cfg.play_count.value.get(str(filename), 0)
+                logger.info(f"歌曲 {filename} 的播放次数: {play_count}")
+                self.tableView.setItem(i, 2, QTableWidgetItem(str(play_count)))
+            
             self.tableView.resizeColumnsToContents()
         except Exception:
             logger.exception("加载本地歌曲失败")

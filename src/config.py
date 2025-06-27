@@ -78,6 +78,8 @@ class Config(QConfig):
         Theme.AUTO,
         OptionsValidator([Theme.AUTO, Theme.LIGHT, Theme.DARK]),
     )
+    
+    play_count = ConfigItem("Player", "PlayCount", {})
 
     # bilibili-api-python
     bili_sessdata = ConfigItem("Bilibili", "SESSDATA", "")
