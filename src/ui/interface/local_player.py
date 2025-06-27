@@ -2,7 +2,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from loguru import logger
-from PyQt6.QtCore import Qt, QUrl
+from typing import TYPE_CHECKING, Optional, Union, Any
+from PyQt6.QtCore import Qt, QUrl, QMimeData
+from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
@@ -13,6 +15,9 @@ from src.utils.file import read_all_audio_info
 from src.core.player import getMusicLocal, open_player
 from src.utils.text import escape_tag
 from src.ui.widgets.tipbar import open_info_tip
+
+import shutil
+import time
 
 if TYPE_CHECKING:
     from ui.main_window import MainWindow
@@ -25,6 +30,8 @@ class LocalPlayerInterface(QWidget):
         super().__init__(parent=parent)
         self.stateTooltip = None
         self.main_window = main_window
+        
+        self.setAcceptDrops(True)
         self.setObjectName("locPlayerInterface")
         self.setStyleSheet("LocPlayerInterface{background: transparent}")
 
@@ -240,6 +247,104 @@ class LocalPlayerInterface(QWidget):
                 parent=app_context.main_window,
             )
             logger.exception("添加所有歌曲到播放列表失败")
+
+    def dragEnterEvent(self, a0: Any):
+        """当用户开始拖动文件到窗口时触发"""
+        try:
+            # 检查是否为文件拖入
+            mime_data = a0.mimeData()
+            if mime_data and mime_data.hasUrls():
+                # 检查是否为音频文件
+                for url in mime_data.urls():
+                    file_path = url.toLocalFile()
+                    if Path(file_path).suffix.lower() in ['.mp3', '.wav', '.ogg', '.flac', '.m4a']:
+                        a0.acceptProposedAction()
+                        return
+            a0.ignore()
+        except Exception as e:
+            logger.exception(f"拖拽进入事件处理失败: {e}")
+        
+    def dragMoveEvent(self, a0: Any):
+        """当用户在窗口内移动拖放物时触发"""
+        try:
+            if a0.mimeData() and a0.mimeData().hasUrls():
+                a0.acceptProposedAction()
+            else:
+                a0.ignore()
+        except Exception as e:
+            logger.exception(f"拖拽移动事件处理失败: {e}")
+            
+    def dropEvent(self, a0: Any):
+        """当用户释放拖放物时触发"""
+        try:
+            mime_data = a0.mimeData()
+            if mime_data and mime_data.hasUrls():
+                imported_count = 0
+                for url in mime_data.urls():
+                    file_path = Path(url.toLocalFile())
+                    if file_path.is_file() and file_path.suffix.lower() in ['.mp3', '.wav', '.ogg', '.flac', '.m4a']:
+                        try:
+                            self._import_audio_file(file_path)
+                            imported_count += 1
+                        except Exception as e:
+                            logger.exception(f"导入文件失败: {e}")
+                    elif file_path.is_dir():
+                        # 处理文件夹导入
+                        folder_import_count = self._import_audio_folder(file_path)
+                        imported_count += folder_import_count
+                
+                if imported_count > 0:
+                    self.load_local_songs()  # 刷新歌曲列表
+                    self._show_import_success_message(imported_count)
+                
+                a0.acceptProposedAction()
+            else:
+                a0.ignore()
+        except Exception as e:
+            logger.exception(f"拖拽释放事件处理失败: {e}")
+            
+    def _import_audio_file(self, source_path: Path) -> Path:
+        """导入音频文件到音乐目录"""
+        target_path = MUSIC_DIR / source_path.name
+        
+        # 如果文件已存在，添加时间戳
+        if target_path.exists():
+            timestamp = int(time.time())
+            new_name = f"{source_path.stem}_{timestamp}{source_path.suffix}"
+            target_path = MUSIC_DIR / new_name
+        
+        # 复制文件
+        shutil.copy2(source_path, target_path)
+        
+        logger.info(f"已导入音频文件: {target_path}")
+        return target_path
+        
+    def _import_audio_folder(self, folder_path: Path) -> int:
+        """导入文件夹中的所有音频文件，返回导入的文件数量"""
+        if not folder_path.is_dir():
+            return 0
+            
+        imported_count = 0
+        for file_path in folder_path.glob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in ['.mp3', '.wav', '.ogg', '.flac', '.m4a']:
+                try:
+                    self._import_audio_file(file_path)
+                    imported_count += 1
+                except Exception as e:
+                    logger.error(f"导入文件 {file_path} 失败: {e}")
+        
+        return imported_count
+        
+    def _show_import_success_message(self, count):
+        """显示导入成功的消息"""
+        InfoBar.success(
+            "导入成功",
+            f"已成功导入 {count} 首歌曲",
+            orient=Qt.Orientation.Horizontal,
+            position=InfoBarPosition.TOP,
+            duration=2000,
+            parent=self,
+        )
 
     def showEvent(self, a0):
         """当页面显示时触发刷新"""
