@@ -1,6 +1,4 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
-
 from loguru import logger
 from typing import TYPE_CHECKING, Any
 from PyQt6.QtCore import Qt, QUrl
