@@ -35,7 +35,7 @@ class HomeInterface(QWidget):
             "这是一个基于 Python 3.13 开发的程序，\n"
             "用于从 Bilibili（哔哩哔哩）爬取 Neuro/Evil 的歌曲的视频内容。\n"
             "如果搜索没结果的话，可以试试多搜几次\n"
-            "(当然未来也支持通过自定义UP 主列表和关键词，灵活调整爬取目标) \n"
+            "(当然也支持通过自定义UP 主列表和关键词，灵活调整爬取目标) \n"
             f"\nLicense:   AGPL-3.0\nVersion: {VERSION}",
             self,
         )

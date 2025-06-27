@@ -185,4 +185,4 @@ else:
     setTheme(QtTheme.AUTO)     
 
 
-VERSION = "1.1.5"
+VERSION = "1.1.6"
