@@ -97,6 +97,15 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         remainTime = self.player.duration() - position
 
         if remainTime == 0:
+            # 实现音乐播放次数统计
+            song_name = app_context.play_queue[app_context.play_queue_index].name
+            if song_name in cfg.play_count.value:
+                cfg.play_count.value[song_name] += 1
+            else:
+                cfg.play_count.value[song_name] = 1
+                
+            cfg.save()
+            
             match cfg.play_mode.value:
                 case PlayMode.LIST_LOOP:
                     logger.info("歌曲播放完毕，自动播放下一首。")
@@ -110,15 +119,6 @@ class CustomMediaPlayBar(MediaPlayBarBase):
                 case PlayMode.RANDOM:
                     logger.info("歌曲播放完毕，自动播放下一首。")
                     nextSong()
-            
-            # 实现音乐播放次数统计
-            song_name = app_context.play_queue[app_context.play_queue_index].name
-            if song_name in cfg.play_count.value:
-                cfg.play_count.value[song_name] += 1
-            else:
-                cfg.play_count.value[song_name] = 1
-                
-            cfg.save()
 
     @staticmethod
     def _formatTime(time: int):

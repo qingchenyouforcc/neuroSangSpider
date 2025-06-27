@@ -91,21 +91,58 @@ class LocalPlayerInterface(QWidget):
 
     def load_local_songs(self):
         try:
+            # 记录当前排序状态
+            header = self.tableView.horizontalHeader()
+            sort_column = -1
+            sort_order = Qt.SortOrder.AscendingOrder
+            
+            try:
+                # 尝试获取当前排序状态
+                if header:
+                    sort_column = header.sortIndicatorSection()
+                    sort_order = header.sortIndicatorOrder()
+            except Exception:
+                logger.debug("无法获取当前排序状态")
+            
+            # 临时关闭排序功能，防止添加数据时自动排序
+            self.tableView.setSortingEnabled(False)
+            
+            self.tableView.clear()
             songs = read_all_audio_info(MUSIC_DIR)
             self.tableView.setRowCount(len(songs))
             self.tableView.setColumnCount(3)
             self.tableView.setHorizontalHeaderLabels(["文件名", "时长", "播放次数"])
 
             for i, (filename, duration) in enumerate(songs):
-                self.tableView.setItem(i, 0, QTableWidgetItem(filename))
+                file_item = QTableWidgetItem(filename)
+                # 存储原始文件名作为隐藏数据，用于后续查找
+                file_item.setData(Qt.ItemDataRole.UserRole, filename)
+                
+                self.tableView.setItem(i, 0, file_item)
                 self.tableView.setItem(i, 1, QTableWidgetItem(f"{duration}s"))
             
                 # 从配置中获取播放次数
                 play_count = cfg.play_count.value.get(str(filename), 0)
-                logger.info(f"歌曲 {filename} 的播放次数: {play_count}")
-                self.tableView.setItem(i, 2, QTableWidgetItem(str(play_count)))
+                logger.debug(f"歌曲 {filename} 的播放次数: {play_count}")
+                
+                # 确保播放次数项可以正确排序（数字排序而非字符串排序）
+                count_item = QTableWidgetItem()
+                count_item.setData(Qt.ItemDataRole.DisplayRole, str(play_count))  
+                count_item.setData(Qt.ItemDataRole.UserRole, int(play_count))  
+                self.tableView.setItem(i, 2, count_item)
             
             self.tableView.resizeColumnsToContents()
+            
+            # 重新启用排序并应用之前的排序设置
+            self.tableView.setSortingEnabled(True)
+            
+            try:
+                # 尝试恢复排序状态
+                if sort_column >= 0 and header:
+                    header.setSortIndicator(sort_column, sort_order)
+            except Exception:
+                logger.debug("无法恢复之前的排序状态")
+                
         except Exception:
             logger.exception("加载本地歌曲失败")
 
