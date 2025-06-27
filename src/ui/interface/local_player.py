@@ -2,9 +2,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from loguru import logger
-from typing import TYPE_CHECKING, Optional, Union, Any
-from PyQt6.QtCore import Qt, QUrl, QMimeData
-from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+from typing import TYPE_CHECKING, Any
+from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
