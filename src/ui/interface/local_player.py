@@ -57,6 +57,7 @@ class LocalPlayerInterface(QWidget):
         super().__init__(parent=parent)
         self.stateTooltip = None
         self.main_window = main_window
+        self._first_load = True  # 标记首次加载，用于控制无效文件提示
         
         self.setAcceptDrops(True)
         self.setObjectName("locPlayerInterface")
@@ -123,6 +124,9 @@ class LocalPlayerInterface(QWidget):
 
     def load_local_songs(self):
         try:
+            # 清理无效文件
+            self._clean_invalid_files()
+            
             # 记录当前排序状态
             header = self.tableView.horizontalHeader()
             sort_column = -1
@@ -339,7 +343,24 @@ class LocalPlayerInterface(QWidget):
     def add_all_to_queue(self):
         """添加列表所有歌曲到播放列表"""
         try:
-            for i in range(self.tableView.rowCount()):
+            # 统计信息
+            total_files = self.tableView.rowCount()
+            added_count = 0
+            already_exists_count = 0
+            invalid_count = 0
+            
+            # 显示进度开始提示
+            InfoBar.info(
+                "添加中",
+                f"正在添加 {total_files} 首歌曲到播放列表...",
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1500,
+                parent=self.parent(),
+            )
+            
+            for i in range(total_files):
+                # 在每次循环中都获取当前行的第0列（文件名列）项
                 item = self.tableView.item(i, 0)
                 if item is None:
                     logger.warning(f"第 {i} 行没有歌曲信息，跳过")
@@ -347,35 +368,45 @@ class LocalPlayerInterface(QWidget):
 
                 file_path = getMusicLocal(item)
                 if file_path is None or not file_path.exists():
-                    # TODO: 可能需要处理文件失效
+                    # 处理文件失效
                     logger.opt(colors=True).warning(
                         f"第 {i} 行的文件路径 <y><u>{escape_tag(str(file_path))}</u></y> 无效，跳过"
                     )
+                    # 记录失效文件，用于后续清理表格
+                    self._mark_invalid_file(item.text())
+                    invalid_count += 1
                     continue
 
                 if file_path in app_context.play_queue:
-                    InfoBar.warning(
-                        "已存在",
-                        f"{item.text()}已存在播放列表",
-                        orient=Qt.Orientation.Horizontal,
-                        position=InfoBarPosition.TOP,
-                        duration=500,
-                        parent=self.parent(),
-                    )
+                    # 不再为每个已存在的文件显示提示，只记录日志和计数
+                    filename = item.text() if item else "未知文件"
+                    logger.debug(f"歌曲 {filename} 已在播放列表中")
+                    already_exists_count += 1
                     continue
 
                 app_context.play_queue.append(file_path)
-                logger.success(f"已添加 {item.text()} 到播放列表")
+                added_count += 1
+                filename = item.text() if item else "未知文件"
+                logger.success(f"已添加 {filename} 到播放列表")
 
+            # 显示添加结果的详细信息
+            message = f"已添加 {added_count} 首新歌曲到播放列表"
+            if already_exists_count > 0:
+                message += f"，{already_exists_count} 首歌曲已存在"
+            if invalid_count > 0:
+                message += f"，{invalid_count} 首歌曲无效"
+                
             InfoBar.success(
-                "成功",
-                "已添加所有歌曲到播放列表",
+                "添加完成",
+                message,
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
-                duration=1500,
+                duration=2000,
                 parent=self.parent(),
             )
-            logger.info(f"当前播放列表:{app_context.play_queue}")
+            
+            logger.info(f"添加完成: 新增 {added_count}, 已存在 {already_exists_count}, 无效 {invalid_count}")
+            logger.debug(f"当前播放列表: {app_context.play_queue}")
 
         except Exception as exc:
             InfoBar.error(
@@ -485,6 +516,85 @@ class LocalPlayerInterface(QWidget):
             duration=2000,
             parent=self,
         )
+
+    def _mark_invalid_file(self, filename: str):
+        """标记无效文件并从配置中清除其相关信息
+        
+        Args:
+            filename: 文件名
+        """
+        try:
+            # 从播放计数中移除
+            if filename in cfg.play_count.value:
+                logger.info(f"从播放计数中移除无效文件: {filename}")
+                del cfg.play_count.value[filename]
+                cfg.save()
+                
+            # 从播放序列中移除
+            play_sequences = cfg.play_sequences.value
+            for seq_name, files in list(play_sequences.items()):
+                if filename in files:
+                    logger.info(f"从播放序列 {seq_name} 中移除无效文件: {filename}")
+                    play_sequences[seq_name] = [f for f in files if f != filename]
+                    # 如果序列变为空，考虑是否需要删除该序列
+                    if not play_sequences[seq_name]:
+                        logger.warning(f"播放序列 {seq_name} 已变为空")
+            
+            # 更新播放序列配置
+            cfg.play_sequences.value = play_sequences
+            cfg.save()
+            
+            # 从恢复的播放队列中移除
+            last_play_data = cfg.last_play_queue.value
+            if isinstance(last_play_data, dict) and "queue" in last_play_data:
+                queue = last_play_data.get("queue", [])
+                if isinstance(queue, list) and filename in queue:
+                    logger.info(f"从恢复的播放队列中移除无效文件: {filename}")
+                    last_play_data["queue"] = [f for f in queue if f != filename]
+                    cfg.last_play_queue.value = last_play_data
+                    cfg.save()
+        except Exception as e:
+            logger.error(f"标记无效文件时出错: {e}")
+            
+    def _clean_invalid_files(self):
+        """清理界面上的无效文件并更新相关配置"""
+        try:
+            invalid_files = []
+            
+            # 扫描表格中的所有文件
+            for i in range(self.tableView.rowCount()):
+                item = self.tableView.item(i, 0)
+                if item is None:
+                    continue
+                
+                file_path = getMusicLocal(item)
+                if file_path is None or not file_path.exists():
+                    invalid_files.append(item.text())                # 如果有无效文件，进行清理
+            if invalid_files:
+                # 打印无效文件列表
+                logger.warning(f"发现 {len(invalid_files)} 个无效文件")
+                for f in invalid_files:
+                    logger.warning(f"  - {f}")
+                    self._mark_invalid_file(f)
+                
+                # 仅当首次加载时显示清理提示，避免频繁打扰用户
+                if hasattr(self, '_first_load') and self._first_load:
+                    InfoBar.info(
+                        "已清理无效文件",
+                        f"已从配置中移除 {len(invalid_files)} 个无效文件",
+                        orient=Qt.Orientation.Horizontal,
+                        position=InfoBarPosition.TOP,
+                        duration=2000,
+                        parent=self,
+                    )
+            
+            # 标记非首次加载
+            if not hasattr(self, '_first_load'):
+                self._first_load = False
+            else:
+                self._first_load = False
+        except Exception as e:
+            logger.exception(f"清理无效文件时出错: {e}")
 
     def showEvent(self, a0):
         """当页面显示时触发刷新"""
