@@ -231,7 +231,6 @@ class PlaySequenceDialog(QDialog):
         # 关闭按钮样式 - 鲜明红色悬停效果
         if hasattr(self, "closeButton"):
             # 设置图标主题色
-            icon_color = "white" if dark_mode else "black"
             hover_bg_color = "#d13438" if dark_mode else "#e81123"
             pressed_bg_color = "#a5262a" if dark_mode else "#c41019"
             

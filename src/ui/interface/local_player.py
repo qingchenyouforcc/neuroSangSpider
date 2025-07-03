@@ -2,7 +2,10 @@ from pathlib import Path
 from loguru import logger
 from typing import TYPE_CHECKING, Any
 from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (
+    QAbstractItemView, QHBoxLayout, QTableWidgetItem, 
+    QVBoxLayout, QWidget
+)
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
@@ -18,6 +21,33 @@ import time
 
 if TYPE_CHECKING:
     from ui.main_window import MainWindow
+
+
+class NumericTableWidgetItem(QTableWidgetItem):
+    """支持数值排序的表格项"""
+    
+    def __init__(self, value):
+        # 存储值并显示为字符串
+        super().__init__(str(value))
+        self._value = int(value) if isinstance(value, (int, float)) else 0
+    
+    def data(self, role):
+        # 对于排序角色，返回数值类型
+        if role == Qt.ItemDataRole.EditRole or role == Qt.ItemDataRole.UserRole:
+            return self._value
+        
+        # 对于显示角色，使用父类的实现（即显示为字符串）
+        return super().data(role)
+    
+    def __lt__(self, other):
+        # 确保排序时比较数值大小
+        if isinstance(other, NumericTableWidgetItem):
+            return self._value < other._value
+        return super().__lt__(other)
+        
+    def setText(self, atext):
+        """设置显示文本，但不影响内部排序值"""
+        super().setText(atext)
 
 
 class LocalPlayerInterface(QWidget):
@@ -79,7 +109,9 @@ class LocalPlayerInterface(QWidget):
         self._layout.addLayout(title_layout)
         self._layout.addWidget(self.tableView)
 
+        # 处理双击事件：无论点击哪一列，都会传递行和列索引
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
+        
         self.refreshButton.clicked.connect(self.load_local_songs)
         self.addQueueButton.clicked.connect(self.add_to_queue)
         self.openPlayer.clicked.connect(open_player)
@@ -119,16 +151,18 @@ class LocalPlayerInterface(QWidget):
                 file_item.setData(Qt.ItemDataRole.UserRole, filename)
                 
                 self.tableView.setItem(i, 0, file_item)
-                self.tableView.setItem(i, 1, QTableWidgetItem(f"{duration}s"))
+                
+                # 时长也应该按照数字排序
+                duration_item = NumericTableWidgetItem(duration)
+                duration_item.setText(f"{duration}s")  # 显示带单位的时长
+                self.tableView.setItem(i, 1, duration_item)
             
                 # 从配置中获取播放次数
                 play_count = cfg.play_count.value.get(str(filename), 0)
                 logger.debug(f"歌曲 {filename} 的播放次数: {play_count}")
                 
-                # 确保播放次数项可以正确排序（数字排序而非字符串排序）
-                count_item = QTableWidgetItem()
-                count_item.setData(Qt.ItemDataRole.DisplayRole, str(play_count))  
-                count_item.setData(Qt.ItemDataRole.UserRole, int(play_count))  
+                # 创建一个特殊的表格项，确保按照数字大小排序
+                count_item = NumericTableWidgetItem(play_count)
                 self.tableView.setItem(i, 2, count_item)
             
             self.tableView.resizeColumnsToContents()
@@ -146,9 +180,15 @@ class LocalPlayerInterface(QWidget):
         except Exception:
             logger.exception("加载本地歌曲失败")
 
-    def play_selected_song(self, row):
-        """双击播放指定行的歌曲"""
+    def play_selected_song(self, row, column=None):
+        """双击播放指定行的歌曲
+        
+        Args:
+            row: 行号
+            column: 列号，无论点击哪一列，都会传递给第0列（文件名列）获取歌曲信息
+        """
         try:
+            # 不管点击哪一列，始终从第0列（文件名列）获取歌曲信息
             item = self.tableView.item(row, 0)
             assert item is not None, "当前行没有歌曲信息"
 
@@ -172,63 +212,128 @@ class LocalPlayerInterface(QWidget):
 
             open_info_tip()
 
-            self.add_to_queue()
+            # 确保歌曲在播放队列中
+            if file_path not in app_context.play_queue:
+                app_context.play_queue.append(file_path)
+                logger.info(f"已将 {item.text()} 添加到播放队列")
+                
+            # 更新播放索引
             app_context.play_queue_index = app_context.play_queue.index(file_path)
             logger.info(f"当前播放歌曲队列位置：{app_context.play_queue_index}")
         except Exception:
             logger.exception("播放选中歌曲失败")
 
-    def add_to_queue(self):
-        """添加到播放列表"""
-        item = self.tableView.currentItem()
-        assert item is not None, "当前行没有歌曲信息"
-
-        if file_path := getMusicLocal(item):
-            if file_path in app_context.play_queue:
+    def add_to_queue(self, row=None):
+        """添加到播放列表
+        
+        Args:
+            row: 指定行号，如果为None则使用当前选中行
+        """
+        try:
+            # 确定要处理的项：如果指定了行号，则获取该行的第0列项，否则使用当前选中项
+            if row is not None:
+                item = self.tableView.item(row, 0)  # 始终使用第0列（文件名列）
+            else:
+                current_item = self.tableView.currentItem()
+                if current_item is None:
+                    logger.warning("没有选中的歌曲")
+                    return
+                
+                # 获取当前选中项所在行的第0列项（文件名列）
+                current_row = current_item.row()
+                item = self.tableView.item(current_row, 0)
+            
+            if item is None:
+                logger.warning("无法获取歌曲信息")
                 return
+            
+            # 获取文件路径并添加到播放队列
+            if file_path := getMusicLocal(item):
+                if file_path in app_context.play_queue:
+                    logger.debug(f"歌曲 {item.text()} 已在播放列表中")
+                    return
 
-            app_context.play_queue.append(file_path)
-            InfoBar.success(
-                "成功",
-                f"已添加{item.text()}到播放列表",
-                orient=Qt.Orientation.Horizontal,
-                position=InfoBarPosition.TOP,
-                duration=1500,
-                parent=self.parent(),
-            )
-            logger.info(f"当前播放列表:{app_context.play_queue}")
-        else:
-            InfoBar.error(
-                "失败",
-                "添加失败！",
-                orient=Qt.Orientation.Horizontal,
-                position=InfoBarPosition.TOP,
-                duration=1500,
-                parent=app_context.main_window,
-            )
+                app_context.play_queue.append(file_path)
+                InfoBar.success(
+                    "成功",
+                    f"已添加{item.text()}到播放列表",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=1500,
+                    parent=self.parent(),
+                )
+                logger.info(f"当前播放列表:{app_context.play_queue}")
+            else:
+                InfoBar.error(
+                    "失败",
+                    "添加失败！",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=1500,
+                    parent=app_context.main_window,
+                )
+        except Exception:
+            logger.exception("添加到播放列表失败")
 
     def del_song(self):
         """删除列表项文件"""
         try:
-            item = self.tableView.currentItem()
+            # 获取当前选中项
+            current_item = self.tableView.currentItem()
+            if current_item is None:
+                logger.warning("没有选中的歌曲")
+                return
+                
+            # 获取当前选中项所在行的第0列项（文件名列）
+            current_row = current_item.row()
+            item = self.tableView.item(current_row, 0)
+            
+            if item is None:
+                logger.warning("无法获取歌曲信息")
+                return
+                
+            # 获取文件路径并删除
             if (file_path := getMusicLocal(item)) and (fp := Path(file_path)).exists():
+                # 删除文件
                 fp.unlink()
+                
+                # 如果文件在播放队列中，从队列中移除
+                if file_path in app_context.play_queue:
+                    app_context.play_queue.remove(file_path)
+                    logger.info(f"已从播放队列中移除: {item.text()}")
+                
+                # 显示成功消息
+                InfoBar.success(
+                    "完成",
+                    f"已删除歌曲: {item.text()}",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=1000,
+                    parent=self.parent(),
+                )
+                
+                # 重新加载歌曲列表
+                self.load_local_songs()
+            else:
+                InfoBar.error(
+                    "失败",
+                    "未找到文件或文件删除失败",
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.TOP,
+                    duration=1500,
+                    parent=self.parent(),
+                )
 
-            if file_path in app_context.play_queue:
-                app_context.play_queue.remove(file_path)
-
-            InfoBar.success(
-                "完成",
-                "已删除该歌曲",
+        except Exception as e:
+            logger.exception(f"删除歌曲失败: {e}")
+            InfoBar.error(
+                "删除失败",
+                f"删除歌曲时出错: {str(e)}",
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
-                duration=1000,
+                duration=1500,
                 parent=self.parent(),
             )
-            self.load_local_songs()
-
-        except Exception:
-            logger.exception("删除歌曲失败")
 
     def add_all_to_queue(self):
         """添加列表所有歌曲到播放列表"""
