@@ -154,7 +154,8 @@ class LocalPlayerInterface(QWidget):
                 
                 # 时长也应该按照数字排序
                 duration_item = NumericTableWidgetItem(duration)
-                duration_item.setText(f"{duration}s")  # 显示带单位的时长
+                duration_mod_second = duration%60 * 10 if 0 <= duration%60 < 10 else duration%60
+                duration_item.setText(f"{int(duration/60):02}:{duration_mod_second:.0f}") 
                 self.tableView.setItem(i, 1, duration_item)
             
                 # 从配置中获取播放次数
