@@ -6,6 +6,7 @@ from qfluentwidgets import FluentWindow, InfoBar, InfoBarPosition, TableWidget, 
 
 from src.core.player import playSongByIndex, sequencePlay
 from src.app_context import app_context
+from src.ui.widgets.play_sequence_dialog import PlaySequenceDialog
 
 
 class PlayQueueInterface(QWidget):
@@ -15,6 +16,7 @@ class PlayQueueInterface(QWidget):
         super().__init__(parent=parent)
         self.main_window = main_window
         self.setObjectName("playQueueInterface")
+        self.is_first_show = True  # 标记是否是第一次显示
 
         self._layout = QVBoxLayout(self)
         self.tableView = TableWidget(self)
@@ -46,10 +48,15 @@ class PlayQueueInterface(QWidget):
 
         self.downSongButton = TransparentToolButton(FIF.DOWN, self)
         self.downSongButton.setToolTip("将当前歌曲下移")
+        
+        # 添加播放序列管理按钮
+        self.sequenceButton = TransparentToolButton(FIF.SAVE, self)
+        self.sequenceButton.setToolTip("播放序列管理")
 
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
+        title_layout.addWidget(self.sequenceButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.seqPlayBtn, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.upSongButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.downSongButton, alignment=Qt.AlignmentFlag.AlignRight)
@@ -63,6 +70,7 @@ class PlayQueueInterface(QWidget):
         self.downSongButton.clicked.connect(self.move_down)
         self.delQueueButton.clicked.connect(self.del_queue)
         self.refreshButton.clicked.connect(self.load_play_queue)
+        self.sequenceButton.clicked.connect(self.open_sequence_dialog)
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
 
         self.load_play_queue()
@@ -144,4 +152,49 @@ class PlayQueueInterface(QWidget):
     def showEvent(self, a0):
         """当页面显示时触发刷新"""
         super().showEvent(a0)
+        
+        # 第一次显示界面且播放队列为空时，尝试恢复上次的播放队列
+        try:
+            if self.is_first_show and not app_context.play_queue:
+                from src.core.player import restore_last_play_queue
+                
+                logger.info("尝试恢复上次播放队列")
+                if restore_last_play_queue():
+                    InfoBar.success(
+                        "提示",
+                        "已恢复上次播放队列",
+                        orient=Qt.Orientation.Horizontal,
+                        position=InfoBarPosition.BOTTOM_RIGHT,
+                        duration=2000,
+                        parent=self.main_window,
+                    )
+                self.is_first_show = False
+        except Exception as e:
+            logger.exception(f"恢复播放队列时出错: {e}")
+            
         self.load_play_queue()
+        
+        # 打开播放序列对话框时，检查并应用当前主题
+        
+    def open_sequence_dialog(self):
+        """打开播放序列管理对话框"""
+        logger.info("正在打开播放序列管理对话框")
+        try:
+            # 创建对话框并设置父窗口
+            dialog = PlaySequenceDialog(self.main_window)
+            
+            # 确保对话框显示前应用当前主题样式
+            dialog._update_card_style()
+            
+            # 显示对话框
+            logger.info("即将显示播放序列对话框")
+            # 使用show()和exec()的组合以确保对话框显示在前端
+            dialog.show()
+            result = dialog.exec()
+            logger.info(f"对话框返回结果: {result}")
+            
+            if result:
+                # 对话框被接受（如加载了序列），刷新界面
+                self.load_play_queue()
+        except Exception:
+            logger.exception("打开播放序列对话框时出错")

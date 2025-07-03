@@ -80,6 +80,8 @@ class Config(QConfig):
     )
     
     play_count = ConfigItem("Player", "PlayCount", {})
+    play_sequences = ConfigItem("Player", "PlaySequences", {})
+    last_play_queue = ConfigItem("Player", "LastPlayQueue", {"queue": [], "index": 0})
 
     # bilibili-api-python
     bili_sessdata = ConfigItem("Bilibili", "SESSDATA", "")

@@ -92,10 +92,17 @@ class MainWindow(FluentWindow):
         app_context.player = self.player_bar
 
         # 设置默认音频格式
-        
         cfg.download_type.value = "mp3"
         cfg.save()
-
+        
+        # 尝试恢复上次的播放队列（如果当前队列为空）
+        try:
+            if not app_context.play_queue:
+                from src.core.player import restore_last_play_queue
+                restore_last_play_queue()
+        except Exception as e:
+            logger.exception(f"尝试恢复播放队列时出错: {e}")
+            
         # 隐藏启动页面
         self.splashScreen.finish()
 
@@ -107,6 +114,10 @@ class MainWindow(FluentWindow):
             w.setDraggable(False)
 
             if w.exec():
+                # 保存当前播放队列
+                from src.core.player import save_current_play_queue
+                save_current_play_queue()
+                
                 logger.info("用户确认退出，程序即将关闭。")
                 event.accept()
                 self.themeListener.terminate()

@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "运行应用程序",
+			"type": "shell",
+			"command": "cd c:\\我的python\\neuroSongSpider\\neuroSongSpider && python main.py",
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
