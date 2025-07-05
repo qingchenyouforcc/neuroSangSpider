@@ -4,6 +4,7 @@
         "flac",
         "infile",
         "mday",
+        "pixmap",
         "SESSDATA"
     ]
 }

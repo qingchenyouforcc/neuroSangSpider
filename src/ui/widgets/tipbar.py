@@ -22,11 +22,13 @@ def open_info_tip():
         app_context.info_bar.close()
     else:
         logger.info(f"正在播放{app_context.playing_now}")
+        
+    song_name = app_context.playing_now.rsplit('.', 1)[0] if app_context.playing_now else "未知歌曲"
 
     info = InfoBar.new(
         icon=FluentIcon.MUSIC,
         title="正在播放",
-        content=f"{app_context.playing_now}",
+        content=f"{song_name}",
         orient=Qt.Orientation.Horizontal,
         isClosable=True,
         position=InfoBarPosition.TOP,
