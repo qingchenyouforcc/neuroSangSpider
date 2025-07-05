@@ -6,6 +6,7 @@ from qfluentwidgets import (
     TransparentToolButton, FluentIcon as FIF,
     ProgressBar, ScrollArea, isDarkTheme
 )
+from loguru import logger
 
 from src.config import VERSION, cfg
 from src.app_context import app_context
@@ -369,6 +370,7 @@ class SongStatsCard(CardWidget):
             self.spaceUsageLabel.setText("0 KB 存储空间")
             self.songCountIcon.setIcon(FIF.DOCUMENT)
             self.spaceUsageIcon.setIcon(FIF.REMOVE)
+            logger.error(f"更新歌曲统计信息失败: {e}")
     
     def _updateStyle(self):
         """根据当前主题更新样式"""
@@ -376,7 +378,6 @@ class SongStatsCard(CardWidget):
         
         # 调整标签颜色
         text_color = "white" if dark_mode else "black"
-        accent_color = "#3a7ebf" if dark_mode else "#0078d4"
         
         # 更新标签样式
         stats_style = f"""
