@@ -1,4 +1,4 @@
-from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtGui import QPainter
 from qfluentwidgets import isDarkTheme
