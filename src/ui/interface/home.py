@@ -262,6 +262,144 @@ class WelcomeCard(CardWidget):
         super().changeEvent(a0)
 
 
+class SongStatsCard(CardWidget):
+    """歌曲统计信息卡片"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("songStatsCard")
+        
+        # 设置卡片大小
+        self.setMinimumWidth(400)
+        self.setFixedHeight(130)  # 稍微增加高度，使布局更加宽松
+        
+        # 创建布局
+        self.vBoxLayout = QVBoxLayout(self)
+        self.vBoxLayout.setContentsMargins(16, 12, 16, 16)  # 调整边距
+        self.vBoxLayout.setSpacing(12)  # 增加间距
+        
+        # 标题栏
+        self.headerLayout = QHBoxLayout()
+        self.titleLabel = SubtitleLabel("歌曲统计", self)
+        self.titleIcon = IconWidget(FIF.ALBUM, self)
+        self.headerLayout.addWidget(self.titleIcon)
+        self.headerLayout.addWidget(self.titleLabel)
+        self.headerLayout.addStretch(1)
+        
+        # 统计信息布局
+        self.statsLayout = QHBoxLayout()
+        self.statsLayout.setSpacing(20)  # 增加两个统计项之间的间距
+        
+        # 歌曲数量统计
+        self.songCountLayout = QVBoxLayout()
+        self.songCountIcon = IconWidget(FIF.LIBRARY, self)
+        self.songCountIcon.setFixedSize(32, 32)  # 设置图标大小
+        self.songCountLabel = BodyLabel("0 首歌曲", self)
+        self.songCountLabel.setObjectName("statsLabel")  # 设置对象名便于样式调整
+        self.songCountLayout.addWidget(self.songCountIcon, 0, Qt.AlignmentFlag.AlignCenter)
+        self.songCountLayout.addWidget(self.songCountLabel, 0, Qt.AlignmentFlag.AlignCenter)
+        self.songCountLayout.setSpacing(8)  # 设置图标和文字间距
+        
+        # 空间占用统计
+        self.spaceUsageLayout = QVBoxLayout()
+        self.spaceUsageIcon = IconWidget(FIF.FOLDER, self)
+        self.spaceUsageIcon.setFixedSize(32, 32)  # 设置图标大小
+        self.spaceUsageLabel = BodyLabel("0 MB 存储空间", self)
+        self.spaceUsageLabel.setObjectName("statsLabel")  # 设置对象名便于样式调整
+        self.spaceUsageLayout.addWidget(self.spaceUsageIcon, 0, Qt.AlignmentFlag.AlignCenter)
+        self.spaceUsageLayout.addWidget(self.spaceUsageLabel, 0, Qt.AlignmentFlag.AlignCenter)
+        self.spaceUsageLayout.setSpacing(8)  # 设置图标和文字间距
+        
+        # 添加到统计信息布局
+        self.statsLayout.addLayout(self.songCountLayout)
+        self.statsLayout.addLayout(self.spaceUsageLayout)
+        
+        # 添加到主布局
+        self.vBoxLayout.addLayout(self.headerLayout)
+        self.vBoxLayout.addLayout(self.statsLayout)
+        
+        # 创建定时器，定期更新统计信息
+        self.updateTimer = QTimer(self)
+        self.updateTimer.setInterval(30000)  # 每30秒更新一次
+        self.updateTimer.timeout.connect(self.updateStats)
+        self.updateTimer.start()
+        
+        # 初始化
+        self.updateStats()
+        self._updateStyle()
+    
+    def updateStats(self):
+        """更新歌曲统计信息"""
+        from src.config import MUSIC_DIR
+        import os
+        
+        try:
+            # 获取歌曲文件列表
+            song_files = [f for f in os.listdir(MUSIC_DIR) if f.lower().endswith(('.mp3', '.ogg', '.wav'))]
+            song_count = len(song_files)
+            
+            # 计算总占用空间
+            total_size = sum(os.path.getsize(os.path.join(MUSIC_DIR, f)) for f in song_files)
+            
+            # 格式化显示空间大小
+            if total_size < 1024*1024:  # 小于1MB
+                size_str = f"{total_size/1024:.1f} KB"
+            elif total_size < 1024*1024*1024:  # 小于1GB
+                size_str = f"{total_size/(1024*1024):.1f} MB"
+            else:  # GB以上
+                size_str = f"{total_size/(1024*1024*1024):.2f} GB"
+            
+            # 更新显示
+            self.songCountLabel.setText(f"{song_count} 首歌曲")
+            self.spaceUsageLabel.setText(f"{size_str} 存储空间")
+            
+            # 根据歌曲数量更新图标
+            if song_count > 0:
+                # 如果有歌曲，使用彩色图标
+                self.songCountIcon.setIcon(FIF.LIBRARY)
+                self.spaceUsageIcon.setIcon(FIF.FOLDER)
+            else:
+                # 如果没有歌曲，使用其他图标
+                self.songCountIcon.setIcon(FIF.DOCUMENT)
+                self.spaceUsageIcon.setIcon(FIF.REMOVE)
+                
+        except Exception as e:
+            # 发生错误时，显示默认值
+            self.songCountLabel.setText("0 首歌曲")
+            self.spaceUsageLabel.setText("0 KB 存储空间")
+            self.songCountIcon.setIcon(FIF.DOCUMENT)
+            self.spaceUsageIcon.setIcon(FIF.REMOVE)
+    
+    def _updateStyle(self):
+        """根据当前主题更新样式"""
+        dark_mode = isDarkTheme()
+        
+        # 调整标签颜色
+        text_color = "white" if dark_mode else "black"
+        accent_color = "#3a7ebf" if dark_mode else "#0078d4"
+        
+        # 更新标签样式
+        stats_style = f"""
+            color: {text_color}; 
+            font-weight: bold;
+            font-size: 14px;
+        """
+        self.songCountLabel.setStyleSheet(stats_style)
+        self.spaceUsageLabel.setStyleSheet(stats_style)
+        
+        # 更新图标样式 - 使用彩色图标
+        for icon in [self.songCountIcon, self.spaceUsageIcon]:
+            # 图标颜色会通过QFluentWidgets自动处理，这里只需要设置大小
+            icon.setFixedSize(36, 36)  # 稍微调大一点
+        
+    def changeEvent(self, a0):
+        """处理控件状态变化事件"""
+        if a0 and a0.type() == QEvent.Type.PaletteChange:
+            # 调色板变化（主题变化）时更新样式
+            self._updateStyle()
+        super().changeEvent(a0)
+
+
 class HomeInterface(QWidget):
     """主页GUI"""
 
@@ -295,6 +433,7 @@ class HomeInterface(QWidget):
         
         # 创建卡片组件
         self.nowPlayingCard = NowPlayingCard(self.container)
+        self.songStatsCard = SongStatsCard(self.container)
         self.welcomeCard = WelcomeCard(self.container)
         
         # 添加版本信息和版权声明
@@ -304,6 +443,7 @@ class HomeInterface(QWidget):
         # 添加小部件到布局
         self._layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
         self._layout.addWidget(self.nowPlayingCard)
+        self._layout.addWidget(self.songStatsCard)
         self._layout.addWidget(self.welcomeCard)
         self._layout.addWidget(self.versionLabel, 0, Qt.AlignmentFlag.AlignRight)
         
@@ -336,7 +476,9 @@ class HomeInterface(QWidget):
         
         # 刷新组件
         self.nowPlayingCard._updateStyle()
+        self.songStatsCard._updateStyle()  # 更新歌曲统计卡片样式
         self.welcomeCard._updateStyle()
+        self.songStatsCard._updateStyle()
         
     def changeEvent(self, a0):
         """处理控件状态变化事件"""
