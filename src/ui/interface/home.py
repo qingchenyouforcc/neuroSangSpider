@@ -54,6 +54,8 @@ class NowPlayingCard(CardWidget):
         self.detailLayout = QVBoxLayout()
         self.songNameLabel = ScrollingLabel("未播放", self)
         self.songNameLabel.setFixedHeight(30)
+        # 设置滚动参数：速度适中，边缘停留时间较长，每次滚动1像素，边缘留白合适
+        self.songNameLabel.setScrollingSettings(speed=40, pause_time=2000, scroll_step=1, margin=25)
         
         # 播放进度条
         self.progressLayout = QHBoxLayout()
@@ -136,7 +138,14 @@ class NowPlayingCard(CardWidget):
                 if display_name:  # 如果成功提取到歌名
                     song_name = f"▶ {display_name} - {author}"
         
-        self.songNameLabel.setText(song_name)
+        # 检查是否需要更新文本，避免不必要的重置
+        if self.songNameLabel.text() != song_name:
+            self.songNameLabel.setText(song_name)
+            # 文本更新后，确保滚动正常工作
+            self.songNameLabel._checkIfNeedsScroll()
+        # 即使文本没变，也要确保滚动状态正确
+        elif hasattr(self.songNameLabel, '_animate') and self.songNameLabel._animate and not self.songNameLabel._timerId:
+            self.songNameLabel._startScrolling()
         
         # 更新播放状态图标
         if app_context.player and app_context.player.player:
