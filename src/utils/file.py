@@ -10,6 +10,7 @@ from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
 from src.config import FFMPEG_PATH, MUSIC_DIR, cfg, subprocess_options
+from src.app_context import app_context
 from src.bili_api.converters import url2bv
 
 
@@ -210,7 +211,7 @@ def on_fix_music():
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
         )
     except Exception:
         logger.exception("修复音乐文件时发生错误")
@@ -220,7 +221,7 @@ def on_fix_music():
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
-            parent=cfg.main_window,
+            parent=app_context.main_window,
         )
 
 
