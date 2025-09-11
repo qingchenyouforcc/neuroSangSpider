@@ -87,7 +87,7 @@ def search_song_list(search_content: str) -> SongList | None:
     total_data = load_from_all_data(VIDEO_DIR)
     if total_data is None:
         return None
-    filter_list = cfg.filter_list.value
+    filter_list = cfg.filter_list.value if cfg.enable_filter.value else []
     black_author_list = cfg.black_author_list.value
 
     search_result_list = total_data
@@ -95,7 +95,8 @@ def search_song_list(search_content: str) -> SongList | None:
 
     search_result_list.unique_by_bv()
     search_result_list.remove_blacklist(black_author_list, 1)
-    search_result_list.filter_data(filter_list, 0)
+    if cfg.enable_filter.value:
+        search_result_list.filter_data(filter_list, 0)
 
     if len(search_result_list.get_data()) == 0:
         return None

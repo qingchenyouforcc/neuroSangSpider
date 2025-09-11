@@ -14,6 +14,7 @@ from qfluentwidgets import (
     PushButton,
     SubtitleLabel,
     ToolButton,
+    SwitchButton,
 )
 
 from src.app_context import app_context
@@ -96,6 +97,31 @@ class ListEditWidget(CardGroupWidget):
     def add_item(self) -> str | None:
         raise NotImplementedError
 
+class SwitchFilterEditWidget(CardGroupWidget):
+    """过滤器开关组件"""
+
+    def __init__(self, parent: QWidget):
+        super().__init__(
+            FluentIcon.FILTER,
+            "过滤器开关",
+            "开启后会按照下方过滤词筛选搜索结果",
+            parent,
+        )
+        self.switch = SwitchButton(parent=self)
+        self.switch.setChecked(cfg.enable_filter.value)
+        self.switch.checkedChanged.connect(self.on_checked_changed)
+        self.hBoxLayout.addWidget(self.switch)
+
+    def on_checked_changed(self, checked: bool):
+        cfg.enable_filter.value = checked
+        cfg.save()
+        InfoBar.success(
+            "设置成功",
+            f"已{'启用' if checked else '关闭'}过滤器",
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            parent=app_context.main_window,
+            duration=1500,
+        )
 
 class FilterEditWidget(ListEditWidget):
     def __init__(self, parent: QWidget) -> None:
@@ -264,6 +290,7 @@ class SearchSettingsCard(GroupHeaderCardWidget):
         super().__init__()
 
         self.setTitle("搜索设置")
+        self.vBoxLayout.addWidget(SwitchFilterEditWidget(self))
         self.vBoxLayout.addWidget(FilterEditWidget(self))
         self.vBoxLayout.addWidget(UpListEditWidget(self))
         self.vBoxLayout.addWidget(BlackListEditWidget(self))

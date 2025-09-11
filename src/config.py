@@ -72,6 +72,8 @@ class Config(QConfig):
     up_list = ConfigItem("Search", "UpList", _DEFAULT_UP_LIST.copy())
     black_author_list = ConfigItem("Search", "BlackList", _DEFAULT_BLACKLIST.copy())
     filter_list = ConfigItem("Search", "FilterWords", _DEFAULT_FILTER_WORDS.copy())
+    # 是否启用搜索结果过滤（默认启用）
+    enable_filter = ConfigItem("Search", "EnableFilter", True)
     theme_mode = ConfigItem(
         "Appearance",
         "ThemeMode",
