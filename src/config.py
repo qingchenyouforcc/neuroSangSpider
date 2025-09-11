@@ -191,4 +191,4 @@ else:
     setTheme(QtTheme.AUTO)     
 
 
-VERSION = "1.1.8"
+VERSION = "1.1.7"
