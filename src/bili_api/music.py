@@ -127,23 +127,25 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
     logger.info(f"  title: {title}")
     logger.info(f"  输出文件: {output_file}")
 
-    # 如果文件存在，弹出提示窗口
+    # 如果文件存在，执行覆盖操作
     if output_file.exists():
-        w = MessageBox(
-            "文件已存在",
-            f"文件 '{output_file.relative_to(MAIN_PATH)}' 已存在。是否覆盖？",
-            app_context.main_window,
+        logger.info(f"文件 {output_file} 已存在，执行覆盖操作。")
+
+    try:
+        sync(download_music(bv, output_file))
+        return True
+    except Exception:
+        logger.exception(f"下载失败: {bv}")
+        InfoBar.error(
+            title="错误",
+            content=f"下载失败: {title}",
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+            parent=app_context.main_window,
         )
-
-        w.setClosableOnMaskClicked(True)
-        w.setDraggable(True)
-
-        if not w.exec():
-            logger.info("用户取消下载。")
-            return False
-
-    sync(download_music(bv, output_file))
-    return True
+        return False
 
 
 def _get_video_title_by_bvid(bvid: str) -> str:

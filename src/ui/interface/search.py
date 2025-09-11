@@ -8,6 +8,7 @@ from qfluentwidgets import (
     FluentWindow,
     InfoBar,
     InfoBarPosition,
+    MessageBox,
     PushButton,
     SearchLineEdit,
     StateToolTip,
@@ -19,9 +20,9 @@ from qfluentwidgets import (
 
 from src.app_context import app_context
 from src.bili_api import create_video_list_file, run_music_download, search_on_bilibili, search_song_list
-from src.config import ASSETS_DIR, cfg
+from src.config import ASSETS_DIR, MUSIC_DIR, cfg
 from src.core.song_list import SongList
-from src.utils.text import format_date_str
+from src.utils.text import fix_filename, format_date_str
 
 
 class SimpleThread(QThread):
@@ -88,27 +89,44 @@ class SearchInterface(QWidget):
         self.GetVideoBtn = PushButton("获取歌曲列表", self)
         self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
 
-        DownloadBtn = PushButton("下载歌曲", self)
-        DownloadBtn.clicked.connect(lambda: self.Download_btn())
+        self.DownloadBtn = PushButton("下载歌曲", self)
+        self.DownloadBtn.clicked.connect(self.Download_btn)
+
+        self.search_input = SearchLineEdit(self)
+        self.search_input.setPlaceholderText("输入关键词搜索本地歌曲")
+        self.search_input.setClearButtonEnabled(True)
+        self.search_input.searchButton.clicked.connect(self.search_btn)
+        self.search_input.returnPressed.connect(self.search_btn)
 
         btnLayout.addWidget(self.GetVideoBtn)
-        btnLayout.addWidget(DownloadBtn)
-        btnLayout.setSpacing(15)
+        btnLayout.addWidget(self.DownloadBtn)
+        btnGroup.setLayout(btnLayout)
 
-        self.searchLine = SearchLineEdit(self)
-        self.searchLine.setClearButtonEnabled(True)
-        self.searchLine.searchButton.clicked.connect(self.search_btn)
-        self.searchLine.returnPressed.connect(self.search_btn)
-
-        self.titleLabel = TitleLabel("搜索歌回", self)
-
-        self.tableView.resizeColumnsToContents()
-        self._layout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignTop)
+        self._layout.addWidget(TitleLabel("搜索歌回", self))
         self._layout.addWidget(self.tableView)
         self._layout.addWidget(btnGroup)
-        self._layout.addWidget(self.searchLine, Qt.AlignmentFlag.AlignBottom)
+        self._layout.addWidget(self.search_input, Qt.AlignmentFlag.AlignBottom)
 
         self.search_result = SongList()
+
+    def on_download_finished(self, success: bool):
+        """下载任务结束时的回调"""
+        if self.loading:
+            self.loading.close()
+            self.loading = None
+        self.main_window.setEnabled(True)
+
+        if success:
+            InfoBar.success(
+                title="完成",
+                content="歌曲下载完成",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self,
+            )
+        # 如果下载失败，run_music_download 会自己记录日志和显示错误 InfoBar
 
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
@@ -208,7 +226,7 @@ class SearchInterface(QWidget):
 
         self.tableView.resizeColumnsToContents()
         self.searching = False
-        self.searchLine.searchButton.setEnabled(True)
+        self.search_input.searchButton.setEnabled(True)
 
         if self.loading:
             self.loading.close()
@@ -233,17 +251,17 @@ class SearchInterface(QWidget):
         self.search_result.clear()
 
         # 显示加载动画
-        self.loading = showLoading(self.searchLine)
+        self.loading = showLoading(self.search_input)
 
         tip = StateToolTip("正在搜索歌曲...", "请耐心等待<3", self)
         tip.move(tip.getSuitablePos())
         tip.show()
         self.search_tip = tip
         self.searching = True
-        self.searchLine.searchButton.setEnabled(False)
+        self.search_input.searchButton.setEnabled(False)
 
         logger.info("---搜索开始---")
-        search_content = self.searchLine.text().lower()
+        search_content = self.search_input.text().lower()
         self._search_ = self.do_search(search_content)
         self.on_search_finished(self._search_)
 
@@ -278,6 +296,33 @@ class SearchInterface(QWidget):
 
     def Download_btn(self):
         index = self.tableView.currentRow()
+        if index < 0:
+            InfoBar.warning(
+                title="提示",
+                content="请先在表格中选择一首歌曲",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=1500,
+                parent=self,
+            )
+            return
+
+        info = self.search_result.select_info(index)
+        if not info:
+            return
+
+        fileType = cfg.download_type.value
+        title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
+        output_file = MUSIC_DIR / f"{title}.{fileType}"
+
+        # 如果文件存在，先在主线程弹出提示窗口
+        if output_file.exists():
+            m = MessageBox("提示", "文件已存在，是否覆盖？", self.main_window)
+            if not m.exec():
+                logger.info("用户取消下载")
+                return
+
         InfoBar.info(
             title="提示",
             content="开始下载歌曲，请耐心等待",
@@ -288,36 +333,11 @@ class SearchInterface(QWidget):
             parent=self,
         )
 
-        try:
-            fileType = cfg.download_type.value
-            if run_music_download(index, self.search_result, fileType):
-                InfoBar.success(
-                    title="完成",
-                    content="歌曲下载完成",
-                    orient=Qt.Orientation.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP,
-                    duration=2000,
-                    parent=self,
-                )
-        except IndexError:
-            InfoBar.error(
-                title="错误",
-                content="你还没有选择歌曲",
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=1500,
-                parent=self,
-            )
-        except Exception as e:
-            InfoBar.error(
-                "未知错误",
-                f"请在github上提交issue并上传日志文件:\n{e!r}",
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=2000,
-                parent=self,
-            )
-            logger.exception("下载歌曲时发生未知错误")
+        # 显示加载动画并禁用主窗口
+        self.loading = showLoading(self.DownloadBtn)
+        self.main_window.setEnabled(False)
+
+        # 创建并启动下载线程
+        self._download_thread = SimpleThread(lambda: run_music_download(index, self.search_result, fileType))
+        self._download_thread.task_finished.connect(self.on_download_finished)
+        self._download_thread.start()
