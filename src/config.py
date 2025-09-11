@@ -156,11 +156,13 @@ DATA_DIR = MAIN_PATH / "data"
 CACHE_DIR = DATA_DIR / "cache"
 MUSIC_DIR = DATA_DIR / "music"
 VIDEO_DIR = DATA_DIR / "video"
+CUSTOM_SANG_DIR = DATA_DIR / "custom_songs"
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_DIR.mkdir(exist_ok=True, parents=True)
 MUSIC_DIR.mkdir(exist_ok=True, parents=True)
 VIDEO_DIR.mkdir(exist_ok=True, parents=True)
+CUSTOM_SANG_DIR.mkdir(exist_ok=True, parents=True)
 
 ASSETS_DIR = get_assets_path()
 FFMPEG_PATH = detect_ffmpeg()
@@ -189,4 +191,4 @@ else:
     setTheme(QtTheme.AUTO)     
 
 
-VERSION = "1.1.7"
+VERSION = "1.1.8"

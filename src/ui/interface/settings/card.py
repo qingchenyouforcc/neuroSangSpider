@@ -19,6 +19,7 @@ from qfluentwidgets import (
 from src.app_context import app_context
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music
+from src.bili_api.music import import_custom_songs_and_download
 
 
 def changeDownloadType(selected_type: str) -> None:
@@ -169,6 +170,10 @@ class SettingsCard(GroupHeaderCardWidget):
         self.fixMusicBtn = PushButton("修复音频", self)
         self.fixMusicBtn.clicked.connect(on_fix_music)
 
+        # 从自定义歌曲文件夹下载
+        self.customSongsBtn = PushButton("下载", self)
+        self.customSongsBtn.clicked.connect(lambda: import_custom_songs_and_download())
+
         # 添加到布局
         self.addGroup(
             FluentIcon.DOWNLOAD,
@@ -211,6 +216,12 @@ class SettingsCard(GroupHeaderCardWidget):
             "修复音频文件",
             "修复下载异常的音频文件",
             self.fixMusicBtn,
+        )
+        self.addGroup(
+            FluentIcon.DOWNLOAD,
+            "导入自定义 BV 列表",
+            "读取 data/custom_songs 下的txt(每行一个 BV)并下载音频[会卡顿一会！]",
+            self.customSongsBtn,
         )
 
     def change_play_mode(self, text: str, mode_map: dict[PlayMode, str]) -> None:
