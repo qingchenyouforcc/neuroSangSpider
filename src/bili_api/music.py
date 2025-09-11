@@ -108,14 +108,7 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
     """运行下载器"""
     info = search_list.select_info(index)
     if info is None:
-        InfoBar.error(
-            "错误",
-            "索引超出范围或信息不存在",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=1500,
-            parent=app_context.main_window,
-        )
+        logger.error("索引超出范围或信息不存在")
         return False
 
     bv = info["bv"]
@@ -136,15 +129,6 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
         return True
     except Exception:
         logger.exception(f"下载失败: {bv}")
-        InfoBar.error(
-            title="错误",
-            content=f"下载失败: {title}",
-            orient=Qt.Orientation.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=3000,
-            parent=app_context.main_window,
-        )
         return False
 
 

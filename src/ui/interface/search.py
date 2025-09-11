@@ -115,6 +115,7 @@ class SearchInterface(QWidget):
             self.loading.close()
             self.loading = None
         self.main_window.setEnabled(True)
+        self.DownloadBtn.setEnabled(True)
 
         if success:
             InfoBar.success(
@@ -126,7 +127,16 @@ class SearchInterface(QWidget):
                 duration=2000,
                 parent=self,
             )
-        # 如果下载失败，run_music_download 会自己记录日志和显示错误 InfoBar
+        else:
+            InfoBar.error(
+                title="错误",
+                content="下载失败，请检查网络与日志",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self,
+            )
 
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
@@ -335,6 +345,7 @@ class SearchInterface(QWidget):
 
         # 显示加载动画并禁用主窗口
         self.loading = showLoading(self.DownloadBtn)
+        self.DownloadBtn.setEnabled(False)
         self.main_window.setEnabled(False)
 
         # 创建并启动下载线程
