@@ -64,6 +64,7 @@ class SearchInterface(QWidget):
         self.searching = False
         self.search_tip = None
         self.setObjectName("searchInterface")
+        self._download_thread: SimpleThread | None = None
 
         self._layout = QVBoxLayout(self)
         self.tableView = TableWidget(self)
@@ -137,6 +138,7 @@ class SearchInterface(QWidget):
                 duration=3000,
                 parent=self,
             )
+        self._download_thread = None
 
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
@@ -318,6 +320,19 @@ class SearchInterface(QWidget):
             )
             return
 
+        # 已有下载任务在运行时阻止并发启动
+        if self._download_thread is not None and self._download_thread.isRunning():
+            InfoBar.info(
+                title="提示",
+                content="已有下载任务正在进行，请稍候",
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=1500,
+                parent=self,
+            )
+            return
+
         info = self.search_result.select_info(index)
         if not info:
             return
@@ -349,6 +364,8 @@ class SearchInterface(QWidget):
         self.main_window.setEnabled(False)
 
         # 创建并启动下载线程
-        self._download_thread = SimpleThread(lambda idx=index, sr=self.search_result, ft=fileType: run_music_download(idx, sr, ft))
-        self._download_thread.task_finished.connect(self.on_download_finished)
-        self._download_thread.start()
+        thread = SimpleThread(lambda idx=index, sr=self.search_result, ft=fileType: run_music_download(idx, sr, ft))
+        thread.task_finished.connect(self.on_download_finished)
+        thread.finished.connect(thread.deleteLater)
+        self._download_thread = thread
+        thread.start()
