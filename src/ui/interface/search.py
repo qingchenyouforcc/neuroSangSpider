@@ -349,6 +349,6 @@ class SearchInterface(QWidget):
         self.main_window.setEnabled(False)
 
         # 创建并启动下载线程
-        self._download_thread = SimpleThread(lambda: run_music_download(index, self.search_result, fileType))
+        self._download_thread = SimpleThread(lambda idx=index, sr=self.search_result, ft=fileType: run_music_download(idx, sr, ft))
         self._download_thread.task_finished.connect(self.on_download_finished)
         self._download_thread.start()
