@@ -3,7 +3,6 @@ import subprocess
 import uuid
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
 from bilibili_api import HEADERS, get_client, sync, video
 from loguru import logger
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
