@@ -3,7 +3,6 @@ import subprocess
 import uuid
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
 from bilibili_api import HEADERS, get_client, sync, video
 from loguru import logger
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
@@ -108,14 +107,7 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
     """运行下载器"""
     info = search_list.select_info(index)
     if info is None:
-        InfoBar.error(
-            "错误",
-            "索引超出范围或信息不存在",
-            orient=Qt.Orientation.Horizontal,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=1500,
-            parent=app_context.main_window,
-        )
+        logger.error("索引超出范围或信息不存在")
         return False
 
     bv = info["bv"]
@@ -127,23 +119,16 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
     logger.info(f"  title: {title}")
     logger.info(f"  输出文件: {output_file}")
 
-    # 如果文件存在，弹出提示窗口
+    # 如果文件存在，执行覆盖操作
     if output_file.exists():
-        w = MessageBox(
-            "文件已存在",
-            f"文件 '{output_file.relative_to(MAIN_PATH)}' 已存在。是否覆盖？",
-            app_context.main_window,
-        )
+        logger.info(f"文件 {output_file} 已存在，执行覆盖操作。")
 
-        w.setClosableOnMaskClicked(True)
-        w.setDraggable(True)
-
-        if not w.exec():
-            logger.info("用户取消下载。")
-            return False
-
-    sync(download_music(bv, output_file))
-    return True
+    try:
+        sync(download_music(bv, output_file))
+        return True
+    except Exception:
+        logger.exception(f"下载失败: {bv}")
+        return False
 
 
 def _get_video_title_by_bvid(bvid: str) -> str:
