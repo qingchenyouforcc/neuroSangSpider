@@ -35,6 +35,39 @@ def changeDownloadType(selected_type: str) -> None:
     )
 
 
+def changeLanguage(language: str) -> None:
+    """
+    切换显示语言
+    切换语言需要重启应用程序才能生效
+    """
+    if language == cfg.language.value:
+        return
+
+    cfg.language.value = language
+    cfg.save()
+
+    # 显示提示信息
+    InfoBar.success(
+        "设置成功",
+        f"语言已切换为 {language}，正在重启应用...",
+        orient=Qt.Orientation.Horizontal,
+        position=InfoBarPosition.BOTTOM_RIGHT,
+        duration=2000,
+        parent=app_context.main_window,
+    )
+    
+    # 延迟重启以让用户看到提示
+    from PyQt6.QtCore import QTimer
+    def restart_later():
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+        from main import restart_app
+        restart_app()
+
+    QTimer.singleShot(1000, restart_later)
+
+
 THEME_DISPLAY = {
     Theme.AUTO: "自动",
     Theme.LIGHT: "浅色",
@@ -124,6 +157,13 @@ class SettingsCard(GroupHeaderCardWidget):
         self.setTitle("基本设置")
         self.setMinimumHeight(200)
 
+        # 显示语言设置
+        language_items = ["zh_CN", "en_US"]
+        self.languageComboBox = ComboBox(self)
+        self.languageComboBox.addItems(language_items)
+        self.languageComboBox.setCurrentIndex(language_items.index(cfg.language.value))
+        self.languageComboBox.currentIndexChanged.connect(lambda idx: changeLanguage(language_items[idx]))
+
         # 下载格式设置（保持原有代码）
         items = ["mp3", "ogg", "wav"]
         self.downloadFormatComboBox = ComboBox(self)
@@ -180,6 +220,12 @@ class SettingsCard(GroupHeaderCardWidget):
             "下载格式",
             "选择默认音乐格式",
             self.downloadFormatComboBox,
+        )
+        self.addGroup(
+            FluentIcon.GLOBE,
+            "显示语言",
+            "选择应用显示语言",
+            self.languageComboBox,
         )
         self.addGroup(
             FluentIcon.BRUSH,

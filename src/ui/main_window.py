@@ -1,3 +1,4 @@
+import os
 from loguru import logger
 from PyQt6 import QtGui
 from PyQt6.QtCore import QSize
@@ -20,6 +21,8 @@ from src.ui.interface.settings import SettingInterface
 class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
+
+        self.is_language_restart = False
         
         # 系统主题监听器
         self.themeListener = SystemThemeListener(self)
@@ -107,25 +110,33 @@ class MainWindow(FluentWindow):
         self.splashScreen.finish()
 
     def closeEvent(self, event):  # pyright: ignore[reportIncompatibleMethodOverride]
-        try:
-            logger.info("正在弹出退出确认对话框...")
+        if not self.is_language_restart:
+            try:
+                logger.info("正在弹出退出确认对话框...")
 
-            w = MessageBox("即将关闭整个程序", "您确定要这么做吗？", self)
-            w.setDraggable(False)
+                w = MessageBox("即将关闭整个程序", "您确定要这么做吗？", self)
+                w.setDraggable(False)
 
-            if w.exec():
-                # 保存当前播放队列
-                from src.core.player import save_current_play_queue
-                save_current_play_queue()
-                
-                logger.info("用户确认退出，程序即将关闭。")
-                event.accept()
-                self.themeListener.terminate()
-                self.themeListener.deleteLater()
-                QApplication.quit()
-            else:
-                logger.info("用户取消了退出操作。")
-                event.ignore()
+                if w.exec():
+                    logger.info("用户确认退出，程序即将关闭。")
 
-        except Exception:
-            logger.exception("在退出确认过程中发生错误")
+                    self.before_shutdown()
+                    event.accept()
+                    QApplication.quit()
+                else:
+                    logger.info("用户取消了退出操作。")
+                    event.ignore()
+
+            except Exception:
+                logger.exception("在退出确认过程中发生错误")
+        self.before_shutdown()
+        event.accept()
+
+    def before_shutdown(self):
+        # 保存当前播放队列
+        from src.core.player import save_current_play_queue
+        save_current_play_queue()
+
+        # 终止系统主题监听器
+        self.themeListener.terminate()
+        self.themeListener.deleteLater()

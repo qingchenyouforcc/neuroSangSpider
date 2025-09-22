@@ -54,6 +54,10 @@ _DEFAULT_FILTER_WORDS = [
     "歌切",
 ]
 
+_SUPPORTED_LANGUAGES = [
+    "en_US",
+    "zh_CN"
+]
 
 class Config(QConfig):
     """应用程序配置类"""
@@ -65,6 +69,7 @@ class Config(QConfig):
         "mp3",
         OptionsValidator(["mp3", "ogg", "wav"]),
     )
+    language = ConfigItem("Language", "Language", "zh_CN")
     volume = ConfigItem("Player", "Volume", 50)
     enable_player_bar = ConfigItem("Player", "EnablePlayerBar", True)
     play_mode = ConfigItem("Player", "Mode", PlayMode.LIST_LOOP)
