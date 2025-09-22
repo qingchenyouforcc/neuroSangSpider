@@ -1,10 +1,9 @@
-from PyQt6.QtCore import Qt, QTranslator, QLocale
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QApplication
-from PyQt6.QtGui import QPalette, QColor
-from qfluentwidgets import BodyLabel, ComboBox, PushButton, CardWidget, FluentIcon, InfoBar, InfoBarPosition, isDarkTheme
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QDialog, QVBoxLayout
+from qfluentwidgets import BodyLabel, ComboBox, PushButton, CardWidget, isDarkTheme
 import os
 
-from src.config import cfg, _SUPPORTED_LANGUAGES
+from src.config import cfg
 
 # 定义首次运行标记文件路径
 FIRST_RUN_MARKER = os.path.join(os.path.expanduser('~'), '.nspd', 'first_run')
