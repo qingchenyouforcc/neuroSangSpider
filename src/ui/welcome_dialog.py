@@ -51,7 +51,7 @@ class WelcomeDialog(QDialog):
         self.language_combo.setStyleSheet(f"ComboBox {{ color: {color}; }}")
         self.language_combo.addItems([
             self.tr('English'), 
-            self.tr('简体中文')
+            self.tr('Simplified Chinese')
         ])
 
         self.ok_button = PushButton(self.tr('OK'), self)
@@ -73,7 +73,7 @@ class WelcomeDialog(QDialog):
         """获取选择的语言"""
         languages = {
             self.tr('English'): 'en_US',
-            self.tr('简体中文'): 'zh_CN'
+            self.tr('Simplified Chinese'): 'zh_CN'
         }
         selected_text = self.language_combo.currentText()
         return languages.get(selected_text)

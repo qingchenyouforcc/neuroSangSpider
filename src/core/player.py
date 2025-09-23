@@ -8,6 +8,7 @@ from qfluentwidgets import InfoBar, InfoBarPosition
 
 from src.app_context import app_context
 from src.config import MUSIC_DIR, PlayMode, cfg
+from i18n import t
 
 from src.ui.widgets.tipbar import open_info_tip
 
@@ -22,8 +23,8 @@ def previousSong():
     """播放上一首"""
     if app_context.play_queue_index <= 0:
         InfoBar.info(
-            "提示",
-            "已经没有上一首了",
+            t("common.info"),
+            t("player.no_previous_song"),
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1000,
@@ -36,15 +37,15 @@ def previousSong():
 
     except IndexError:
         InfoBar.info(
-            "提示",
-            "已经没有上一首了",
+            t("common.info"),
+            t("player.no_previous_song"),
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1000,
             parent=InfoBar.desktopView(),
         )
     except Exception:
-        logger.exception("播放上一首时发生错误")
+        logger.exception(t("player.previous_song_error"))
 
 
 def nextSong():
@@ -52,8 +53,8 @@ def nextSong():
     if cfg.play_mode.value == PlayMode.SEQUENTIAL:
         if app_context.play_queue_index >= len(app_context.play_queue) - 1:
             InfoBar.info(
-                "提示",
-                "已经没有下一首了",
+                t("common.info"),
+                t("player.no_next_song"),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
                 duration=1000,
@@ -74,23 +75,23 @@ def nextSong():
 
     except IndexError:
         InfoBar.info(
-            "提示",
-            "已经没有下一首了",
+            t("common.info"),
+            t("player.no_next_song"),
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1000,
             parent=InfoBar.desktopView(),
         )
     except Exception:
-        logger.exception("播放下一首时发生错误")
+        logger.exception(t("player.next_song_error"))
 
 
 # noinspection PyTypeChecker
 def playSongByIndex():
     if not app_context.play_queue:
         InfoBar.error(
-            "错误",
-            "播放队列为空",
+            t("common.error"),
+            t("player.play_queue_empty"),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -100,7 +101,7 @@ def playSongByIndex():
     file_path = getMusicLocalStr(app_context.play_queue[app_context.play_queue_index].name)
 
     url = QUrl.fromLocalFile(file_path and str(file_path))
-    assert app_context.player is not None, "播放器未初始化"
+    assert app_context.player is not None, t("player.player_not_initialized")
     app_context.player.player.setSource(url)
     app_context.player.player.play()
 
@@ -139,8 +140,8 @@ def summonMusicLocal(file_name: str) -> Path | None:
 
     if not file_path.exists():
         InfoBar.error(
-            "错误",
-            f"找不到文件: {file_name}",
+            t("common.error"),
+            t("player.file_not_found", file_name=file_name),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -164,7 +165,7 @@ def sequencePlay() -> None:
         cfg.play_mode.value = PlayMode.LIST_LOOP
         playSongByIndex()
     except Exception:
-        logger.exception("顺序播放时发生错误")
+        logger.exception(t("player.sequence_play_error"))
 
 
 def save_play_sequence(sequence_name: str) -> None:
@@ -175,8 +176,8 @@ def save_play_sequence(sequence_name: str) -> None:
     """
     if not app_context.play_queue:
         InfoBar.warning(
-            "警告",
-            "播放队列为空，无法保存",
+            t("common.warning"),
+            t("player.play_queue_empty_cannot_save"),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -192,11 +193,11 @@ def save_play_sequence(sequence_name: str) -> None:
     cfg.play_sequences.value = play_sequences
     cfg.save()
     
-    logger.info(f"已保存播放序列：{sequence_name}，包含 {len(file_names)} 首歌曲")
+    logger.info(t("player.play_sequence_saved", sequence_name=sequence_name, count=len(file_names)))
     
     InfoBar.success(
-        "成功",
-        f"已保存播放序列：{sequence_name}",
+        t("common.success"),
+        t("player.play_sequence_saved_success", sequence_name=sequence_name),
         duration=2000,
         parent=app_context.main_window,
         position=InfoBarPosition.BOTTOM_RIGHT,
@@ -215,8 +216,8 @@ def load_play_sequence(sequence_name: str) -> bool:
     play_sequences = cfg.play_sequences.value
     if sequence_name not in play_sequences:
         InfoBar.warning(
-            "警告",
-            f"播放序列不存在：{sequence_name}",
+            t("common.warning"),
+            t("player.play_sequence_not_exist", sequence_name=sequence_name),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -233,12 +234,12 @@ def load_play_sequence(sequence_name: str) -> bool:
         if file_path.exists():
             play_queue.append(file_path)
         else:
-            logger.warning(f"找不到文件: {name}，已从序列中移除")
+            logger.warning(t("player.file_not_found_removed", name=name))
     
     if not play_queue:
         InfoBar.warning(
-            "警告",
-            f"序列 {sequence_name} 中没有有效的音乐文件",
+            t("common.warning"),
+            t("player.play_sequence_no_valid_files", sequence_name=sequence_name),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -250,11 +251,11 @@ def load_play_sequence(sequence_name: str) -> bool:
     app_context.play_queue_index = 0
     cfg.save()
     
-    logger.info(f"已加载播放序列：{sequence_name}，包含 {len(play_queue)} 首歌曲")
+    logger.info(t("player.play_sequence_loaded", sequence_name=sequence_name, count=len(play_queue)))
     
     InfoBar.success(
-        "成功",
-        f"已加载播放序列：{sequence_name}",
+        t("common.success"),
+        t("player.play_sequence_loaded_success", sequence_name=sequence_name),
         duration=2000,
         parent=app_context.main_window,
         position=InfoBarPosition.BOTTOM_RIGHT,
@@ -275,8 +276,8 @@ def delete_play_sequence(sequence_name: str) -> bool:
     play_sequences = cfg.play_sequences.value
     if sequence_name not in play_sequences:
         InfoBar.warning(
-            "警告",
-            f"播放序列不存在：{sequence_name}",
+            t("common.warning"),
+            t("player.play_sequence_not_exist", sequence_name=sequence_name),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -289,11 +290,11 @@ def delete_play_sequence(sequence_name: str) -> bool:
     # 不需要特殊处理最近播放序列
     cfg.save()
     
-    logger.info(f"已删除播放序列：{sequence_name}")
+    logger.info(t("player.play_sequence_deleted", sequence_name=sequence_name))
     
     InfoBar.success(
-        "成功",
-        f"已删除播放序列：{sequence_name}",
+        t("common.success"),
+        t("player.play_sequence_deleted_success", sequence_name=sequence_name),
         duration=2000,
         parent=app_context.main_window,
         position=InfoBarPosition.BOTTOM_RIGHT,
@@ -329,7 +330,7 @@ def save_current_play_queue():
     """
     try:
         if not app_context.play_queue:
-            logger.debug("没有播放队列需要保存")
+            logger.debug(t("player.no_play_queue_to_save"))
             return
         
         # 转换为相对于音乐目录的相对路径
@@ -338,12 +339,12 @@ def save_current_play_queue():
             if hasattr(path, 'name') and isinstance(path.name, str):
                 file_names.append(path.name)
             else:
-                logger.warning(f"无法获取文件名: {path}")
+                logger.warning(t("player.cannot_get_filename", path=path))
         
         # 确保播放索引是有效的整数
         play_index = app_context.play_queue_index
         if not isinstance(play_index, int) or play_index < 0:
-            logger.warning(f"无效的播放索引: {play_index}，将重置为 0")
+            logger.warning(t("player.invalid_play_index", play_index=play_index))
             play_index = 0
         
         # 保存播放队列和当前播放索引
@@ -355,9 +356,9 @@ def save_current_play_queue():
         cfg.last_play_queue.value = last_play_data
         cfg.save()
         
-        logger.info(f"已保存播放队列，包含 {len(file_names)} 首歌曲，当前索引: {play_index}")
+        logger.info(t("player.play_queue_saved", count=len(file_names), index=play_index))
     except Exception as e:
-        logger.exception(f"保存播放队列时发生错误: {e}")
+        logger.exception(t("player.save_play_queue_error", error=str(e)))
 
 
 def restore_last_play_queue() -> bool:
@@ -371,7 +372,7 @@ def restore_last_play_queue() -> bool:
         
         # 确保数据结构正确
         if not isinstance(last_play_data, dict) or "queue" not in last_play_data:
-            logger.debug("没有有效的上次播放队列数据")
+            logger.debug(t("player.no_valid_last_play_queue_data"))
             return False
         
         # 获取文件名列表和索引
@@ -380,11 +381,11 @@ def restore_last_play_queue() -> bool:
         
         # 确保文件名列表是一个列表
         if not isinstance(file_names, list):
-            logger.debug(f"播放队列数据格式错误: queue应为列表，实际是 {type(file_names)}")
+            logger.debug(t("player.play_queue_data_format_error", type_name=str(type(file_names))))
             return False
             
         if not file_names:
-            logger.debug("上次播放队列为空")
+            logger.debug(t("player.last_play_queue_empty"))
             return False
         
         # 转换为完整路径并验证文件存在
@@ -393,19 +394,19 @@ def restore_last_play_queue() -> bool:
             try:
                 # 确保文件名是有效的字符串
                 if not isinstance(name, str) or not name.strip():
-                    logger.warning(f"无效的文件名: {name}")
+                    logger.warning(t("player.invalid_filename", name=name))
                     continue
                     
                 file_path = MUSIC_DIR / name
                 if file_path.exists():
                     play_queue.append(file_path)
                 else:
-                    logger.warning(f"找不到文件: {name}，已从队列中移除")
+                    logger.warning(t("player.file_not_found_removed_from_queue", name=name))
             except Exception as e:
-                logger.error(f"处理文件 {name} 时出错: {e}")
+                logger.error(t("player.process_file_error", name=name, error=str(e)))
         
         if not play_queue:
-            logger.warning("恢复的播放队列中没有有效的音乐文件")
+            logger.warning(t("player.no_valid_music_files_in_restored_queue"))
             return False
         
         # 更新播放队列
@@ -417,17 +418,17 @@ def restore_last_play_queue() -> bool:
                 if isinstance(play_index, (str, float)) and play_index:
                     play_index = int(play_index)
                 else:
-                    logger.warning(f"无效的播放索引类型: {type(play_index)}，将重置为 0")
+                    logger.warning(t("player.invalid_play_index_type", type_name=str(type(play_index))))
                     play_index = 0
             except (TypeError, ValueError):
-                logger.warning(f"无效的播放索引值: {play_index}，将重置为 0")
+                logger.warning(t("player.invalid_play_index_value", play_index=play_index))
                 play_index = 0
             
         app_context.play_queue_index = max(0, min(play_index, len(play_queue) - 1))  # 确保索引有效且不小于0
         
-        logger.info(f"已恢复播放队列，包含 {len(play_queue)} 首歌曲，当前索引: {app_context.play_queue_index}")
+        logger.info(t("player.play_queue_restored", count=len(play_queue), index=app_context.play_queue_index))
         
         return True
     except Exception as e:
-        logger.exception(f"恢复播放队列时发生错误: {e}")
+        logger.exception(t("player.restore_play_queue_error", error=str(e)))
         return False

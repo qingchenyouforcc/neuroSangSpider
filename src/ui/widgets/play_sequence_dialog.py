@@ -22,6 +22,7 @@ from qfluentwidgets import (
     isDarkTheme
 )
 
+from i18n import t
 from src.config import cfg
 from src.app_context import app_context
 from src.core.player import (
@@ -41,7 +42,7 @@ class PlaySequenceDialog(QDialog):
         
         # 连接自定义主题变化信号
         self.themeChanged.connect(self._update_card_style)
-        self.setWindowTitle("播放序列管理")
+        self.setWindowTitle(t("play_sequence.title"))
         self.setFixedSize(500, 400)
         
         # 设置无边框窗口，但保留任务栏按钮，并确保对话框模态
@@ -98,8 +99,8 @@ class PlaySequenceDialog(QDialog):
         
         # 标题和描述
         title_content = QVBoxLayout()
-        self.titleLabel = TitleLabel("播放序列管理", self.card)
-        self.descLabel = StrongBodyLabel("管理您喜爱的播放序列集合", self.card)
+        self.titleLabel = TitleLabel(t("play_sequence.title"), self.card)
+        self.descLabel = StrongBodyLabel(t("play_sequence.description"), self.card)
         title_content.addWidget(self.titleLabel)
         title_content.addWidget(self.descLabel)
         
@@ -108,7 +109,7 @@ class PlaySequenceDialog(QDialog):
         
         # 添加关闭按钮 - 使用自定义样式
         self.closeButton = TransparentToolButton(FIF.CLOSE, self.card)
-        self.closeButton.setToolTip("关闭")
+        self.closeButton.setToolTip(t("common.close"))
         self.closeButton.clicked.connect(self.reject)
         self.closeButton.setFixedSize(32, 32)  # 设置固定大小以确保良好的点击区域
         title_layout.addWidget(self.closeButton)
@@ -134,16 +135,16 @@ class PlaySequenceDialog(QDialog):
         button_layout.setSpacing(10)
         
         # 添加按钮
-        self.saveButton = PushButton("保存序列", self.card, FIF.SAVE)
-        self.saveButton.setToolTip("保存当前播放队列")
+        self.saveButton = PushButton(t("play_sequence.save"), self.card, FIF.SAVE)
+        self.saveButton.setToolTip(t("play_sequence.save_tooltip"))
         self.saveButton.clicked.connect(self.on_save_clicked)
         
-        self.loadButton = PrimaryPushButton("加载序列", self.card, FIF.DOWNLOAD)
-        self.loadButton.setToolTip("加载选中序列")
+        self.loadButton = PrimaryPushButton(t("play_sequence.load"), self.card, FIF.DOWNLOAD)
+        self.loadButton.setToolTip(t("play_sequence.load_tooltip"))
         self.loadButton.clicked.connect(self.on_load_clicked)
         
-        self.deleteButton = PushButton("删除序列", self.card, FIF.DELETE)
-        self.deleteButton.setToolTip("删除选中序列")
+        self.deleteButton = PushButton(t("play_sequence.delete"), self.card, FIF.DELETE)
+        self.deleteButton.setToolTip(t("play_sequence.delete_tooltip"))
         self.deleteButton.clicked.connect(self.on_delete_clicked)
         
         button_layout.addWidget(self.saveButton)
@@ -274,8 +275,8 @@ class PlaySequenceDialog(QDialog):
         """保存当前播放队列为序列"""
         if not app_context.play_queue:
             InfoBar.warning(
-                "警告", 
-                "播放队列为空，无法保存",
+                t("common.warning"), 
+                t("play_sequence.empty_queue"),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
                 duration=2000,
@@ -285,10 +286,10 @@ class PlaySequenceDialog(QDialog):
         
         # 创建输入对话框
         dialog = MessageBoxBase(self)
-        dialog.setWindowTitle("保存播放序列")
+        dialog.setWindowTitle(t("play_sequence.save_dialog_title"))
         
         # 添加说明文字
-        label = StrongBodyLabel("请输入序列名称:", dialog)
+        label = StrongBodyLabel(t("play_sequence.input_name"), dialog)
         dialog.viewLayout.addWidget(label)
         
         # 添加输入框
@@ -296,8 +297,8 @@ class PlaySequenceDialog(QDialog):
         dialog.viewLayout.addWidget(lineEdit)
         
         # 设置按钮文本
-        dialog.yesButton.setText("保存")
-        dialog.cancelButton.setText("取消")
+        dialog.yesButton.setText(t("common.save"))
+        dialog.cancelButton.setText(t("common.cancel"))
         
         # 显示对话框
         if dialog.exec():
@@ -309,8 +310,8 @@ class PlaySequenceDialog(QDialog):
             if name in get_play_sequence_names():
                 # 使用 MessageBox 确认是否覆盖
                 w = MessageBox(
-                    "确认覆盖",
-                    f"序列 '{name}' 已存在，是否覆盖？",
+                    t("play_sequence.confirm_overwrite"),
+                    t("play_sequence.overwrite_message").format(name=name),
                     self
                 )
                 if not w.exec():
@@ -324,8 +325,8 @@ class PlaySequenceDialog(QDialog):
         selected_items = self.sequenceList.selectedItems()
         if not selected_items:
             InfoBar.warning(
-                "警告",
-                "请先选择一个序列",
+                t("common.warning"),
+                t("play_sequence.select_sequence"),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
                 duration=2000,
@@ -342,8 +343,8 @@ class PlaySequenceDialog(QDialog):
         selected_items = self.sequenceList.selectedItems()
         if not selected_items:
             InfoBar.warning(
-                "警告",
-                "请先选择一个序列",
+                t("common.warning"),
+                t("play_sequence.select_sequence"),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
                 duration=2000,
@@ -355,8 +356,8 @@ class PlaySequenceDialog(QDialog):
         
         # 使用 MessageBox 确认是否删除
         w = MessageBox(
-            "确认删除",
-            f"确定要删除序列 '{sequence_name}' 吗？",
+            t("play_sequence.confirm_delete"),
+            t("play_sequence.delete_message").format(sequence_name=sequence_name),
             self
         )
         if w.exec():

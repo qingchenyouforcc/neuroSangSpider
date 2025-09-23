@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
+from i18n import t
 from src.app_context import app_context
 from src.config import MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info
@@ -78,25 +79,25 @@ class LocalPlayerInterface(QWidget):
         # 创建标题和刷新按钮的水平布局
         title_layout = QHBoxLayout()
 
-        self.titleLabel = TitleLabel("本地播放器", self)
+        self.titleLabel = TitleLabel(t("local_player.title"), self)
 
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
-        self.refreshButton.setToolTip("刷新歌曲列表")
+        self.refreshButton.setToolTip(t("local_player.refresh_tooltip"))
 
         self.addQueueButton = TransparentToolButton(FIF.ADD, self)
-        self.addQueueButton.setToolTip("添加到播放列表")
+        self.addQueueButton.setToolTip(t("local_player.add_queue_tooltip"))
 
         self.openPlayer = TransparentToolButton(FIF.MUSIC, self)
-        self.openPlayer.setToolTip("打开播放器")
+        self.openPlayer.setToolTip(t("local_player.open_player_tooltip"))
 
         self.openInfoTip = TransparentToolButton(FIF.INFO, self)
-        self.openInfoTip.setToolTip("打开正在播放提示")
+        self.openInfoTip.setToolTip(t("local_player.open_info_tip_tooltip"))
 
         self.delSongBtn = TransparentToolButton(FIF.DELETE, self)
-        self.delSongBtn.setToolTip("删除文件")
+        self.delSongBtn.setToolTip(t("local_player.delete_tooltip"))
 
         self.addQueueAllBtn = TransparentToolButton(FIF.CHEVRON_DOWN_MED, self)
-        self.addQueueAllBtn.setToolTip("添加所有文件到播放列表")
+        self.addQueueAllBtn.setToolTip(t("local_player.add_all_tooltip"))
 
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
@@ -147,7 +148,7 @@ class LocalPlayerInterface(QWidget):
             songs = read_all_audio_info(MUSIC_DIR)
             self.tableView.setRowCount(len(songs))
             self.tableView.setColumnCount(3)
-            self.tableView.setHorizontalHeaderLabels(["文件名", "时长", "播放次数"])
+            self.tableView.setHorizontalHeaderLabels([t("local_player.header_filename"), t("local_player.header_duration"), t("local_player.header_play_count")])
 
             for i, (filename, duration) in enumerate(songs):
                 file_item = QTableWidgetItem(filename)

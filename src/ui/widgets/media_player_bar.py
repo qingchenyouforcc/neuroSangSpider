@@ -7,6 +7,7 @@ from qfluentwidgets import CaptionLabel, FluentIcon
 from qfluentwidgets.multimedia import MediaPlayBarButton, MediaPlayer, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
 
+from i18n import t
 from src.app_context import app_context
 from src.config import PlayMode, cfg
 from src.core.player import nextSong, playSongByIndex, previousSong
@@ -34,7 +35,7 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.skipBackButton = MediaPlayBarButton(FluentIcon.SKIP_BACK, self)
 
         self.modeChangeButton = MediaPlayBarButton(FluentIcon.SYNC, self)
-        self.modeChangeButton.setToolTip("列表循环")
+        self.modeChangeButton.setToolTip(t("play_mode.list_loop"))
 
         self.currentTimeLabel = CaptionLabel("0:00:00", self)
         self.remainTimeLabel = CaptionLabel("0:00:00", self)
@@ -108,16 +109,16 @@ class CustomMediaPlayBar(MediaPlayBarBase):
             
             match cfg.play_mode.value:
                 case PlayMode.LIST_LOOP:
-                    logger.info("歌曲播放完毕，自动播放下一首。")
+                    logger.info(t("media_player.song_finished_play_next"))
                     nextSong()
                 case PlayMode.SEQUENTIAL:
                     if app_context.play_queue_index < len(app_context.play_queue):
-                        logger.info("歌曲播放完毕，自动播放下一首。")
+                        logger.info(t("media_player.song_finished_play_next"))
                         nextSong()
                 case PlayMode.SINGLE_LOOP:
                     playSongByIndex()
                 case PlayMode.RANDOM:
-                    logger.info("歌曲播放完毕，自动播放下一首。")
+                    logger.info(t("media_player.song_finished_play_next"))
                     nextSong()
 
     @staticmethod
@@ -137,16 +138,16 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         match cfg.play_mode.value:
             case PlayMode.LIST_LOOP:
                 self.modeChangeButton.setIcon(FluentIcon.SYNC)
-                self.modeChangeButton.setToolTip("列表循环")
+                self.modeChangeButton.setToolTip(t("play_mode.list_loop"))
             case PlayMode.SEQUENTIAL:
                 self.modeChangeButton.setIcon(FluentIcon.MENU)
-                self.modeChangeButton.setToolTip("顺序播放")
+                self.modeChangeButton.setToolTip(t("play_mode.sequential"))
             case PlayMode.SINGLE_LOOP:
                 self.modeChangeButton.setIcon(FluentIcon.ROTATE)
-                self.modeChangeButton.setToolTip("单曲循环")
+                self.modeChangeButton.setToolTip(t("play_mode.single_loop"))
             case PlayMode.RANDOM:
                 self.modeChangeButton.setIcon(FluentIcon.QUESTION)
-                self.modeChangeButton.setToolTip("随机播放")
+                self.modeChangeButton.setToolTip(t("play_mode.random"))
 
     def togglePlayState(self):
         """toggle the play state of media player"""
