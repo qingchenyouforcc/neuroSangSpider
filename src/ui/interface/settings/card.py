@@ -31,7 +31,7 @@ def changeDownloadType(selected_type: str) -> None:
     cfg.save()
     InfoBar.success(
         t("common.settings_success"),
-        t("common.download_format_set") % selected_type,
+        t("common.download_format_set", format=selected_type),
         orient=Qt.Orientation.Horizontal,
         position=InfoBarPosition.BOTTOM_RIGHT,
         duration=1500,
@@ -81,7 +81,7 @@ def on_theme_switched(current_text: str) -> None:
     try:
         cfg.set_theme(theme)
     except Exception:
-        logger.exception(t("settings.theme_switch_error"))
+        logger.exception("不是哥们你这怎么报错的？")
 
 
 class BiliApiDialog(MessageBoxBase):
@@ -120,8 +120,8 @@ class BiliApiDialog(MessageBoxBase):
         self.viewLayout.addWidget(self.buvid3Edit)
 
         # 设置按钮文本
-        self.yesButton.setText(t("bili_api.save"))
-        self.cancelButton.setText(t("bili_api.cancel"))
+        self.yesButton.setText(t("common.save"))
+        self.cancelButton.setText(t("common.cancel"))
 
     def accept(self) -> None:
         """保存设置"""
@@ -278,7 +278,7 @@ class SettingsCard(GroupHeaderCardWidget):
         cfg.save()
         InfoBar.success(
             t("common.settings_success"),
-            t("common.play_mode_set").format(text=text),
+            t("common.play_mode_set", play_mode=text),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
@@ -290,7 +290,7 @@ class SettingsCard(GroupHeaderCardWidget):
         cfg.save()
         InfoBar.success(
             t("common.settings_success"),
-            t("common.search_pages_set").format(value=value),
+            t("common.search_pages_set", value=value),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
@@ -301,7 +301,7 @@ class SettingsCard(GroupHeaderCardWidget):
         cfg.save()
         InfoBar.success(
             t("common.settings_success"),
-            t("common.player_bar_set").format(status=t("common.enabled") if checked else t("common.disabled")),
+            t("common.player_bar_set", display_mode=t("common.enabled") if checked else t("common.disabled")),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
