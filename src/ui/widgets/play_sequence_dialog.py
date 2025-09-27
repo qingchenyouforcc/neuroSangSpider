@@ -263,7 +263,11 @@ class PlaySequenceDialog(QDialog):
         sequence_names = get_play_sequence_names()
         sequences = cfg.play_sequences.value
         for name in sequence_names:
-            item = QListWidgetItem(f"{name} ({len(sequences[name])}首)")
+
+            item = QListWidgetItem(t("play_sequence.sequence_item_prefix",
+                                     name= name,
+                                     sequences= len(sequences[name])))
+
             item.setData(Qt.ItemDataRole.UserRole, name)  # 存储真实的序列名
             self.sequenceList.addItem(item)
 
@@ -311,7 +315,7 @@ class PlaySequenceDialog(QDialog):
                 # 使用 MessageBox 确认是否覆盖
                 w = MessageBox(
                     t("play_sequence.confirm_overwrite"),
-                    t("play_sequence.overwrite_message").format(name=name),
+                    t("play_sequence.overwrite_message", name=name),
                     self
                 )
                 if not w.exec():
@@ -357,7 +361,7 @@ class PlaySequenceDialog(QDialog):
         # 使用 MessageBox 确认是否删除
         w = MessageBox(
             t("play_sequence.confirm_delete"),
-            t("play_sequence.delete_message").format(sequence_name=sequence_name),
+            t("play_sequence.delete_message", sequence_name=sequence_name),
             self
         )
         if w.exec():
@@ -404,10 +408,8 @@ class PlaySequenceDialog(QDialog):
                     close_btn_height = self.closeButton.height()
                     
                     # 判断点击位置是否在关闭按钮区域
-                    in_close_btn = (pos.x() >= close_btn_x and 
-                                   pos.x() <= close_btn_x + close_btn_width and
-                                   pos.y() >= close_btn_y and 
-                                   pos.y() <= close_btn_y + close_btn_height)
+                    in_close_btn = (close_btn_x <= pos.x() <= close_btn_x + close_btn_width and
+                                    close_btn_y <= pos.y() <= close_btn_y + close_btn_height)
                     
                     if not in_close_btn:
                         self.drag_position = a0.globalPosition().toPoint() - self.frameGeometry().topLeft()

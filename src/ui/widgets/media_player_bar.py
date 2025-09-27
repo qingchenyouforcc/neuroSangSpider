@@ -109,16 +109,16 @@ class CustomMediaPlayBar(MediaPlayBarBase):
             
             match cfg.play_mode.value:
                 case PlayMode.LIST_LOOP:
-                    logger.info(t("media_player.song_finished_play_next"))
+                    logger.info("歌曲播放完毕，自动播放下一首。")
                     nextSong()
                 case PlayMode.SEQUENTIAL:
                     if app_context.play_queue_index < len(app_context.play_queue):
-                        logger.info(t("media_player.song_finished_play_next"))
+                        logger.info("歌曲播放完毕，自动播放下一首。")
                         nextSong()
                 case PlayMode.SINGLE_LOOP:
                     playSongByIndex()
                 case PlayMode.RANDOM:
-                    logger.info(t("media_player.song_finished_play_next"))
+                    logger.info("歌曲播放完毕，自动播放下一首。")
                     nextSong()
 
     @staticmethod
