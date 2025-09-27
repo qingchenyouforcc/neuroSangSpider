@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout
 from qfluentwidgets import BodyLabel, ComboBox, PushButton, CardWidget, isDarkTheme
 import os
 
-from i18n import t
 from src.config import cfg
 
 # 定义首次运行标记文件路径
