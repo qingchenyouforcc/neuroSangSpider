@@ -39,7 +39,6 @@ def restart_app():
         
         logger.info(f"启动新实例: {executable} {' '.join(args)}")
         
-        # subprocess启动新实例
         subprocess.Popen([executable] + args, 
                         creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
                         close_fds=True)

@@ -42,27 +42,53 @@ class I18nManager(QObject):
 
         self.logger.info(f"预加载了 {len(self._translations)} 种语言")
 
-    def i18n(self, key: str, default: str = None) -> str:
+    def i18n(self, key: str, default: str = None, **kwargs) -> str:
         if not key:
             return default or ""
 
         # 优先使用当前语言
         current_translations = self._translations.get(self._current_language, {})
         if key in current_translations:
-            return current_translations[key]
+            translation = current_translations[key]
+            if kwargs:
+                try:
+                    return translation.format(**kwargs)
+                except Exception as e:
+                    self.logger.error(f"格式化翻译失败 key='{key}': {e}")
+                    return translation
+            return translation
 
-        # 回退到默认语言
         fallback_translations = self._translations.get(self._fallback_language, {})
         if key in fallback_translations:
             self.logger.warning(f"词条 '{key}' 在语言 {self._current_language} 中未找到，使用回退语言")
-            return fallback_translations[key]
+            translation = fallback_translations[key]
+            if kwargs:
+                try:
+                    return translation.format(**kwargs)
+                except Exception as e:
+                    self.logger.error(f"格式化回退翻译失败 key='{key}': {e}")
+                    return translation
+            return translation
 
         # 使用提供的默认值或键本身
         if default is not None:
             self.logger.warning(f"词条 '{key}' 未找到，使用提供的默认值")
+            # 进行格式化
+            if kwargs:
+                try:
+                    return default.format(**kwargs)
+                except Exception as e:
+                    self.logger.error(f"格式化默认值失败 key='{key}': {e}")
+                    return default
             return default
 
         self.logger.error(f"词条 '{key}' 未在任何语言中找到")
+        if kwargs:
+            try:
+                return key.format(**kwargs)
+            except Exception as e:
+                self.logger.error(f"格式化键失败 key='{key}': {e}")
+                return key
         return key
 
     def set_language(self, language: str):
