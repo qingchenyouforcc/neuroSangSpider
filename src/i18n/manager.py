@@ -41,7 +41,7 @@ class I18nManager(QObject):
 
         self.logger.info(f"预加载了 {len(self._translations)} 种语言")
 
-    def i18n(self, key: str, default: str = None, **kwargs) -> str:
+    def i18n(self, key: str, default: str | None = None, **kwargs: object) -> str:
         if not key:
             return default or ""
 

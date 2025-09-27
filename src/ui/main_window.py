@@ -112,7 +112,7 @@ class MainWindow(FluentWindow):
         # 隐藏启动页面
         self.splashScreen.finish()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event):  # type: ignore[override]
         if not self.is_language_restart:
             # 显示退出确认对话框
             try:
