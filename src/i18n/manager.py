@@ -90,7 +90,7 @@ class I18nManager(QObject):
                 return key
         return key
 
-    def set_language(self, language: str):
+    def _set_language(self, language: str):
         if language not in self._translations:
             self.logger.error(f"不支持的语言: {language}")
             return False
@@ -118,6 +118,13 @@ class I18nManager(QObject):
         """添加语言改变监听器"""
         if listener not in self._listeners:
             self._listeners.append(listener)
+
+    def set_language_with_restart(self, language: str, main_window):
+        """设置语言并标记需要重启"""
+        if self._set_language(language):
+            main_window.is_language_restart = True
+            return True
+        return False
 
     def remove_change_listener(self, listener: Callable):
         """移除语言改变监听器"""

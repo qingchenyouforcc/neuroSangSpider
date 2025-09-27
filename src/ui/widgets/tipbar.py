@@ -57,10 +57,10 @@ def open_info_tip():
         )
 
     except Exception as e:
-        logger.warning(t("tipbar.unknown_error_opening_play_tip"))
+        logger.warning("打开播放提示栏时发生未知错误")
         InfoBar.error(
             t("common.unknown_error"),
-            t("tipbar.github_issue").format(e=e),
+            t("tipbar.github_issue", e=e),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -76,7 +76,7 @@ def infoCloseBtnClicked():
 
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""
-    assert app_context.player is not None, "播放器未初始化"
+    assert app_context.player is not None, t("tipbar.player_uninitialized")
     app_context.player.togglePlayState()
     update_info_tip()
 

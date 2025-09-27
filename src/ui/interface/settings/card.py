@@ -49,14 +49,13 @@ def changeLanguage(language: str) -> None:
 
     # 先通过i18n_manager设置语言，确保翻译状态一致
     if hasattr(app_context, 'i18n_manager') and app_context.i18n_manager:
-        app_context.i18n_manager.set_language(language)
+        app_context.i18n_manager.set_language_with_restart(language, app_context.main_window)
     
     cfg.language.value = language
     cfg.save()
 
-    project_root = Path(__file__).parent.parent.parent.parent
-    sys.path.append(str(project_root))
-    restart_app()
+    if hasattr(app_context, 'main_window') and app_context.main_window:
+        app_context.main_window.close()
 
 
 def get_theme_display():

@@ -51,7 +51,7 @@ class MainWindow(FluentWindow):
         # TODO 实现按照配置文件主题切换，bug没修好
         # 临时方案：按照系统主题修改
         cfg.set_theme(Theme.AUTO) 
-        logger.info(t("main_window.apply_default_theme"))
+        logger.info("应用默认主题: AUTO")
 
         self.show()   
 
@@ -107,52 +107,64 @@ class MainWindow(FluentWindow):
                 from src.core.player import restore_last_play_queue
                 restore_last_play_queue()
         except Exception as e:
-            logger.exception(t("main_window.restore_queue_error", error=str(e)))
+            logger.exception(f"尝试恢复播放队列时出错: {e}")
             
         # 隐藏启动页面
         self.splashScreen.finish()
 
-    def closeEvent(self, event):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def closeEvent(self, event):
         if not self.is_language_restart:
+            # 显示退出确认对话框
             try:
-                logger.info(t("main_window.showing_exit_confirm_dialog"))
-
+                logger.info("正在弹出退出确认对话框...")
                 w = MessageBox(t("common.close_confirm"), t("common.close_confirm_desc"), self)
                 w.setDraggable(False)
+                w.yesButton.setText(t("common.ok"))
+                w.cancelButton.setText(t("common.cancel"))
 
                 if w.exec():
-                    logger.info(t("main_window.user_confirmed_exit"))
-
+                    logger.info("用户确认退出，程序即将关闭。")
                     self.before_shutdown()
                     event.accept()
                     QApplication.quit()
                 else:
-                    logger.info(t("main_window.user_canceled_exit"))
+                    logger.info("用户取消了退出操作。")
                     event.ignore()
-
-            except Exception:
-                logger.exception(t("main_window.exit_confirm_error"))
+            except Exception as e:
+                logger.exception(f"在退出确认过程中发生错误: {e}")
+                event.accept()
         else:
+            # 显示重启确认对话框
             try:
-                logger.info(t("main_window.showing_restart_confirm_dialog"))
-                w = MessageBox(t("common.restart_confirm"), t("common.restart_desc"), self)
+                logger.info("正在弹出重启确认对话框...")
+                w = MessageBox(t("common.restart_confirm"), t("common.restart_confirm_desc"), self)
                 w.setDraggable(False)
-                if w.exec():
+                w.yesButton.setText(t("common.ok"))
+                w.cancelButton.setText(t("common.cancel"))
+                
+                result = w.exec()
+                logger.info(f"重启确认对话框结果: {result}")
+
+                if result:
+                    logger.info("用户确认重启，程序即将重启。")
                     self.before_shutdown()
                     self._perform_restart()
                     event.accept()
                 else:
-                    logger.info(t("main_window.user_canceled_restart"))
+                    logger.info("用户取消了重启操作。")
+                    self.is_language_restart = False
                     event.ignore()
-            except Exception:
-                logger.exception(t("main_window.restart_confirm_error"))
+            except Exception as e:
+                logger.exception(f"在确认重启过程中发生错误: {e}")
+                # 出错时默认执行重启
+                self.before_shutdown()
+                self._perform_restart()
+                event.accept()
 
     def _perform_restart(self):
-        """
-        执行实际的重启操作
-        """
-        logger.info(t("main_window.starting_restart_operation"))
-        
+
+        logger.info("正在开始重启...")
+
         # 优先使用subprocess启动新实例，然后退出当前进程
         try:
             if getattr(sys, 'frozen', False):
@@ -163,29 +175,33 @@ class MainWindow(FluentWindow):
                 # 开发环境
                 executable = sys.executable
                 args = [sys.argv[0]] if sys.argv else []
-            
-            logger.info(t("main_window.using_subprocess_restart", executable=executable, args=' '.join(args)))
-            
+
+            logger.info(f"使用subprocess重启: {executable} {' '.join(args)}")
+
             env = os.environ.copy()
             env['LANGUAGE_RESTART'] = '1'
-            
+
             # 启动新实例
-            process = subprocess.Popen([executable] + args, 
-                                     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
-                                     env=env,
-                                     close_fds=True)
-            
-            logger.info(t("main_window.new_instance_started", pid=process.pid))
-            
+            process = subprocess.Popen([executable] + args,
+                                       creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
+                                       env=env,
+                                       close_fds=True)
+
+            logger.info(f"新实例已启动，PID: {process.pid}")
+
+            sys.exit(0)
+
         except Exception as e:
-            logger.error(t("main_window.subprocess_restart_failed", error=str(e)))
-            
+            logger.error(f"subprocess重启失败: {str(e)}")
+
             # 回退到QProcess
             try:
-                logger.info(t("main_window.fallback_to_qprocess_restart"))
+                logger.info("回退到QProcess重启方式")
                 QProcess.startDetached(sys.executable, sys.argv)
+
+                sys.exit(0)
             except Exception as e2:
-                logger.error(t("main_window.qprocess_restart_failed", error=str(e2)))
+                logger.error(f"QProcess重启失败: {str(e2)}")
                 # 最后尝试直接使用os.execv
                 try:
                     if getattr(sys, 'frozen', False):
@@ -194,11 +210,13 @@ class MainWindow(FluentWindow):
                     else:
                         executable = sys.executable
                         args = [sys.executable] + sys.argv
-                    
-                    logger.info(t("main_window.last_try_os_execv", executable=executable, args=' '.join(args[1:])))
+
+                    logger.info(f"最后尝试使用os.execv重启: {executable} {' '.join(args[1:])}")
                     os.execv(executable, args)
                 except Exception as e3:
-                    logger.error(t("main_window.all_restart_methods_failed", error=str(e3)))
+                    logger.error(f"所有重启方法都失败了: {str(e3)}")
+                    # 所有方法都失败时，仍然退出当前进程
+                    sys.exit(1)
 
     def before_shutdown(self):
         # 保存当前播放队列
