@@ -1,7 +1,8 @@
 from pathlib import Path
 from loguru import logger
 from typing import TYPE_CHECKING, Any
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import Qt, QUrl, QSize
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
@@ -10,9 +11,12 @@ from src.i18n import t
 from src.app_context import app_context
 from src.config import MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info
-from src.core.player import getMusicLocal, open_player
+from src.core.player import getMusicLocalStr, open_player
 from src.utils.text import escape_tag
 from src.ui.widgets.tipbar import open_info_tip
+from src.ui.widgets.song_cell import build_song_cell
+from src.utils.cover import get_cover_pixmap
+from src.ui.widgets.pixmap_utils import rounded_pixmap
 
 import shutil
 import time
@@ -61,38 +65,34 @@ class LocalPlayerInterface(QWidget):
         self.setObjectName("locPlayerInterface")
         self.setStyleSheet("LocPlayerInterface{background: transparent}")
 
+        # 布局与表格
         self._layout = QVBoxLayout(self)
         self.tableView = TableWidget(self)
-
         self._layout.setContentsMargins(30, 30, 30, 30)
         self._layout.setSpacing(15)
-
         self.tableView.setBorderVisible(True)
         self.tableView.setSortingEnabled(True)
         self.tableView.setBorderRadius(8)
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
-        # 创建标题和刷新按钮的水平布局
+        # 封面图标尺寸（与播放队列保持一致）
+        self.cover_icon_size = 40
+        self.tableView.setIconSize(QSize(self.cover_icon_size, self.cover_icon_size))
+
+        # 标题栏
         title_layout = QHBoxLayout()
-
         self.titleLabel = TitleLabel(t("local_player.title"), self)
-
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip(t("local_player.refresh_tooltip"))
-
         self.addQueueButton = TransparentToolButton(FIF.ADD, self)
         self.addQueueButton.setToolTip(t("local_player.add_queue_tooltip"))
-
         self.openPlayer = TransparentToolButton(FIF.MUSIC, self)
         self.openPlayer.setToolTip(t("local_player.open_player_tooltip"))
-
         self.openInfoTip = TransparentToolButton(FIF.INFO, self)
         self.openInfoTip.setToolTip(t("local_player.open_info_tip_tooltip"))
-
         self.delSongBtn = TransparentToolButton(FIF.DELETE, self)
         self.delSongBtn.setToolTip(t("local_player.delete_tooltip"))
-
         self.addQueueAllBtn = TransparentToolButton(FIF.CHEVRON_DOWN_MED, self)
         self.addQueueAllBtn.setToolTip(t("local_player.add_all_tooltip"))
 
@@ -108,9 +108,8 @@ class LocalPlayerInterface(QWidget):
         self._layout.addLayout(title_layout)
         self._layout.addWidget(self.tableView)
 
-        # 处理双击事件：无论点击哪一列，都会传递行和列索引
+        # 信号
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
-
         self.refreshButton.clicked.connect(self.load_local_songs)
         self.addQueueButton.clicked.connect(self.add_to_queue)
         self.openPlayer.clicked.connect(open_player)
@@ -119,6 +118,11 @@ class LocalPlayerInterface(QWidget):
         self.addQueueAllBtn.clicked.connect(self.add_all_to_queue)
 
         self.load_local_songs()
+
+    def _name_col(self) -> int:
+        """根据是否显示封面返回文件名所在列索引"""
+        show_cover = bool(cfg.enable_cover.value)
+        return 1 if show_cover else 0
 
     def load_local_songs(self):
         try:
@@ -144,27 +148,61 @@ class LocalPlayerInterface(QWidget):
             self.tableView.clear()
             songs = read_all_audio_info(MUSIC_DIR)
             self.tableView.setRowCount(len(songs))
-            self.tableView.setColumnCount(3)
-            self.tableView.setHorizontalHeaderLabels(
-                [
-                    t("local_player.header_filename"),
-                    t("local_player.header_duration"),
-                    t("local_player.header_play_count"),
-                ]
-            )
+            show_cover = bool(cfg.enable_cover.value)
+            if show_cover:
+                self.tableView.setColumnCount(4)
+                self.tableView.setHorizontalHeaderLabels(
+                    [
+                        t("play_queue.header_cover"),
+                        t("local_player.header_filename"),
+                        t("local_player.header_duration"),
+                        t("local_player.header_play_count"),
+                    ]
+                )
+            else:
+                self.tableView.setColumnCount(3)
+                self.tableView.setHorizontalHeaderLabels(
+                    [
+                        t("local_player.header_filename"),
+                        t("local_player.header_duration"),
+                        t("local_player.header_play_count"),
+                    ]
+                )
 
             for i, (filename, duration) in enumerate(songs):
-                file_item = QTableWidgetItem(filename)
-                # 存储原始文件名作为隐藏数据，用于后续查找
+                # 用于排序与数据存储的表格项（始终设置在文件名列）
+                name_col = 1 if show_cover else 0
+                file_item = QTableWidgetItem("")  # 避免与自定义小部件重复显示
                 file_item.setData(Qt.ItemDataRole.UserRole, filename)
+                self.tableView.setItem(i, name_col, file_item)
 
-                self.tableView.setItem(i, 0, file_item)
+                # 视觉展示采用可复用的歌曲单元格控件（解析标签显示副标题）
+                self.tableView.setCellWidget(
+                    i,
+                    name_col,
+                    build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False),
+                )
+
+                # 封面列
+                if show_cover:
+                    cover_item = QTableWidgetItem()
+                    audio_path = MUSIC_DIR / filename
+                    pix = get_cover_pixmap(audio_path, size=self.cover_icon_size)
+                    radius = max(0, int(cfg.cover_corner_radius.value))
+                    pix = rounded_pixmap(pix, radius)
+                    cover_item.setIcon(QIcon(pix))
+                    cover_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                    self.tableView.setItem(i, 0, cover_item)
+
+                # 行高匹配封面
+                self.tableView.setRowHeight(i, self.cover_icon_size + 12)
 
                 # 时长也应该按照数字排序
                 duration_item = NumericTableWidgetItem(duration)
                 duration_mod_second = duration % 60 * 10 if 0 <= duration % 60 < 10 else duration % 60
                 duration_item.setText(f"{int(duration / 60):02}:{duration_mod_second:.0f}")
-                self.tableView.setItem(i, 1, duration_item)
+                # 时长列位置
+                self.tableView.setItem(i, (2 if show_cover else 1), duration_item)
 
                 # 从配置中获取播放次数
                 play_count = cfg.play_count.value.get(str(filename), 0)
@@ -172,9 +210,16 @@ class LocalPlayerInterface(QWidget):
 
                 # 创建一个特殊的表格项，确保按照数字大小排序
                 count_item = NumericTableWidgetItem(play_count)
-                self.tableView.setItem(i, 2, count_item)
+                self.tableView.setItem(i, (3 if show_cover else 2), count_item)
 
-            self.tableView.resizeColumnsToContents()
+            # 列尺寸
+            if show_cover:
+                self.tableView.setColumnWidth(0, self.cover_icon_size + 24)
+                self.tableView.resizeColumnToContents(1)
+                self.tableView.resizeColumnToContents(2)
+                self.tableView.resizeColumnToContents(3)
+            else:
+                self.tableView.resizeColumnsToContents()
 
             # 重新启用排序并应用之前的排序设置
             self.tableView.setSortingEnabled(True)
@@ -197,11 +242,11 @@ class LocalPlayerInterface(QWidget):
             column: 列号，无论点击哪一列，都会传递给第0列（文件名列）获取歌曲信息
         """
         try:
-            # 不管点击哪一列，始终从第0列（文件名列）获取歌曲信息
-            item = self.tableView.item(row, 0)
+            # 无论点击哪一列，取文件名列的隐藏数据
+            item = self.tableView.item(row, self._name_col())
             assert item is not None, t("local_player.current_line_no_sang_info")
-
-            file_path = getMusicLocal(item)
+            file_name = item.data(Qt.ItemDataRole.UserRole) or item.text()
+            file_path = getMusicLocalStr(str(file_name))
             if file_path is None or not file_path.exists():
                 InfoBar.error(
                     t("common.play_song_error"),
@@ -217,14 +262,14 @@ class LocalPlayerInterface(QWidget):
             self.main_window.player_bar.player.setSource(url)
             self.main_window.player_bar.player.play()
 
-            app_context.playing_now = item.text()
+            app_context.playing_now = str(file_name)
 
             open_info_tip()
 
             # 确保歌曲在播放队列中
             if file_path not in app_context.play_queue:
                 app_context.play_queue.append(file_path)
-                logger.info(f"已将 {item.text()} 添加到播放队列")
+                logger.info(f"已将 {file_name} 添加到播放队列")
 
             # 更新播放索引
             app_context.play_queue_index = app_context.play_queue.index(file_path)
@@ -241,7 +286,7 @@ class LocalPlayerInterface(QWidget):
         try:
             # 确定要处理的项：如果指定了行号，则获取该行的第0列项，否则使用当前选中项
             if row is not None:
-                item = self.tableView.item(row, 0)  # 始终使用第0列（文件名列）
+                item = self.tableView.item(row, self._name_col())
             else:
                 current_item = self.tableView.currentItem()
                 if current_item is None:
@@ -250,22 +295,23 @@ class LocalPlayerInterface(QWidget):
 
                 # 获取当前选中项所在行的第0列项（文件名列）
                 current_row = current_item.row()
-                item = self.tableView.item(current_row, 0)
+                item = self.tableView.item(current_row, self._name_col())
 
             if item is None:
                 logger.warning("无法获取歌曲信息")
                 return
 
             # 获取文件路径并添加到播放队列
-            if file_path := getMusicLocal(item):
+            file_name = item.data(Qt.ItemDataRole.UserRole) or item.text()
+            if file_name and (file_path := getMusicLocalStr(str(file_name))):
                 if file_path in app_context.play_queue:
-                    logger.debug(f"歌曲 {item.text()} 已在播放列表中")
+                    logger.debug(f"歌曲 {file_name} 已在播放列表中")
                     return
 
                 app_context.play_queue.append(file_path)
                 InfoBar.success(
                     t("common.success"),
-                    t("local_player.add_sang_success", name=item.text()),
+                    t("local_player.add_sang_success", name=str(file_name)),
                     orient=Qt.Orientation.Horizontal,
                     position=InfoBarPosition.TOP,
                     duration=1500,
@@ -295,26 +341,27 @@ class LocalPlayerInterface(QWidget):
 
             # 获取当前选中项所在行的第0列项（文件名列）
             current_row = current_item.row()
-            item = self.tableView.item(current_row, 0)
+            item = self.tableView.item(current_row, self._name_col())
 
             if item is None:
                 logger.warning("无法获取歌曲信息")
                 return
 
             # 获取文件路径并删除
-            if (file_path := getMusicLocal(item)) and (fp := Path(file_path)).exists():
+            file_name = item.data(Qt.ItemDataRole.UserRole) or item.text()
+            if file_name and (file_path := getMusicLocalStr(str(file_name))) and (fp := Path(file_path)).exists():
                 # 删除文件
                 fp.unlink()
 
                 # 如果文件在播放队列中，从队列中移除
                 if file_path in app_context.play_queue:
                     app_context.play_queue.remove(file_path)
-                    logger.info(f"已从播放队列中移除: {item.text()}")
+                    logger.info(f"已从播放队列中移除: {file_name}")
 
                 # 显示成功消息
                 InfoBar.success(
                     t("common.success"),
-                    t("local_player.delete_sang_success", name=item.text()),
+                    t("local_player.delete_sang_success", name=str(file_name)),
                     orient=Qt.Orientation.Horizontal,
                     position=InfoBarPosition.TOP,
                     duration=1000,
@@ -365,32 +412,31 @@ class LocalPlayerInterface(QWidget):
 
             for i in range(total_files):
                 # 在每次循环中都获取当前行的第0列（文件名列）项
-                item = self.tableView.item(i, 0)
+                item = self.tableView.item(i, self._name_col())
                 if item is None:
                     logger.warning(f"第 {i} 行没有歌曲信息，跳过")
                     continue
 
-                file_path = getMusicLocal(item)
+                file_name = item.data(Qt.ItemDataRole.UserRole) or item.text()
+                file_path = getMusicLocalStr(str(file_name)) if file_name else None
                 if file_path is None or not file_path.exists():
                     # 处理文件失效
-                    logger.opt(colors=True).warning(
-                        f"第 {i} 行的文件路径 <y><u>{escape_tag(str(file_path))}</u></y> 无效，跳过"
-                    )
+                    logger.opt(colors=True).warning(f"第 {i} 行的文件无效，跳过: {escape_tag(str(file_name))}")
                     # 记录失效文件，用于后续清理表格
-                    self._mark_invalid_file(item.text())
+                    self._mark_invalid_file(str(file_name))
                     invalid_count += 1
                     continue
 
                 if file_path in app_context.play_queue:
                     # 不再为每个已存在的文件显示提示，只记录日志和计数
-                    filename = item.text() if item else t("common.unknown_file")
+                    filename = str(file_name) if file_name else t("common.unknown_file")
                     logger.debug(f"歌曲 {filename} 已在播放列表中")
                     already_exists_count += 1
                     continue
 
                 app_context.play_queue.append(file_path)
                 added_count += 1
-                filename = item.text() if item else t("common.unknown_file")
+                filename = str(file_name) if file_name else t("common.unknown_file")
                 logger.success(f"已添加 {filename} 到播放列表")
 
             # 显示添加结果的详细信息
@@ -567,13 +613,13 @@ class LocalPlayerInterface(QWidget):
 
             # 扫描表格中的所有文件
             for i in range(self.tableView.rowCount()):
-                item = self.tableView.item(i, 0)
+                item = self.tableView.item(i, self._name_col())
                 if item is None:
                     continue
-
-                file_path = getMusicLocal(item)
+                file_name = item.data(Qt.ItemDataRole.UserRole) or item.text()
+                file_path = getMusicLocalStr(str(file_name)) if file_name else None
                 if file_path is None or not file_path.exists():
-                    invalid_files.append(item.text())  # 如果有无效文件，进行清理
+                    invalid_files.append(str(file_name))  # 如果有无效文件，进行清理
             if invalid_files:
                 # 打印无效文件列表
                 logger.warning(f"发现 {len(invalid_files)} 个无效文件")

@@ -1,6 +1,6 @@
 from PyQt6.QtCore import Qt, QTimer, QSize, QEvent
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLabel
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QPainter, QPainterPath
 from qfluentwidgets import (
     BodyLabel,
     SubtitleLabel,
@@ -18,8 +18,9 @@ from loguru import logger
 from src.i18n.i18n import t
 from src.config import VERSION, cfg
 from src.app_context import app_context
-from src.core.player import nextSong, previousSong
+from src.core.player import nextSong, previousSong, getMusicLocalStr
 from src.ui.widgets.custom_label import ScrollingLabel
+from src.utils.cover import get_cover_pixmap
 
 
 class NowPlayingCard(CardWidget):
@@ -28,6 +29,8 @@ class NowPlayingCard(CardWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("nowPlayingCard")
+        # 记录上一次用于封面的歌曲名，避免重复刷新
+        self._last_cover_song_name = None
 
         # 设置卡片大小
         self.setFixedHeight(200)
@@ -42,6 +45,7 @@ class NowPlayingCard(CardWidget):
         self.headerLayout = QHBoxLayout()
         self.titleLabel = SubtitleLabel(t("home.titlebar.now_playing"), self)
         self.titleIcon = IconWidget(FIF.MUSIC, self)
+        self.titleIcon.setFixedSize(28, 28)
         self.headerLayout.addWidget(self.titleIcon)
         self.headerLayout.addWidget(self.titleLabel)
         self.headerLayout.addStretch(1)
@@ -118,6 +122,15 @@ class NowPlayingCard(CardWidget):
         # 初始化
         self.updatePlayingInfo()
         self._updateStyle()
+        # 创建定时器，用于更新播放进度
+        self.updateTimer = QTimer(self)
+        self.updateTimer.setInterval(1000)  # 每秒更新一次
+        self.updateTimer.timeout.connect(self.updatePlayingInfo)
+        self.updateTimer.start()
+
+        # 初始化
+        self.updatePlayingInfo()
+        self._updateStyle()
 
     def _togglePlay(self):
         """切换播放/暂停状态"""
@@ -133,6 +146,12 @@ class NowPlayingCard(CardWidget):
             self.currentTimeLabel.setText("0:00")
             self.totalTimeLabel.setText("0:00")
             self.playButton.setIcon(FIF.PLAY_SOLID)
+            # 恢复默认封面
+            if self.coverLabel.pixmap() != self.defaultCover:
+                self.coverLabel.setPixmap(self.defaultCover)
+            # 恢复标题图标为音乐图标
+            self.titleIcon.setIcon(FIF.MUSIC)
+            self._last_cover_song_name = None
             return
 
         # 更新歌曲名称，美化显示
@@ -177,6 +196,56 @@ class NowPlayingCard(CardWidget):
             # 更新时间标签
             self.currentTimeLabel.setText(self._formatTime(position))
             self.totalTimeLabel.setText(self._formatTime(duration))
+
+        # 更新封面（仅在歌曲变更时刷新，避免每秒拉取）
+        try:
+            current_name = app_context.playing_now
+            if current_name and current_name != self._last_cover_song_name:
+                path = getMusicLocalStr(current_name)
+                if path:
+                    # 先取较大尺寸以获得更清晰裁切，再中心裁切到目标显示尺寸
+                    target_w, target_h = self.coverLabel.width(), self.coverLabel.height()
+                    base_size = max(target_w, target_h, 256)
+                    pix = get_cover_pixmap(path, size=base_size)
+                    pix = self._scale_center_crop(pix, target_w, target_h)
+                    # 圆角裁剪，保持与设置一致
+                    radius = max(0, int(cfg.cover_corner_radius.value)) if hasattr(cfg, "cover_corner_radius") else 10
+                    if not pix.isNull() and radius > 0:
+                        w, h = pix.width(), pix.height()
+                        rounded = pix.__class__(w, h)
+                        rounded.fill(Qt.GlobalColor.transparent)
+                        painter = QPainter(rounded)
+                        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+                        path2 = QPainterPath()
+                        path2.addRoundedRect(0.0, 0.0, float(w), float(h), float(radius), float(radius))
+                        painter.setClipPath(path2)
+                        painter.drawPixmap(0, 0, pix)
+                        painter.end()
+                        pix = rounded
+                    self.coverLabel.setPixmap(pix)
+                    # 同步把标题栏的小图标换成小尺寸圆角封面
+                    try:
+                        icon_size = 28
+                        small = self._scale_center_crop(pix, icon_size, icon_size)
+                        r2 = max(0, int(min(icon_size, icon_size) / 5))
+                        if r2 > 0:
+                            w2, h2 = small.width(), small.height()
+                            rounded2 = small.__class__(w2, h2)
+                            rounded2.fill(Qt.GlobalColor.transparent)
+                            painter2 = QPainter(rounded2)
+                            painter2.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+                            path2b = QPainterPath()
+                            path2b.addRoundedRect(0.0, 0.0, float(w2), float(h2), float(r2), float(r2))
+                            painter2.setClipPath(path2b)
+                            painter2.drawPixmap(0, 0, small)
+                            painter2.end()
+                            small = rounded2
+                        self.titleIcon.setIcon(QIcon(small))
+                    except Exception:
+                        pass
+                    self._last_cover_song_name = current_name
+        except Exception as e:
+            logger.exception(f"更新主页封面失败: {e}")
 
     def _formatTime(self, time_ms):
         """格式化时间（毫秒转为分:秒）"""
@@ -223,6 +292,21 @@ class NowPlayingCard(CardWidget):
             # 调色板变化（主题变化）时更新样式
             self._updateStyle()
         super().changeEvent(a0)
+
+    # --- helpers ---
+    def _scale_center_crop(self, pix, target_w: int, target_h: int):
+        """按原比例缩放以覆盖目标区域后，从中心裁切到目标尺寸。"""
+        if pix.isNull() or target_w <= 0 or target_h <= 0:
+            return pix
+        scaled = pix.scaled(
+            target_w,
+            target_h,
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        x = max(0, (scaled.width() - target_w) // 2)
+        y = max(0, (scaled.height() - target_h) // 2)
+        return scaled.copy(x, y, target_w, target_h)
 
 
 class WelcomeCard(CardWidget):

@@ -1,8 +1,7 @@
-import re
 from loguru import logger
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath
+from PyQt6.QtGui import QIcon
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import (
     FluentWindow,
@@ -11,9 +10,6 @@ from qfluentwidgets import (
     TableWidget,
     TitleLabel,
     TransparentToolButton,
-    BodyLabel,
-    CaptionLabel,
-    isDarkTheme,
 )
 
 from src.i18n import t
@@ -22,23 +18,13 @@ from src.app_context import app_context
 from src.ui.widgets.play_sequence_dialog import PlaySequenceDialog
 from src.utils.cover import get_cover_pixmap
 from src.config import cfg
+from src.ui.widgets.song_cell import build_song_cell
+from src.ui.widgets.pixmap_utils import rounded_pixmap
 
 
 def _rounded_pixmap(pix, radius: int):
-    """将 QPixmap 裁剪为圆角矩形。"""
-    if pix.isNull():
-        return pix
-    w, h = pix.width(), pix.height()
-    rounded = pix.__class__(w, h)
-    rounded.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(rounded)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-    path = QPainterPath()
-    path.addRoundedRect(0.0, 0.0, float(w), float(h), float(radius), float(radius))
-    painter.setClipPath(path)
-    painter.drawPixmap(0, 0, pix)
-    painter.end()
-    return rounded
+    # 兼容旧私有方法名，内部转到通用工具
+    return rounded_pixmap(pix, radius)
 
 
 class PlayQueueInterface(QWidget):
@@ -112,32 +98,8 @@ class PlayQueueInterface(QWidget):
         self.load_play_queue()
 
     def _build_song_cell(self, display_name: str) -> QWidget:
-        """构建包含主标题 + 副标题(提取【】内容)的单元格控件"""
-        # 提取所有【...】内容
-        parts = re.findall(r"【(.*?)】", display_name)
-        # 主标题去掉所有【...】
-        main_text = re.sub(r"【.*?】", "", display_name).strip()
-
-        w = QWidget(self.tableView)
-        lay = QVBoxLayout(w)
-        lay.setContentsMargins(0, 2, 0, 2)
-        lay.setSpacing(2)
-
-        main_lbl = BodyLabel(main_text, w)
-        main_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        main_lbl.setToolTip(display_name)
-        lay.addWidget(main_lbl)
-
-        if parts:
-            sub_lbl = CaptionLabel(" · ".join(parts), w)
-            # 按主题设置副标题颜色：
-            # 深色主题下用较浅灰（#C8C8C8），浅色主题下稍微深一点的灰（#6E6E6E）以保证可读性
-            sub_color = "#C8C8C8" if isDarkTheme() else "#6E6E6E"
-            sub_lbl.setStyleSheet(f"color: {sub_color};")
-            sub_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-            lay.addWidget(sub_lbl)
-
-        return w
+        # 向后兼容旧方法名，直接复用通用构建器
+        return build_song_cell(display_name, parent=self.tableView)
 
     def load_play_queue(self):
         if not app_context.play_queue:
