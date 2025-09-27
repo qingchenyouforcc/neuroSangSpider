@@ -1,9 +1,8 @@
-import os
 import sys
 from datetime import datetime
 
 from loguru import logger
-from PyQt6.QtCore import Qt, QProcess
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QDialog
 
 from src.config import ASSETS_DIR, cfg

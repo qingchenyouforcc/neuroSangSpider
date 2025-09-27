@@ -79,7 +79,7 @@ class PlayQueueInterface(QWidget):
     def load_play_queue(self):
         if not app_context.play_queue:
             InfoBar.warning(
-                t("play_queue.tip"),
+                t("common.info"),
                 t("play_queue.empty"),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
@@ -99,7 +99,7 @@ class PlayQueueInterface(QWidget):
 
             self.tableView.resizeColumnsToContents()
         except Exception:
-            logger.exception(t("play_queue.load_list_failed"))
+            logger.exception("加载歌曲列表失败")
 
     def move_up(self):
         index = self.tableView.currentIndex().row()
@@ -135,11 +135,11 @@ class PlayQueueInterface(QWidget):
         index = self.tableView.currentIndex().row()
         if index >= 0:
             try:
-                logger.info(t("play_queue.delete_song_log", song=app_context.play_queue[index].name, position=index))
+                logger.info(f"删除歌曲: {app_context.play_queue[index]}, 位置: {index}")
                 app_context.play_queue.pop(index)
                 self.load_play_queue()
             except Exception:
-                logger.exception(t("play_queue.delete_song_failed"))
+                logger.exception("删除歌曲失败")
 
     @staticmethod
     def play_selected_song(row):
@@ -148,7 +148,7 @@ class PlayQueueInterface(QWidget):
             app_context.play_queue_index = row
             playSongByIndex()
         except Exception:
-            logger.exception(t("play_queue.play_song_error", row=row))
+            logger.exception(f"播放 {row=} 的歌曲时出错")
             
     def showEvent(self, a0):
         """当页面显示时触发刷新"""
@@ -159,10 +159,10 @@ class PlayQueueInterface(QWidget):
             if self.is_first_show and not app_context.play_queue:
                 from src.core.player import restore_last_play_queue
                 
-                logger.info(t("play_queue.try_restore_queue"))
+                logger.info("尝试恢复上次播放队列")
                 if restore_last_play_queue():
                     InfoBar.success(
-                        t("play_queue.tip"),
+                        t("common.info"),
                         t("play_queue.restored"),
                         orient=Qt.Orientation.Horizontal,
                         position=InfoBarPosition.BOTTOM_RIGHT,
@@ -171,7 +171,7 @@ class PlayQueueInterface(QWidget):
                     )
                 self.is_first_show = False
         except Exception as e:
-            logger.exception(t("play_queue.restore_queue_error", error=str(e)))
+            logger.exception(f"恢复播放队列时出错: {e}")
             
         self.load_play_queue()
         
@@ -179,7 +179,7 @@ class PlayQueueInterface(QWidget):
         
     def open_sequence_dialog(self):
         """打开播放序列管理对话框"""
-        logger.info(t("play_queue.opening_sequence_dialog"))
+        logger.info("正在打开播放序列管理对话框")
         try:
             # 创建对话框并设置父窗口
             dialog = PlaySequenceDialog(self.main_window)
@@ -188,14 +188,14 @@ class PlayQueueInterface(QWidget):
             dialog._update_card_style()
             
             # 显示对话框
-            logger.info(t("play_queue.showing_sequence_dialog"))
+            logger.info("即将显示播放序列对话框")
             # 使用show()和exec()的组合以确保对话框显示在前端
             dialog.show()
             result = dialog.exec()
-            logger.info(t("play_queue.dialog_result", result=result))
+            logger.info(f"对话框返回结果: {result}")
             
             if result:
                 # 对话框被接受（如加载了序列），刷新界面
                 self.load_play_queue()
         except Exception:
-            logger.exception(t("play_queue.open_dialog_error"))
+            logger.exception("打开播放序列对话框时出错")

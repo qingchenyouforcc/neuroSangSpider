@@ -1,7 +1,6 @@
-# src/i18n/manager.py
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Callable, List
+from typing import Dict, Callable, List
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from src.config import cfg
