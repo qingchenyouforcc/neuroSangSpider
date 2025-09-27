@@ -1,13 +1,44 @@
+import re
 from loguru import logger
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtGui import QIcon, QPainter, QPainterPath
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import FluentWindow, InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
+from qfluentwidgets import (
+    FluentWindow,
+    InfoBar,
+    InfoBarPosition,
+    TableWidget,
+    TitleLabel,
+    TransparentToolButton,
+    BodyLabel,
+    CaptionLabel,
+    isDarkTheme,
+)
 
 from src.i18n import t
 from src.core.player import playSongByIndex, sequencePlay
 from src.app_context import app_context
 from src.ui.widgets.play_sequence_dialog import PlaySequenceDialog
+from src.utils.cover import get_cover_pixmap
+from src.config import cfg
+
+
+def _rounded_pixmap(pix, radius: int):
+    """将 QPixmap 裁剪为圆角矩形。"""
+    if pix.isNull():
+        return pix
+    w, h = pix.width(), pix.height()
+    rounded = pix.__class__(w, h)
+    rounded.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(rounded)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    path = QPainterPath()
+    path.addRoundedRect(0.0, 0.0, float(w), float(h), float(radius), float(radius))
+    painter.setClipPath(path)
+    painter.drawPixmap(0, 0, pix)
+    painter.end()
+    return rounded
 
 
 class PlayQueueInterface(QWidget):
@@ -30,7 +61,11 @@ class PlayQueueInterface(QWidget):
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
-        # 创建标题和刷新按钮的水平布局
+        # 封面图标尺寸（可按需调整）
+        self.cover_icon_size = 40
+        self.tableView.setIconSize(QSize(self.cover_icon_size, self.cover_icon_size))
+
+        # 创建标题和按钮的水平布局
         title_layout = QHBoxLayout()
 
         self.titleLabel = TitleLabel(t("play_queue.title"), self)
@@ -76,6 +111,34 @@ class PlayQueueInterface(QWidget):
 
         self.load_play_queue()
 
+    def _build_song_cell(self, display_name: str) -> QWidget:
+        """构建包含主标题 + 副标题(提取【】内容)的单元格控件"""
+        # 提取所有【...】内容
+        parts = re.findall(r"【(.*?)】", display_name)
+        # 主标题去掉所有【...】
+        main_text = re.sub(r"【.*?】", "", display_name).strip()
+
+        w = QWidget(self.tableView)
+        lay = QVBoxLayout(w)
+        lay.setContentsMargins(0, 2, 0, 2)
+        lay.setSpacing(2)
+
+        main_lbl = BodyLabel(main_text, w)
+        main_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        main_lbl.setToolTip(display_name)
+        lay.addWidget(main_lbl)
+
+        if parts:
+            sub_lbl = CaptionLabel(" · ".join(parts), w)
+            # 按主题设置副标题颜色：
+            # 深色主题下用较浅灰（#C8C8C8），浅色主题下稍微深一点的灰（#6E6E6E）以保证可读性
+            sub_color = "#C8C8C8" if isDarkTheme() else "#6E6E6E"
+            sub_lbl.setStyleSheet(f"color: {sub_color};")
+            sub_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+            lay.addWidget(sub_lbl)
+
+        return w
+
     def load_play_queue(self):
         if not app_context.play_queue:
             InfoBar.warning(
@@ -91,13 +154,40 @@ class PlayQueueInterface(QWidget):
 
         try:
             self.tableView.setRowCount(len(app_context.play_queue))
-            self.tableView.setColumnCount(1)
-            self.tableView.setHorizontalHeaderLabels([t("play_queue.header_song")])
+            show_cover = bool(cfg.enable_cover.value)
+            self.tableView.setColumnCount(2 if show_cover else 1)
+            if show_cover:
+                self.tableView.setHorizontalHeaderLabels([t("play_queue.header_cover"), t("play_queue.header_song")])
+            else:
+                self.tableView.setHorizontalHeaderLabels([t("play_queue.header_song")])
 
-            for i, song in enumerate(app_context.play_queue):
-                self.tableView.setItem(i, 0, QTableWidgetItem(song.name))
+            icon_size = self.cover_icon_size
 
-            self.tableView.resizeColumnsToContents()
+            for i, song_path in enumerate(app_context.play_queue):
+                if show_cover:
+                    # 封面
+                    cover_item = QTableWidgetItem()
+                    pix = get_cover_pixmap(song_path, size=icon_size)
+                    # 圆角半径来自设置
+                    radius = max(0, int(cfg.cover_corner_radius.value))
+                    pix = _rounded_pixmap(pix, radius=radius)
+                    cover_item.setIcon(QIcon(pix))
+                    cover_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                    self.tableView.setItem(i, 0, cover_item)
+                    # 歌曲名
+                    self.tableView.setCellWidget(i, 1, self._build_song_cell(song_path.stem))
+                else:
+                    # 仅歌曲名
+                    self.tableView.setCellWidget(i, 0, self._build_song_cell(song_path.stem))
+
+                # 行高匹配图标
+                self.tableView.setRowHeight(i, icon_size + 12)
+
+            if show_cover:
+                self.tableView.setColumnWidth(0, icon_size + 24)
+                self.tableView.resizeColumnToContents(1)
+            else:
+                self.tableView.resizeColumnToContents(0)
         except Exception:
             logger.exception("加载歌曲列表失败")
 

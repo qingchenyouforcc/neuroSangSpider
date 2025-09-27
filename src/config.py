@@ -87,6 +87,10 @@ class Config(QConfig):
         OptionsValidator([Theme.AUTO, Theme.LIGHT, Theme.DARK]),
     )
 
+    # 播放列表封面设置
+    enable_cover = ConfigItem("Appearance", "EnableCover", True)
+    cover_corner_radius = ConfigItem("Appearance", "CoverCornerRadius", 10)
+
     play_count = ConfigItem("Player", "PlayCount", {})
     play_sequences = ConfigItem("Player", "PlaySequences", {})
     last_play_queue = ConfigItem("Player", "LastPlayQueue", {"queue": [], "index": 0})

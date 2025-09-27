@@ -21,6 +21,7 @@ from src.app_context import app_context
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music
 from src.bili_api.music import import_custom_songs_and_download
+from src.ui.interface.play_queue import PlayQueueInterface
 
 
 def changeDownloadType(selected_type: str) -> None:
@@ -192,6 +193,17 @@ class SettingsCard(GroupHeaderCardWidget):
         self.playerBarSwitch.setChecked(cfg.enable_player_bar.value)
         self.playerBarSwitch.checkedChanged.connect(self.on_player_bar_switch_changed)
 
+        # 封面显示开关
+        self.coverSwitch = SwitchButton(parent=self)
+        self.coverSwitch.setChecked(cfg.enable_cover.value)
+        self.coverSwitch.checkedChanged.connect(self.on_cover_switch_changed)
+
+        # 封面圆角半径
+        self.coverRadiusSpin = SpinBox(self)
+        self.coverRadiusSpin.setRange(0, 64)
+        self.coverRadiusSpin.setValue(cfg.cover_corner_radius.value)
+        self.coverRadiusSpin.valueChanged.connect(self.on_cover_radius_changed)
+
         # 搜索页数设置
         self.searchPageSpinBox = SpinBox(self)
         self.searchPageSpinBox.setRange(1, 10)
@@ -240,6 +252,18 @@ class SettingsCard(GroupHeaderCardWidget):
             t("settings.player_bar"),
             t("settings.player_bar_desc"),
             self.playerBarSwitch,
+        )
+        self.addGroup(
+            FluentIcon.BRUSH,
+            t("settings.cover_switch_title"),
+            t("settings.cover_switch_desc"),
+            self.coverSwitch,
+        )
+        self.addGroup(
+            FluentIcon.BRUSH,
+            t("settings.cover_radius_title"),
+            t("settings.cover_radius_desc"),
+            self.coverRadiusSpin,
         )
         self.addGroup(
             FluentIcon.SEARCH,
@@ -302,3 +326,44 @@ class SettingsCard(GroupHeaderCardWidget):
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
         )
+
+    def on_cover_switch_changed(self, checked: bool) -> None:
+        cfg.enable_cover.value = checked
+        cfg.save()
+        InfoBar.success(
+            t("common.settings_success"),
+            t("settings.cover_switch_to", status=t("common.enabled") if checked else t("common.disabled")),
+            parent=app_context.main_window,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+        )
+        # 尝试刷新播放列表界面
+        try:
+            if hasattr(app_context, "main_window") and app_context.main_window:
+                # 找到播放列表子界面并刷新
+                for w in app_context.main_window.findChildren(PlayQueueInterface):
+                    if getattr(w, "objectName", lambda: "")() == "playQueueInterface":
+                        if hasattr(w, "load_play_queue"):
+                            w.load_play_queue()
+        except Exception:
+            logger.exception("刷新播放列表封面显示失败")
+
+    def on_cover_radius_changed(self, value: int) -> None:
+        cfg.cover_corner_radius.value = value
+        cfg.save()
+        InfoBar.success(
+            t("common.settings_success"),
+            t("settings.cover_radius_set", value=value),
+            parent=app_context.main_window,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+        )
+        # 尝试刷新播放列表界面
+        try:
+            if hasattr(app_context, "main_window") and app_context.main_window:
+                for w in app_context.main_window.findChildren(PlayQueueInterface):
+                    if getattr(w, "objectName", lambda: "")() == "playQueueInterface":
+                        if hasattr(w, "load_play_queue"):
+                            w.load_play_queue()
+        except Exception:
+            logger.exception("刷新播放列表封面圆角失败")
