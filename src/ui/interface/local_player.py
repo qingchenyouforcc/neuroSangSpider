@@ -196,13 +196,13 @@ class LocalPlayerInterface(QWidget):
         try:
             # 不管点击哪一列，始终从第0列（文件名列）获取歌曲信息
             item = self.tableView.item(row, 0)
-            assert item is not None, "当前行没有歌曲信息"
+            assert item is not None, t("local_player.current_line_no_sang_info")
 
             file_path = getMusicLocal(item)
             if file_path is None or not file_path.exists():
                 InfoBar.error(
-                    "播放失败",
-                    "未找到本地歌曲文件",
+                    t("common.play_song_error"),
+                    t("local_player.no_local_songs_found"),
                     orient=Qt.Orientation.Horizontal,
                     position=InfoBarPosition.TOP,
                     duration=500,
@@ -261,8 +261,8 @@ class LocalPlayerInterface(QWidget):
 
                 app_context.play_queue.append(file_path)
                 InfoBar.success(
-                    "成功",
-                    f"已添加{item.text()}到播放列表",
+                    t("common.success"),
+                    t("local_player.add_sang_success", name=item.text()),
                     orient=Qt.Orientation.Horizontal,
                     position=InfoBarPosition.TOP,
                     duration=1500,
@@ -271,8 +271,8 @@ class LocalPlayerInterface(QWidget):
                 logger.info(f"当前播放列表:{app_context.play_queue}")
             else:
                 InfoBar.error(
-                    "失败",
-                    "添加失败！",
+                    t("common.fail"),
+                    t("local_player.add_sang_error"),
                     orient=Qt.Orientation.Horizontal,
                     position=InfoBarPosition.TOP,
                     duration=1500,
@@ -310,8 +310,8 @@ class LocalPlayerInterface(QWidget):
                 
                 # 显示成功消息
                 InfoBar.success(
-                    "完成",
-                    f"已删除歌曲: {item.text()}",
+                    t("common.success"),
+                    t("local_player.delete_sang_success", name=item.text()),
                     orient=Qt.Orientation.Horizontal,
                     position=InfoBarPosition.TOP,
                     duration=1000,
@@ -322,8 +322,8 @@ class LocalPlayerInterface(QWidget):
                 self.load_local_songs()
             else:
                 InfoBar.error(
-                    "失败",
-                    "未找到文件或文件删除失败",
+                    t("common.fail"),
+                    t("local_player.delete_sang_error"),
                     orient=Qt.Orientation.Horizontal,
                     position=InfoBarPosition.TOP,
                     duration=1500,
@@ -333,8 +333,8 @@ class LocalPlayerInterface(QWidget):
         except Exception as e:
             logger.exception(f"删除歌曲失败: {e}")
             InfoBar.error(
-                "删除失败",
-                f"删除歌曲时出错: {str(e)}",
+                t("common.delete_failed"),
+                t("local_player.delete_sang_failed_with_error", error=str(e)),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
                 duration=1500,
@@ -353,7 +353,7 @@ class LocalPlayerInterface(QWidget):
             # 显示进度开始提示
             InfoBar.info(
                 "添加中",
-                f"正在添加 {total_files} 首歌曲到播放列表...",
+                t("local_player.adding_sang_to_queue", number=total_files),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
                 duration=1500,
@@ -380,25 +380,25 @@ class LocalPlayerInterface(QWidget):
 
                 if file_path in app_context.play_queue:
                     # 不再为每个已存在的文件显示提示，只记录日志和计数
-                    filename = item.text() if item else "未知文件"
+                    filename = item.text() if item else t("common.unknown_file")
                     logger.debug(f"歌曲 {filename} 已在播放列表中")
                     already_exists_count += 1
                     continue
 
                 app_context.play_queue.append(file_path)
                 added_count += 1
-                filename = item.text() if item else "未知文件"
+                filename = item.text() if item else t("common.unknown_file")
                 logger.success(f"已添加 {filename} 到播放列表")
 
             # 显示添加结果的详细信息
-            message = f"已添加 {added_count} 首新歌曲到播放列表"
+            message = t("local_player.added_count", added_count=added_count)
             if already_exists_count > 0:
-                message += f"，{already_exists_count} 首歌曲已存在"
+                message += t("local_player.already_exists_count", already_exists_count=already_exists_count)
             if invalid_count > 0:
-                message += f"，{invalid_count} 首歌曲无效"
+                message += t("local_player.invalid_count", invalid_count=invalid_count)
                 
             InfoBar.success(
-                "添加完成",
+                t("common.add_song_success"),
                 message,
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
@@ -411,7 +411,7 @@ class LocalPlayerInterface(QWidget):
 
         except Exception as exc:
             InfoBar.error(
-                "添加失败",
+                t("common.add_song_failed"),
                 str(exc),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.TOP,
@@ -510,8 +510,8 @@ class LocalPlayerInterface(QWidget):
     def _show_import_success_message(self, count):
         """显示导入成功的消息"""
         InfoBar.success(
-            "导入成功",
-            f"已成功导入 {count} 首歌曲",
+            t("common.import_success"),
+            t("local_player.import_sang_success_count", count=count),
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.TOP,
             duration=2000,
@@ -581,8 +581,8 @@ class LocalPlayerInterface(QWidget):
                 # 仅当首次加载时显示清理提示，避免频繁打扰用户
                 if hasattr(self, '_first_load') and self._first_load:
                     InfoBar.info(
-                        "已清理无效文件",
-                        f"已从配置中移除 {len(invalid_files)} 个无效文件",
+                        t("local_player.remove_invalid_files_title"),
+                        t("local_player.remove_invalid_files_desc", count=len(invalid_files)),
                         orient=Qt.Orientation.Horizontal,
                         position=InfoBarPosition.TOP,
                         duration=2000,

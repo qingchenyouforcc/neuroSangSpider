@@ -233,13 +233,7 @@ class WelcomeCard(CardWidget):
         
         # 介绍
         self.infoLabel = BodyLabel(
-            "这是一个基于 Python 3.13 开发的歌回播放软件。"
-            "\n\n主要功能："
-            "\n • 智能搜索机制，精准查找歌曲"
-            "\n • 可自定义UP主列表和关键词"
-            "\n • 音频提取与播放"
-            "\n • 本地播放器，支持播放队列管理"
-            f"\n\nLicense: AGPL-3.0\nVersion: {VERSION}",
+            t("home.welcome.introduction", version=VERSION),
             self
         )
         self.infoLabel.setWordWrap(True)
@@ -296,7 +290,7 @@ class SongStatsCard(CardWidget):
         self.songCountLayout = QVBoxLayout()
         self.songCountIcon = IconWidget(FIF.LIBRARY, self)
         self.songCountIcon.setFixedSize(32, 32)  # 设置图标大小
-        self.songCountLabel = BodyLabel("0" + t("home.song_stats.song_count_text"), self)
+        self.songCountLabel = BodyLabel(t("home.song_stats.song_count_text", song_count="0"), self)
         self.songCountLabel.setObjectName("statsLabel")  # 设置对象名便于样式调整
         self.songCountLayout.addWidget(self.songCountIcon, 0, Qt.AlignmentFlag.AlignCenter)
         self.songCountLayout.addWidget(self.songCountLabel, 0, Qt.AlignmentFlag.AlignCenter)
@@ -306,7 +300,7 @@ class SongStatsCard(CardWidget):
         self.spaceUsageLayout = QVBoxLayout()
         self.spaceUsageIcon = IconWidget(FIF.FOLDER, self)
         self.spaceUsageIcon.setFixedSize(32, 32)  # 设置图标大小
-        self.spaceUsageLabel = BodyLabel("0" + t("home.song_stats.space_usage_text"), self)
+        self.spaceUsageLabel = BodyLabel(t("home.song_stats.space_usage_text", space_usage="0MB"), self)
         self.spaceUsageLabel.setObjectName("statsLabel")  # 设置对象名便于样式调整
         self.spaceUsageLayout.addWidget(self.spaceUsageIcon, 0, Qt.AlignmentFlag.AlignCenter)
         self.spaceUsageLayout.addWidget(self.spaceUsageLabel, 0, Qt.AlignmentFlag.AlignCenter)
@@ -352,8 +346,8 @@ class SongStatsCard(CardWidget):
                 size_str = f"{total_size/(1024*1024*1024):.2f} GB"
             
             # 更新显示
-            self.songCountLabel.setText(f"{song_count} " + t("home.song_stats.song_count_text"))
-            self.spaceUsageLabel.setText(f"{size_str} " + t("home.song_stats.space_usage_text"))
+            self.songCountLabel.setText(t("home.song_stats.song_count_text", song_count=song_count))
+            self.spaceUsageLabel.setText(t("home.song_stats.space_usage_text", space_usage=size_str))
             
             # 根据歌曲数量更新图标
             if song_count > 0:
@@ -367,8 +361,8 @@ class SongStatsCard(CardWidget):
                 
         except Exception as e:
             # 发生错误时，显示默认值
-            self.songCountLabel.setText("0 " + t("home.song_stats.song_count_text"))
-            self.spaceUsageLabel.setText("0 KB " + t("home.song_stats.space_usage_text"))
+            self.songCountLabel.setText(t("home.song_stats.song_count_text", song_count="0"))
+            self.spaceUsageLabel.setText(t("home.song_stats.space_usage_text", space_usage="0KB"))
             self.songCountIcon.setIcon(FIF.DOCUMENT)
             self.spaceUsageIcon.setIcon(FIF.REMOVE)
             logger.error(f"更新歌曲统计信息失败: {e}")
