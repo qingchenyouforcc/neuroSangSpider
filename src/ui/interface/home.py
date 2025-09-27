@@ -240,7 +240,6 @@ class NowPlayingCard(CardWidget):
                             painter2.drawPixmap(0, 0, small)
                             painter2.end()
                             small = rounded2
-                        self.titleIcon.setIcon(QIcon(small))
                     except Exception:
                         pass
                     self._last_cover_song_name = current_name
