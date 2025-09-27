@@ -98,6 +98,7 @@ class ListEditWidget(CardGroupWidget):
     def add_item(self) -> str | None:
         raise NotImplementedError
 
+
 class SwitchFilterEditWidget(CardGroupWidget):
     """过滤器开关组件"""
 
@@ -123,6 +124,7 @@ class SwitchFilterEditWidget(CardGroupWidget):
             parent=app_context.main_window,
             duration=1500,
         )
+
 
 class FilterEditWidget(ListEditWidget):
     def __init__(self, parent: QWidget) -> None:
@@ -241,9 +243,9 @@ class UpListEditWidget(ListEditWidget):
 class BlackListEditWidget(ListEditWidget):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(
-                FluentIcon.CLOSE,
-                t("settings.blacklist_title"),
-                t("settings.blacklist_desc"),
+            FluentIcon.CLOSE,
+            t("settings.blacklist_title"),
+            t("settings.blacklist_desc"),
             parent,
             cfg.black_author_list.value,
         )
@@ -258,7 +260,9 @@ class BlackListEditWidget(ListEditWidget):
 
     def add_item(self) -> str | None:
         try:
-            mbox, line_edit = self.create_mbox(t("settings.add_blacklist_title"), t("settings.add_blacklist_placeholder"))
+            mbox, line_edit = self.create_mbox(
+                t("settings.add_blacklist_title"), t("settings.add_blacklist_placeholder")
+            )
             if not mbox.exec():
                 return None
 

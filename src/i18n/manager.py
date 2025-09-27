@@ -6,8 +6,8 @@ from PyQt6.QtCore import QObject, pyqtSignal
 from src.config import cfg
 from src.i18n.loader import PropertiesLoader
 
-class I18nManager(QObject):
 
+class I18nManager(QObject):
     language_changed = pyqtSignal(str)
 
     def __init__(self, resources_dir: Path):
@@ -15,7 +15,7 @@ class I18nManager(QObject):
         self.logger = logging.getLogger(__name__)
         self.loader = PropertiesLoader(resources_dir)
         self._translations: Dict[str, Dict[str, str]] = {}
-        
+
         # 处理cfg.language.value可能为列表的情况
         lang_value = cfg.language.value
         if isinstance(lang_value, list):
@@ -25,7 +25,7 @@ class I18nManager(QObject):
             cfg.language.value = self._current_language
         else:
             self._current_language = lang_value
-            
+
         self._fallback_language = "en_US"
         self._listeners: List[Callable] = []
 
@@ -41,7 +41,7 @@ class I18nManager(QObject):
 
         self.logger.info(f"预加载了 {len(self._translations)} 种语言")
 
-    def i18n(self, key: str, default: str = None, **kwargs) -> str:
+    def i18n(self, key: str, default: str | None = None, **kwargs: object) -> str:
         if not key:
             return default or ""
 

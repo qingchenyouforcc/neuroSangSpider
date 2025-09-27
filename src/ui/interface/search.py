@@ -260,10 +260,9 @@ class SearchInterface(QWidget):
 
         self.tableView.clear()
         self.tableView.setColumnCount(4)
-        self.tableView.setHorizontalHeaderLabels([t("common.header_title"),
-                                                  t("common.video_blogger"),
-                                                  t("common.date"),
-                                                  t("common.bvid")])
+        self.tableView.setHorizontalHeaderLabels(
+            [t("common.header_title"), t("common.video_blogger"), t("common.date"), t("common.bvid")]
+        )
         self.search_result.clear()
 
         # 显示加载动画

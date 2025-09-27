@@ -26,34 +26,34 @@ class MainWindow(FluentWindow):
         super().__init__()
 
         self.is_language_restart = False
-        
+
         # 系统主题监听器
         self.themeListener = SystemThemeListener(self)
-        
+
         self.setObjectName("demoWindow")
         icon = QtGui.QIcon(str(ASSETS_DIR / "main.ico"))
 
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
-        
+
         # 创建启动页面
         self.splashScreen = SplashScreen(self.windowIcon(), self)
         self.splashScreen.setIconSize(QSize(64, 64))
-        
+
         # 设置初始窗口大小
         desktop = QApplication.primaryScreen()
         if desktop:  # 确保 desktop 对象不是 None
-            self.resize(QSize(680, 530)) 
+            self.resize(QSize(680, 530))
         # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
         else:  # 如果获取不到主屏幕信息，给一个默认大小
             self.resize(QSize(680, 530))
-            
+
         # TODO 实现按照配置文件主题切换，bug没修好
         # 临时方案：按照系统主题修改
-        cfg.set_theme(Theme.AUTO) 
+        cfg.set_theme(Theme.AUTO)
         logger.info("应用默认主题: AUTO")
 
-        self.show()   
+        self.show()
 
         # 添加子界面
         self.addSubInterface(
@@ -88,7 +88,7 @@ class MainWindow(FluentWindow):
         )
 
         self.setWindowTitle(t("app.title"))
-        
+
         self.player_bar = CustomMediaPlayBar()
         self.player_bar.setFixedSize(300, 120)
         self.player_bar.player.setVolume(cfg.volume.value)
@@ -100,19 +100,20 @@ class MainWindow(FluentWindow):
         # 设置默认音频格式
         cfg.download_type.value = "mp3"
         cfg.save()
-        
+
         # 尝试恢复上次的播放队列（如果当前队列为空）
         try:
             if not app_context.play_queue:
                 from src.core.player import restore_last_play_queue
+
                 restore_last_play_queue()
         except Exception as e:
             logger.exception(f"尝试恢复播放队列时出错: {e}")
-            
+
         # 隐藏启动页面
         self.splashScreen.finish()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event):  # type: ignore[override]
         if not self.is_language_restart:
             # 显示退出确认对话框
             try:
@@ -141,7 +142,7 @@ class MainWindow(FluentWindow):
                 w.setDraggable(False)
                 w.yesButton.setText(t("common.ok"))
                 w.cancelButton.setText(t("common.cancel"))
-                
+
                 result = w.exec()
                 logger.info(f"重启确认对话框结果: {result}")
 
@@ -162,12 +163,11 @@ class MainWindow(FluentWindow):
                 event.accept()
 
     def _perform_restart(self):
-
         logger.info("正在开始重启...")
 
         # 优先使用subprocess启动新实例，然后退出当前进程
         try:
-            if getattr(sys, 'frozen', False):
+            if getattr(sys, "frozen", False):
                 # 打包后的情况
                 executable = sys.executable
                 args = []
@@ -179,13 +179,15 @@ class MainWindow(FluentWindow):
             logger.info(f"使用subprocess重启: {executable} {' '.join(args)}")
 
             env = os.environ.copy()
-            env['LANGUAGE_RESTART'] = '1'
+            env["LANGUAGE_RESTART"] = "1"
 
             # 启动新实例
-            process = subprocess.Popen([executable] + args,
-                                       creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
-                                       env=env,
-                                       close_fds=True)
+            process = subprocess.Popen(
+                [executable] + args,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
+                env=env,
+                close_fds=True,
+            )
 
             logger.info(f"新实例已启动，PID: {process.pid}")
 
@@ -204,7 +206,7 @@ class MainWindow(FluentWindow):
                 logger.error(f"QProcess重启失败: {str(e2)}")
                 # 最后尝试直接使用os.execv
                 try:
-                    if getattr(sys, 'frozen', False):
+                    if getattr(sys, "frozen", False):
                         executable = sys.executable
                         args = [executable]
                     else:
@@ -221,6 +223,7 @@ class MainWindow(FluentWindow):
     def before_shutdown(self):
         # 保存当前播放队列
         from src.core.player import save_current_play_queue
+
         save_current_play_queue()
 
         # 终止系统主题监听器
