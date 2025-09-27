@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout
 from qfluentwidgets import BodyLabel, ComboBox, PushButton, CardWidget, isDarkTheme
 import os
 
+from i18n import t
 from src.config import cfg
 
 # 定义首次运行标记文件路径
@@ -12,7 +13,7 @@ class WelcomeDialog(QDialog):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr('Welcome'))
+        self.setWindowTitle("Welcome")
         self.setFixedSize(400, 300)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
 
@@ -43,18 +44,18 @@ class WelcomeDialog(QDialog):
         self.card_layout.setContentsMargins(20, 20, 20, 20)
         self.card_layout.setSpacing(15)
 
-        self.title_label = BodyLabel(self.tr('Select Language'), self)
+        self.title_label = BodyLabel("选择显示语言\nSelect Language", self)
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {color};")
 
         self.language_combo = ComboBox(self)
         self.language_combo.setStyleSheet(f"ComboBox {{ color: {color}; }}")
         self.language_combo.addItems([
-            self.tr('English'), 
-            self.tr('Simplified Chinese')
+            "English",
+            "简体中文-Simplified Chinese"
         ])
 
-        self.ok_button = PushButton(self.tr('OK'), self)
+        self.ok_button = PushButton('OK-确认', self)
         self.ok_button.clicked.connect(self.accept)
 
         self.card_layout.addWidget(self.title_label)
@@ -72,8 +73,8 @@ class WelcomeDialog(QDialog):
     def get_selected_language(self):
         """获取选择的语言"""
         languages = {
-            self.tr('English'): 'en_US',
-            self.tr('Simplified Chinese'): 'zh_CN'
+            'English': 'en_US',
+            '简体中文-Simplified Chinese': 'zh_CN'
         }
         selected_text = self.language_combo.currentText()
         return languages.get(selected_text)
