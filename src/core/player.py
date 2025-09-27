@@ -170,7 +170,7 @@ def sequencePlay() -> None:
 
 def save_play_sequence(sequence_name: str) -> None:
     """保存当前播放序列
-    
+
     Args:
         sequence_name: 序列名称
     """
@@ -186,7 +186,7 @@ def save_play_sequence(sequence_name: str) -> None:
 
     # 转换为相对于音乐目录的相对路径
     file_names = [path.name for path in app_context.play_queue]
-    
+
     # 存储播放序列
     play_sequences = cfg.play_sequences.value
     play_sequences[sequence_name] = file_names
@@ -206,10 +206,10 @@ def save_play_sequence(sequence_name: str) -> None:
 
 def load_play_sequence(sequence_name: str) -> bool:
     """加载播放序列
-    
+
     Args:
         sequence_name: 序列名称
-        
+
     Returns:
         bool: 是否成功加载
     """
@@ -223,10 +223,10 @@ def load_play_sequence(sequence_name: str) -> bool:
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
         return False
-    
+
     # 获取文件名列表
     file_names = play_sequences[sequence_name]
-    
+
     # 转换为完整路径并验证文件存在
     play_queue = []
     for name in file_names:
@@ -235,7 +235,7 @@ def load_play_sequence(sequence_name: str) -> bool:
             play_queue.append(file_path)
         else:
             logger.warning(f"找不到文件: {name}，已从序列中移除")
-    
+
     if not play_queue:
         InfoBar.warning(
             t("common.warning"),
@@ -245,7 +245,7 @@ def load_play_sequence(sequence_name: str) -> bool:
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
         return False
-    
+
     # 更新播放队列
     app_context.play_queue = play_queue
     app_context.play_queue_index = 0
@@ -260,16 +260,16 @@ def load_play_sequence(sequence_name: str) -> bool:
         parent=app_context.main_window,
         position=InfoBarPosition.BOTTOM_RIGHT,
     )
-    
+
     return True
 
 
 def delete_play_sequence(sequence_name: str) -> bool:
     """删除播放序列
-    
+
     Args:
         sequence_name: 序列名称
-        
+
     Returns:
         bool: 是否成功删除
     """
@@ -283,7 +283,7 @@ def delete_play_sequence(sequence_name: str) -> bool:
             position=InfoBarPosition.BOTTOM_RIGHT,
         )
         return False
-    
+
     # 删除序列
     del play_sequences[sequence_name]
     cfg.play_sequences.value = play_sequences
@@ -291,7 +291,7 @@ def delete_play_sequence(sequence_name: str) -> bool:
     cfg.save()
 
     logger.info(f"已删除播放序列：{sequence_name}")
-    
+
     InfoBar.success(
         t("common.success"),
         t("player.play_sequence_deleted_success", sequence_name=sequence_name),
@@ -299,13 +299,13 @@ def delete_play_sequence(sequence_name: str) -> bool:
         parent=app_context.main_window,
         position=InfoBarPosition.BOTTOM_RIGHT,
     )
-    
+
     return True
 
 
 def get_play_sequences() -> dict:
     """获取所有播放序列
-    
+
     Returns:
         dict: {"序列名": [文件名1, 文件名2, ...]}
     """
@@ -314,7 +314,7 @@ def get_play_sequences() -> dict:
 
 def get_play_sequence_names() -> list[str]:
     """获取所有播放序列名称
-    
+
     Returns:
         list[str]: 序列名称列表
     """
@@ -323,7 +323,7 @@ def get_play_sequence_names() -> list[str]:
 
 def save_current_play_queue():
     """保存当前播放队列到配置，在程序关闭时自动调用
-    
+
     保存内容包括：
     1. 歌曲文件名列表
     2. 当前播放索引
@@ -332,30 +332,27 @@ def save_current_play_queue():
         if not app_context.play_queue:
             logger.debug("没有播放队列需要保存")
             return
-        
+
         # 转换为相对于音乐目录的相对路径
         file_names = []
         for path in app_context.play_queue:
-            if hasattr(path, 'name') and isinstance(path.name, str):
+            if hasattr(path, "name") and isinstance(path.name, str):
                 file_names.append(path.name)
             else:
                 logger.warning(f"无法获取文件名: {path}")
-        
+
         # 确保播放索引是有效的整数
         play_index = app_context.play_queue_index
         if not isinstance(play_index, int) or play_index < 0:
             logger.warning(f"无效的播放索引: {play_index}，将重置为 0")
             play_index = 0
-        
+
         # 保存播放队列和当前播放索引
-        last_play_data = {
-            "queue": file_names,
-            "index": play_index
-        }
-        
+        last_play_data = {"queue": file_names, "index": play_index}
+
         cfg.last_play_queue.value = last_play_data
         cfg.save()
-        
+
         logger.info(f"已保存播放队列，包含 {len(file_names)} 首歌曲，当前索引: {play_index}")
     except Exception as e:
         logger.exception(f"保存播放队列时发生错误: {e}")
@@ -363,31 +360,31 @@ def save_current_play_queue():
 
 def restore_last_play_queue() -> bool:
     """恢复上次保存的播放队列
-    
+
     Returns:
         bool: 是否成功恢复
     """
     try:
         last_play_data = cfg.last_play_queue.value
-        
+
         # 确保数据结构正确
         if not isinstance(last_play_data, dict) or "queue" not in last_play_data:
             logger.debug("没有有效的上次播放队列数据")
             return False
-        
+
         # 获取文件名列表和索引
         file_names = last_play_data.get("queue", [])
         play_index = last_play_data.get("index", 0)
-        
+
         # 确保文件名列表是一个列表
         if not isinstance(file_names, list):
             logger.debug(f"播放队列数据格式错误: queue应为列表，实际是 {type(file_names)}")
             return False
-            
+
         if not file_names:
             logger.debug("上次播放队列为空")
             return False
-        
+
         # 转换为完整路径并验证文件存在
         play_queue = []
         for name in file_names:
@@ -396,7 +393,7 @@ def restore_last_play_queue() -> bool:
                 if not isinstance(name, str) or not name.strip():
                     logger.warning(f"无效的文件名: {name}")
                     continue
-                    
+
                 file_path = MUSIC_DIR / name
                 if file_path.exists():
                     play_queue.append(file_path)
@@ -404,28 +401,26 @@ def restore_last_play_queue() -> bool:
                     logger.warning(f"找不到文件: {name}，已从队列中移除")
             except Exception as e:
                 logger.error(f"处理文件 {name} 时出错: {e}")
-        
+
         if not play_queue:
             logger.warning("恢复的播放队列中没有有效的音乐文件")
             return False
-        
+
         # 更新播放队列
         app_context.play_queue = play_queue
-        
+
         # 确保索引是整数且在有效范围内
         if not isinstance(play_index, int):
             try:
                 if isinstance(play_index, (str, float)) and play_index:
                     play_index = int(play_index)
                 else:
-
                     logger.warning(f"无效的播放索引类型: {type(play_index)}，将重置为 0")
                     play_index = 0
             except (TypeError, ValueError):
-
                 logger.warning(f"无效的播放索引值: {play_index}，将重置为 0")
                 play_index = 0
-            
+
         app_context.play_queue_index = max(0, min(play_index, len(play_queue) - 1))  # 确保索引有效且不小于0
 
         logger.info(f"已恢复播放队列，包含 {len(play_queue)} 首歌曲，当前索引: {app_context.play_queue_index}")

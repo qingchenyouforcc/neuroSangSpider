@@ -23,6 +23,7 @@ def load_from_all_data(input_folder: Path, exclude_file: list[str] | None = None
     total_list.unique_by_bv()
     return total_list
 
+
 def load_extend(input_folder: Path):
     """读取所有的扩展包,返回bv号列表和up主id列表"""
     bv_list = []

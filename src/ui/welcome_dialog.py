@@ -6,10 +6,10 @@ import os
 from src.config import cfg
 
 # 定义首次运行标记文件路径
-FIRST_RUN_MARKER = os.path.join(os.path.expanduser('~'), '.nspd', 'first_run')
+FIRST_RUN_MARKER = os.path.join(os.path.expanduser("~"), ".nspd", "first_run")
+
 
 class WelcomeDialog(QDialog):
-    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Welcome")
@@ -25,7 +25,7 @@ class WelcomeDialog(QDialog):
         else:
             bg_color = "#FFFFFF"
             color = "#000000"
-        
+
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
@@ -49,12 +49,9 @@ class WelcomeDialog(QDialog):
 
         self.language_combo = ComboBox(self)
         self.language_combo.setStyleSheet(f"ComboBox {{ color: {color}; }}")
-        self.language_combo.addItems([
-            "English",
-            "简体中文-Simplified Chinese"
-        ])
+        self.language_combo.addItems(["English", "简体中文-Simplified Chinese"])
 
-        self.ok_button = PushButton('OK-确认', self)
+        self.ok_button = PushButton("OK-确认", self)
         self.ok_button.clicked.connect(self.accept)
 
         self.card_layout.addWidget(self.title_label)
@@ -65,19 +62,15 @@ class WelcomeDialog(QDialog):
 
         if parent:
             self.move(
-                parent.x() + (parent.width() - self.width()) // 2,
-                parent.y() + (parent.height() - self.height()) // 2
+                parent.x() + (parent.width() - self.width()) // 2, parent.y() + (parent.height() - self.height()) // 2
             )
-    
+
     def get_selected_language(self):
         """获取选择的语言"""
-        languages = {
-            'English': 'en_US',
-            '简体中文-Simplified Chinese': 'zh_CN'
-        }
+        languages = {"English": "en_US", "简体中文-Simplified Chinese": "zh_CN"}
         selected_text = self.language_combo.currentText()
         return languages.get(selected_text)
-    
+
     def save_language_preference(self):
         """保存语言偏好设置"""
         language_code = self.get_selected_language()
@@ -87,16 +80,15 @@ class WelcomeDialog(QDialog):
 
         config_dir = os.path.dirname(FIRST_RUN_MARKER)
         os.makedirs(config_dir, exist_ok=True)
-        
+
         # 创建首次运行标记文件
-        with open(FIRST_RUN_MARKER, 'w') as f:
-            f.write('completed')
-    
+        with open(FIRST_RUN_MARKER, "w") as f:
+            f.write("completed")
+
     def accept(self):
         """确认选择并保存设置"""
         self.save_language_preference()
         super().accept()
-
 
     @staticmethod
     def is_first_run():
