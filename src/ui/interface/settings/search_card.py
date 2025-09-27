@@ -54,7 +54,7 @@ class ListEditWidget(CardGroupWidget):
             btn.deleteLater()
             self.refresh_layout()
         except Exception:
-            logger.exception(t("settings.remove_item_error"))
+            logger.exception("删除列表项时发生错误")
 
     def on_add_item(self) -> None:
         if item := self.add_item():
@@ -67,7 +67,7 @@ class ListEditWidget(CardGroupWidget):
             btn.clicked.connect(lambda: self.on_remove_item(btn))
             self._layout.addWidget(btn)
         except Exception as e:
-            logger.error(t("settings.add_button_failed", error=str(e)))
+            logger.error(f"添加按钮失败: {e}")
 
     def refresh_layout(self):
         logger.info(t("settings.layout_updated"))
@@ -140,7 +140,7 @@ class FilterEditWidget(ListEditWidget):
             cfg.save()
             logger.info(f"当前过滤器列表为 {cfg.filter_list}")
         except Exception:
-            logger.exception(t("settings.remove_filter_error"))
+            logger.exception("删除过滤词时发生错误")
 
     def add_item(self) -> str | None:
         try:
@@ -172,7 +172,7 @@ class FilterEditWidget(ListEditWidget):
                 super().refresh_layout()
                 return word
         except Exception:
-            logger.exception(t("settings.add_filter_error"))
+            logger.exception("添加过滤词时发生错误")
             return None
 
 
@@ -195,7 +195,7 @@ class UpListEditWidget(ListEditWidget):
             del self.names[user_id]
             logger.info(f"当前UP主列表为 {cfg.up_list.value}")
         except Exception:
-            logger.exception(t("settings.remove_up_error"))
+            logger.exception("删除UP主时发生错误")
 
     def add_item(self) -> str | None:
         try:
@@ -234,7 +234,7 @@ class UpListEditWidget(ListEditWidget):
             super().refresh_layout()
             return self.names[uid]
         except Exception:
-            logger.exception(t("settings.add_up_error"))
+            logger.exception("添加UP主时发生错误")
             return None
 
 
@@ -254,7 +254,7 @@ class BlackListEditWidget(ListEditWidget):
             cfg.save()
             logger.info(f"当前黑名单列表为 {cfg.black_author_list}")
         except Exception:
-            logger.exception(t("settings.remove_blacklist_error"))
+            logger.exception("删除黑名单UP主时发生错误")
 
     def add_item(self) -> str | None:
         try:
@@ -280,7 +280,7 @@ class BlackListEditWidget(ListEditWidget):
             super().refresh_layout()
             return text
         except Exception:
-            logger.exception(t("settings.add_blacklist_error"))
+            logger.exception("添加黑名单UP主时发生错误")
             return None
 
 
