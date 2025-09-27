@@ -2,6 +2,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QVBoxLayout, QWidget
 from qfluentwidgets import ScrollArea, TitleLabel
 
+from i18n import t
 from src.config import cfg
 
 from .card import SettingsCard
@@ -12,7 +13,7 @@ class SettingInterface(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setObjectName("settingInterface")
-        self.settingLabel = TitleLabel("设置", self)
+        self.settingLabel = TitleLabel(t("settings.title"), self)
 
         # 设置背景透明属性
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)

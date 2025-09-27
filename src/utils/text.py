@@ -4,6 +4,8 @@ from collections.abc import Iterable
 
 from loguru import logger
 
+from i18n import t
+
 
 def contain_text(words_set: Iterable[str], text: str) -> bool:
     """检测是否包含内容"""
@@ -42,10 +44,10 @@ def format_date_str(date: str) -> str:
             localtime = time.localtime(time.time())
             res = re.search("([0-9]*)-([0-9]*)", date)
             if res is None:
-                if "昨天" in date:
+                if t("date.yesterday") in date:
                     localtime = time.localtime(time.time() - 3600 * 24)
                     res = f"{localtime.tm_year}-{localtime.tm_mon}-{localtime.tm_mday}"
-                elif "前天" in date:
+                elif t("date.day_before_yesterday") in date:
                     localtime = time.localtime(time.time() - 3600 * 24 * 2)
                     res = f"{localtime.tm_year}-{localtime.tm_mon}-{localtime.tm_mday}"
                 else:
@@ -60,7 +62,7 @@ def format_date_str(date: str) -> str:
 
         return res
     except Exception:
-        logger.opt(exception=True).warning("日期格式化错误")
+        logger.opt(exception=True).warning(t("utils.date_format_error"))
         return date
 
 

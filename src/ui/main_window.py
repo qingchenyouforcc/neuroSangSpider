@@ -1,11 +1,15 @@
+import os
+import sys
+import subprocess
 from loguru import logger
 from PyQt6 import QtGui
-from PyQt6.QtCore import QSize
+from PyQt6.QtCore import QSize, QProcess
 from PyQt6.QtWidgets import QApplication
 from qfluentwidgets import SplashScreen
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition, SystemThemeListener
 
+from i18n import t
 from src.config import ASSETS_DIR, cfg, Theme
 from src.app_context import app_context
 
@@ -20,6 +24,8 @@ from src.ui.interface.settings import SettingInterface
 class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
+
+        self.is_language_restart = False
         
         # 系统主题监听器
         self.themeListener = SystemThemeListener(self)
@@ -53,41 +59,41 @@ class MainWindow(FluentWindow):
         self.addSubInterface(
             interface=self.homeInterface,
             icon=FIF.HOME,
-            text="主页",
+            text=t("nav.home"),
             position=NavigationItemPosition.TOP,
         )
         self.addSubInterface(
             interface=SearchInterface(self, main_window=self),
             icon=FIF.SEARCH,
-            text="搜索",
+            text=t("nav.search"),
             position=NavigationItemPosition.TOP,
         )
         self.addSubInterface(
             interface=PlayQueueInterface(self, main_window=self),
             icon=FIF.ALIGNMENT,
-            text="播放队列",
+            text=t("nav.play_queue"),
             position=NavigationItemPosition.TOP,
         )
         self.addSubInterface(
             interface=LocalPlayerInterface(self, main_window=self),
             icon=FIF.PLAY,
-            text="本地播放",
+            text=t("nav.local_player"),
             position=NavigationItemPosition.BOTTOM,
         )
         self.addSubInterface(
             interface=SettingInterface(self),
             icon=FIF.SETTING,
-            text="设置",
+            text=t("nav.settings"),
             position=NavigationItemPosition.BOTTOM,
         )
 
-        self.setWindowTitle("NeuroSangSpider")
+        self.setWindowTitle(t("app.title"))
         
         self.player_bar = CustomMediaPlayBar()
         self.player_bar.setFixedSize(300, 120)
         self.player_bar.player.setVolume(cfg.volume.value)
         self.player_bar.setWindowIcon(icon)
-        self.player_bar.setWindowTitle("Player")
+        self.player_bar.setWindowTitle(t("player.title"))
         self.player_bar.show()
         app_context.player = self.player_bar
 
@@ -106,26 +112,117 @@ class MainWindow(FluentWindow):
         # 隐藏启动页面
         self.splashScreen.finish()
 
-    def closeEvent(self, event):  # pyright: ignore[reportIncompatibleMethodOverride]
-        try:
-            logger.info("正在弹出退出确认对话框...")
+    def closeEvent(self, event):
+        if not self.is_language_restart:
+            # 显示退出确认对话框
+            try:
+                logger.info("正在弹出退出确认对话框...")
+                w = MessageBox(t("common.close_confirm"), t("common.close_confirm_desc"), self)
+                w.setDraggable(False)
+                w.yesButton.setText(t("common.ok"))
+                w.cancelButton.setText(t("common.cancel"))
 
-            w = MessageBox("即将关闭整个程序", "您确定要这么做吗？", self)
-            w.setDraggable(False)
-
-            if w.exec():
-                # 保存当前播放队列
-                from src.core.player import save_current_play_queue
-                save_current_play_queue()
-                
-                logger.info("用户确认退出，程序即将关闭。")
+                if w.exec():
+                    logger.info("用户确认退出，程序即将关闭。")
+                    self.before_shutdown()
+                    event.accept()
+                    QApplication.quit()
+                else:
+                    logger.info("用户取消了退出操作。")
+                    event.ignore()
+            except Exception as e:
+                logger.exception(f"在退出确认过程中发生错误: {e}")
                 event.accept()
-                self.themeListener.terminate()
-                self.themeListener.deleteLater()
-                QApplication.quit()
-            else:
-                logger.info("用户取消了退出操作。")
-                event.ignore()
+        else:
+            # 显示重启确认对话框
+            try:
+                logger.info("正在弹出重启确认对话框...")
+                w = MessageBox(t("common.restart_confirm"), t("common.restart_confirm_desc"), self)
+                w.setDraggable(False)
+                w.yesButton.setText(t("common.ok"))
+                w.cancelButton.setText(t("common.cancel"))
+                
+                result = w.exec()
+                logger.info(f"重启确认对话框结果: {result}")
 
-        except Exception:
-            logger.exception("在退出确认过程中发生错误")
+                if result:
+                    logger.info("用户确认重启，程序即将重启。")
+                    self.before_shutdown()
+                    self._perform_restart()
+                    event.accept()
+                else:
+                    logger.info("用户取消了重启操作。")
+                    self.is_language_restart = False
+                    event.ignore()
+            except Exception as e:
+                logger.exception(f"在确认重启过程中发生错误: {e}")
+                # 出错时默认执行重启
+                self.before_shutdown()
+                self._perform_restart()
+                event.accept()
+
+    def _perform_restart(self):
+
+        logger.info("正在开始重启...")
+
+        # 优先使用subprocess启动新实例，然后退出当前进程
+        try:
+            if getattr(sys, 'frozen', False):
+                # 打包后的情况
+                executable = sys.executable
+                args = []
+            else:
+                # 开发环境
+                executable = sys.executable
+                args = [sys.argv[0]] if sys.argv else []
+
+            logger.info(f"使用subprocess重启: {executable} {' '.join(args)}")
+
+            env = os.environ.copy()
+            env['LANGUAGE_RESTART'] = '1'
+
+            # 启动新实例
+            process = subprocess.Popen([executable] + args,
+                                       creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
+                                       env=env,
+                                       close_fds=True)
+
+            logger.info(f"新实例已启动，PID: {process.pid}")
+
+            sys.exit(0)
+
+        except Exception as e:
+            logger.error(f"subprocess重启失败: {str(e)}")
+
+            # 回退到QProcess
+            try:
+                logger.info("回退到QProcess重启方式")
+                QProcess.startDetached(sys.executable, sys.argv)
+
+                sys.exit(0)
+            except Exception as e2:
+                logger.error(f"QProcess重启失败: {str(e2)}")
+                # 最后尝试直接使用os.execv
+                try:
+                    if getattr(sys, 'frozen', False):
+                        executable = sys.executable
+                        args = [executable]
+                    else:
+                        executable = sys.executable
+                        args = [sys.executable] + sys.argv
+
+                    logger.info(f"最后尝试使用os.execv重启: {executable} {' '.join(args[1:])}")
+                    os.execv(executable, args)
+                except Exception as e3:
+                    logger.error(f"所有重启方法都失败了: {str(e3)}")
+                    # 所有方法都失败时，仍然退出当前进程
+                    sys.exit(1)
+
+    def before_shutdown(self):
+        # 保存当前播放队列
+        from src.core.player import save_current_play_queue
+        save_current_play_queue()
+
+        # 终止系统主题监听器
+        self.themeListener.terminate()
+        self.themeListener.deleteLater()

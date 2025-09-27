@@ -9,6 +9,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
+from i18n import t
 from src.config import FFMPEG_PATH, MUSIC_DIR, subprocess_options
 from src.app_context import app_context
 from src.bili_api.converters import url2bv
@@ -32,11 +33,11 @@ def part2all(input_folder: str, output_file: str):
                     for line in infile:
                         f.write(line)
             except UnicodeDecodeError:
-                logger.info(f"跳过非文本文件: {path.name}")
+                logger.info(t("file.skip_non_text_file", filename=path.name))
             except Exception:
-                logger.exception(f"处理文件 {path.name} 时出错")
+                logger.exception(t("file.process_file_error", filename=path.name))
 
-    logger.info(f"所有文件内容已合并到 {output_file_path}")
+    logger.info(t("file.files_merged", output_path=str(output_file_path)))
 
 
 def convert_old2new(input_folder: Path):
@@ -54,7 +55,7 @@ def convert_old2new(input_folder: Path):
                 encoding="utf-8",
             )
         except Exception:
-            logger.exception(f"处理文件 {fp} 时出错")
+            logger.exception(t("file.process_file_error", filename=str(fp)))
 
 
 def get_audio_duration(file_path: Path):
@@ -71,7 +72,7 @@ def get_audio_duration(file_path: Path):
         ("example.mp3", 245.3)
     """
     if not file_path.exists():
-        raise FileNotFoundError(f"文件不存在: {file_path}")
+        raise FileNotFoundError(t("file.file_not_found", filepath=str(file_path)))
 
     try:
         audio: Any = File(file_path)
@@ -80,7 +81,7 @@ def get_audio_duration(file_path: Path):
         return file_path.name, duration
 
     except Exception as e:
-        raise RuntimeError(f"无法读取音频信息: {e}") from e
+        raise RuntimeError(t("file.cannot_read_audio_info", error=str(e))) from e
 
 
 def read_all_audio_info(
@@ -110,7 +111,7 @@ def read_all_audio_info(
                 info = get_audio_duration(fp)
                 results.append(info)
             except Exception:
-                logger.exception(f"跳过文件: {fp.relative_to(directory)}")
+                logger.exception(t("file.skip_file", filepath=str(fp.relative_to(directory))))
 
     return results
 
@@ -148,7 +149,7 @@ def clean_audio_file(input_path, output_path, target_format="mp3"):
         )
         return True
     except subprocess.CalledProcessError:
-        logger.exception(f"❌ 处理失败: {input_path}")
+        logger.exception(t("file.process_failed", filepath=str(input_path)))
         return False
 
 
@@ -182,42 +183,42 @@ def batch_clean_audio_files(
         if not output_file.exists():
             files_to_process.append((input_file, output_file))
         else:
-            logger.info(f"✅ 已存在: {output_file.name}")
+            logger.info(t("file.already_exists", filename=output_file.name))
 
     total_count = len(files_to_process)
     if total_count == 0:
-        logger.info("✅ 没有需要处理的文件")
+        logger.info(t("file.no_files_to_process"))
         return
 
-    logger.info(f"🔍 共找到 {total_count} 个音频文件，开始清理...\n")
+    logger.info(t("file.found_audio_files_start_cleaning", count=total_count))
 
-    for input_file, output_file in tqdm(files_to_process, desc="处理中", unit="file"):
+    for input_file, output_file in tqdm(files_to_process, desc=t("file.processing"), unit="file"):
         success = clean_audio_file(input_file, output_file, target_format=target_format)
         if success:
-            tqdm.write(f"✔️ 已清理: {input_file.name} -> {output_file.name}")
+            tqdm.write(t("file.cleaned_successfully", input_name=input_file.name, output_name=output_file.name))
             cleaned_count += 1
             if overwrite:
                 input_file.unlink()
 
-    logger.info(f"\n✅ 完成！共清理 {cleaned_count}/{total_count} 个文件")
+    logger.info(t("file.cleaning_completed", cleaned=cleaned_count, total=total_count))
 
 
 def on_fix_music():
     try:
         batch_clean_audio_files(MUSIC_DIR, target_format="mp3", overwrite=True)
         InfoBar.success(
-            "修复完成",
-            "修复完成！",
+            t("fix.success"),
+            t("fix.success_message"),
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
             parent=app_context.main_window,
         )
     except Exception:
-        logger.exception("修复音乐文件时发生错误")
+        logger.exception(t("file.fix_music_error"))
         InfoBar.error(
-            "修复失败",
-            "修复失败！",
+            t("fix.failed"),
+            t("fix.failed_message"),
             orient=Qt.Orientation.Horizontal,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,

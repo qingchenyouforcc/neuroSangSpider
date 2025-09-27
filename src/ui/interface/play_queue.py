@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QV
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
+from i18n import t
 from src.core.player import playSongByIndex, sequencePlay
 from src.app_context import app_context
 from src.ui.widgets.play_sequence_dialog import PlaySequenceDialog
@@ -32,26 +33,26 @@ class PlayQueueInterface(QWidget):
         # 创建标题和刷新按钮的水平布局
         title_layout = QHBoxLayout()
 
-        self.titleLabel = TitleLabel("播放列表", self)
+        self.titleLabel = TitleLabel(t("play_queue.title"), self)
 
         self.seqPlayBtn = TransparentToolButton(FIF.MENU, self)
-        self.seqPlayBtn.setToolTip("按顺序播放(不改变播放模式)")
+        self.seqPlayBtn.setToolTip(t("play_queue.seq_play_tooltip"))
 
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
-        self.refreshButton.setToolTip("刷新歌曲列表")
+        self.refreshButton.setToolTip(t("play_queue.refresh_tooltip"))
 
         self.delQueueButton = TransparentToolButton(FIF.DELETE, self)
-        self.delQueueButton.setToolTip("从播放列表中删除")
+        self.delQueueButton.setToolTip(t("play_queue.delete_tooltip"))
 
         self.upSongButton = TransparentToolButton(FIF.UP, self)
-        self.upSongButton.setToolTip("将当前歌曲上移")
+        self.upSongButton.setToolTip(t("play_queue.up_tooltip"))
 
         self.downSongButton = TransparentToolButton(FIF.DOWN, self)
-        self.downSongButton.setToolTip("将当前歌曲下移")
+        self.downSongButton.setToolTip(t("play_queue.down_tooltip"))
         
         # 添加播放序列管理按钮
         self.sequenceButton = TransparentToolButton(FIF.SAVE, self)
-        self.sequenceButton.setToolTip("播放序列管理")
+        self.sequenceButton.setToolTip(t("play_queue.sequence_tooltip"))
 
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
@@ -78,8 +79,8 @@ class PlayQueueInterface(QWidget):
     def load_play_queue(self):
         if not app_context.play_queue:
             InfoBar.warning(
-                "提示",
-                "播放列表为空",
+                t("common.info"),
+                t("play_queue.empty"),
                 orient=Qt.Orientation.Horizontal,
                 position=InfoBarPosition.BOTTOM_RIGHT,
                 duration=1000,
@@ -91,7 +92,7 @@ class PlayQueueInterface(QWidget):
         try:
             self.tableView.setRowCount(len(app_context.play_queue))
             self.tableView.setColumnCount(1)
-            self.tableView.setHorizontalHeaderLabels(["歌曲"])
+            self.tableView.setHorizontalHeaderLabels([t("play_queue.header_song")])
 
             for i, song in enumerate(app_context.play_queue):
                 self.tableView.setItem(i, 0, QTableWidgetItem(song.name))
@@ -161,8 +162,8 @@ class PlayQueueInterface(QWidget):
                 logger.info("尝试恢复上次播放队列")
                 if restore_last_play_queue():
                     InfoBar.success(
-                        "提示",
-                        "已恢复上次播放队列",
+                        t("common.info"),
+                        t("play_queue.restored"),
                         orient=Qt.Orientation.Horizontal,
                         position=InfoBarPosition.BOTTOM_RIGHT,
                         duration=2000,

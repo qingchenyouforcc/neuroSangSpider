@@ -17,6 +17,7 @@ from qfluentwidgets import (
     SwitchButton,
 )
 
+from i18n import t
 from src.app_context import app_context
 from src.bili_api import get_up_name, get_up_names
 from src.config import cfg
@@ -69,7 +70,7 @@ class ListEditWidget(CardGroupWidget):
             logger.error(f"添加按钮失败: {e}")
 
     def refresh_layout(self):
-        logger.info("布局已更新")
+        logger.info(t("settings.layout_updated"))
         self._layout.removeWidget(self.addWordBtn)
         self._layout.addWidget(self.addWordBtn)
         self._layout.update()
@@ -86,8 +87,8 @@ class ListEditWidget(CardGroupWidget):
         lineEdit.setClearButtonEnabled(True)
         mbox.viewLayout.addWidget(lineEdit)
 
-        mbox.yesButton.setText("确定")
-        mbox.cancelButton.setText("取消")
+        mbox.yesButton.setText(t("common.ok"))
+        mbox.cancelButton.setText(t("common.cancel"))
         mbox.setMinimumWidth(600)
         return mbox, lineEdit
 
@@ -103,8 +104,8 @@ class SwitchFilterEditWidget(CardGroupWidget):
     def __init__(self, parent: QWidget):
         super().__init__(
             FluentIcon.FILTER,
-            "过滤器开关",
-            "开启后会按照下方过滤词筛选搜索结果",
+            t("settings.filter_switch_title"),
+            t("settings.filter_switch_desc"),
             parent,
         )
         self.switch = SwitchButton(parent=self)
@@ -116,8 +117,8 @@ class SwitchFilterEditWidget(CardGroupWidget):
         cfg.enable_filter.value = checked
         cfg.save()
         InfoBar.success(
-            "设置成功",
-            f"已{'启用' if checked else '关闭'}过滤器",
+            t("common.settings_success"),
+            t("settings.filter_status", status=t("common.enabled") if checked else t("common.disabled")),
             position=InfoBarPosition.BOTTOM_RIGHT,
             parent=app_context.main_window,
             duration=1500,
@@ -127,8 +128,8 @@ class FilterEditWidget(ListEditWidget):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(
             FluentIcon.SEARCH,
-            "调整过滤器",
-            "搜索结果只会显示符合过滤条件的歌曲(单击删除)",
+            t("settings.filter_title"),
+            t("settings.filter_desc"),
             parent,
             cfg.filter_list.value,
         )
@@ -143,22 +144,22 @@ class FilterEditWidget(ListEditWidget):
 
     def add_item(self) -> str | None:
         try:
-            mbox, line_edit = self.create_mbox("添加搜索结果过滤词", "输入添加的过滤词")
+            mbox, line_edit = self.create_mbox(t("settings.add_filter_word"), t("settings.filter_word_placeholder"))
             if not mbox.exec():
                 return None
             word = line_edit.text().strip()
             if not word:
                 InfoBar.error(
-                    "错误",
-                    "请输入要添加的过滤词",
+                    t("common.error"),
+                    t("settings.filter_word_empty"),
                     position=InfoBarPosition.BOTTOM_RIGHT,
                     parent=app_context.main_window,
                 )
                 return None
             if word in cfg.filter_list.value:
                 InfoBar.error(
-                    "错误",
-                    "该过滤词已存在",
+                    t("common.error"),
+                    t("settings.filter_word_exists"),
                     position=InfoBarPosition.BOTTOM_RIGHT,
                     parent=app_context.main_window,
                 )
@@ -180,8 +181,8 @@ class UpListEditWidget(ListEditWidget):
         self.names = get_up_names(cfg.up_list.value)
         super().__init__(
             FluentIcon.PEOPLE,
-            "UP主列表",
-            "获取歌曲列表时查找的UP主列表（单击删除）",
+            t("settings.up_list_title"),
+            t("settings.up_list_desc"),
             parent,
             self.names.values(),
         )
@@ -198,15 +199,15 @@ class UpListEditWidget(ListEditWidget):
 
     def add_item(self) -> str | None:
         try:
-            mbox, line_edit = self.create_mbox("添加获取歌曲列表时查找的UP主", "输入添加的UP主UID")
+            mbox, line_edit = self.create_mbox(t("settings.add_up_title"), t("settings.add_up_placeholder"))
             if not mbox.exec():
                 return None
 
             text = line_edit.text().strip()
             if not text:
                 InfoBar.error(
-                    "错误",
-                    "请输入要添加的UP主UID",
+                    t("common.error"),
+                    t("settings.up_uid_empty"),
                     position=InfoBarPosition.BOTTOM_RIGHT,
                     parent=app_context.main_window,
                 )
@@ -216,8 +217,8 @@ class UpListEditWidget(ListEditWidget):
                 uid = int(text)
             except ValueError:
                 InfoBar.error(
-                    "错误",
-                    "请输入正确的UID格式",
+                    t("common.error"),
+                    t("settings.up_uid_format_error"),
                     position=InfoBarPosition.BOTTOM_RIGHT,
                     parent=app_context.main_window,
                 )
@@ -240,9 +241,9 @@ class UpListEditWidget(ListEditWidget):
 class BlackListEditWidget(ListEditWidget):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(
-            FluentIcon.CLOSE,
-            "黑名单",
-            "在搜索结果中排除这些UP主的歌曲（单击删除）",
+                FluentIcon.CLOSE,
+                t("settings.blacklist_title"),
+                t("settings.blacklist_desc"),
             parent,
             cfg.black_author_list.value,
         )
@@ -257,15 +258,15 @@ class BlackListEditWidget(ListEditWidget):
 
     def add_item(self) -> str | None:
         try:
-            mbox, line_edit = self.create_mbox("添加搜索黑名单UP主", "输入UP主关键词")
+            mbox, line_edit = self.create_mbox(t("settings.add_blacklist_title"), t("settings.add_blacklist_placeholder"))
             if not mbox.exec():
                 return None
 
             text = line_edit.text().strip()
             if not text:
                 InfoBar.error(
-                    "错误",
-                    "请输入要添加的UP主关键词",
+                    t("common.error"),
+                    t("settings.blacklist_keyword_empty"),
                     position=InfoBarPosition.BOTTOM_RIGHT,
                     parent=app_context.main_window,
                 )
@@ -289,7 +290,7 @@ class SearchSettingsCard(GroupHeaderCardWidget):
     def __init__(self) -> None:  # pyright:ignore[reportIncompatibleVariableOverride]
         super().__init__()
 
-        self.setTitle("搜索设置")
+        self.setTitle(t("settings.search_settings_title"))
         self.vBoxLayout.addWidget(SwitchFilterEditWidget(self))
         self.vBoxLayout.addWidget(FilterEditWidget(self))
         self.vBoxLayout.addWidget(UpListEditWidget(self))

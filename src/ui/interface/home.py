@@ -8,6 +8,7 @@ from qfluentwidgets import (
 )
 from loguru import logger
 
+from src.i18n.i18n import t
 from src.config import VERSION, cfg
 from src.app_context import app_context
 from src.core.player import nextSong, previousSong
@@ -32,7 +33,7 @@ class NowPlayingCard(CardWidget):
         
         # 标题栏
         self.headerLayout = QHBoxLayout()
-        self.titleLabel = SubtitleLabel("当前播放", self)
+        self.titleLabel = SubtitleLabel(t("home.titlebar.now_playing"), self)
         self.titleIcon = IconWidget(FIF.MUSIC, self)
         self.headerLayout.addWidget(self.titleIcon)
         self.headerLayout.addWidget(self.titleLabel)
@@ -53,7 +54,7 @@ class NowPlayingCard(CardWidget):
         
         # 歌曲详情
         self.detailLayout = QVBoxLayout()
-        self.songNameLabel = ScrollingLabel("未播放", self)
+        self.songNameLabel = ScrollingLabel(t("home.now_playing.wait_play"), self)
         self.songNameLabel.setFixedHeight(30)
         # 设置滚动参数：速度适中，边缘停留时间较长，每次滚动1像素，边缘留白合适
         self.songNameLabel.setScrollingSettings(speed=40, pause_time=2000, scroll_step=1, margin=25)
@@ -113,14 +114,14 @@ class NowPlayingCard(CardWidget):
     
     def _togglePlay(self):
         """切换播放/暂停状态"""
-        assert app_context.player is not None, "播放器未初始化"
+        assert app_context.player is not None, t("home.now_playing.player_not_init")
         app_context.player.togglePlayState()
         self.playButton.setIcon(FIF.PAUSE_BOLD)
     
     def updatePlayingInfo(self):
         """更新当前播放信息"""
         if not app_context.player or not app_context.playing_now:
-            self.songNameLabel.setText("未播放")
+            self.songNameLabel.setText(t("home.now_playing.wait_play"))
             self.progressBar.setValue(0)
             self.currentTimeLabel.setText("0:00")
             self.totalTimeLabel.setText("0:00")
@@ -228,17 +229,11 @@ class WelcomeCard(CardWidget):
         self.vBoxLayout.setSpacing(10)
         
         # 标题
-        self.titleLabel = SubtitleLabel("欢迎使用 NeuroSangSpider", self)
+        self.titleLabel = SubtitleLabel(t("home.welcome.title"), self)
         
         # 介绍
         self.infoLabel = BodyLabel(
-            "这是一个基于 Python 3.13 开发的歌回播放软件。"
-            "\n\n主要功能："
-            "\n • 智能搜索机制，精准查找歌曲"
-            "\n • 可自定义UP主列表和关键词"
-            "\n • 音频提取与播放"
-            "\n • 本地播放器，支持播放队列管理"
-            f"\n\nLicense: AGPL-3.0\nVersion: {VERSION}",
+            t("home.welcome.introduction", version=VERSION),
             self
         )
         self.infoLabel.setWordWrap(True)
@@ -281,7 +276,7 @@ class SongStatsCard(CardWidget):
         
         # 标题栏
         self.headerLayout = QHBoxLayout()
-        self.titleLabel = SubtitleLabel("歌曲统计", self)
+        self.titleLabel = SubtitleLabel(t("home.song_stats.title"), self)
         self.titleIcon = IconWidget(FIF.ALBUM, self)
         self.headerLayout.addWidget(self.titleIcon)
         self.headerLayout.addWidget(self.titleLabel)
@@ -295,7 +290,7 @@ class SongStatsCard(CardWidget):
         self.songCountLayout = QVBoxLayout()
         self.songCountIcon = IconWidget(FIF.LIBRARY, self)
         self.songCountIcon.setFixedSize(32, 32)  # 设置图标大小
-        self.songCountLabel = BodyLabel("0 首歌曲", self)
+        self.songCountLabel = BodyLabel(t("home.song_stats.song_count_text", song_count="0"), self)
         self.songCountLabel.setObjectName("statsLabel")  # 设置对象名便于样式调整
         self.songCountLayout.addWidget(self.songCountIcon, 0, Qt.AlignmentFlag.AlignCenter)
         self.songCountLayout.addWidget(self.songCountLabel, 0, Qt.AlignmentFlag.AlignCenter)
@@ -305,7 +300,7 @@ class SongStatsCard(CardWidget):
         self.spaceUsageLayout = QVBoxLayout()
         self.spaceUsageIcon = IconWidget(FIF.FOLDER, self)
         self.spaceUsageIcon.setFixedSize(32, 32)  # 设置图标大小
-        self.spaceUsageLabel = BodyLabel("0 MB 存储空间", self)
+        self.spaceUsageLabel = BodyLabel(t("home.song_stats.space_usage_text", space_usage="0MB"), self)
         self.spaceUsageLabel.setObjectName("statsLabel")  # 设置对象名便于样式调整
         self.spaceUsageLayout.addWidget(self.spaceUsageIcon, 0, Qt.AlignmentFlag.AlignCenter)
         self.spaceUsageLayout.addWidget(self.spaceUsageLabel, 0, Qt.AlignmentFlag.AlignCenter)
@@ -351,8 +346,8 @@ class SongStatsCard(CardWidget):
                 size_str = f"{total_size/(1024*1024*1024):.2f} GB"
             
             # 更新显示
-            self.songCountLabel.setText(f"{song_count} 首歌曲")
-            self.spaceUsageLabel.setText(f"{size_str} 存储空间")
+            self.songCountLabel.setText(t("home.song_stats.song_count_text", song_count=song_count))
+            self.spaceUsageLabel.setText(t("home.song_stats.space_usage_text", space_usage=size_str))
             
             # 根据歌曲数量更新图标
             if song_count > 0:
@@ -366,8 +361,8 @@ class SongStatsCard(CardWidget):
                 
         except Exception as e:
             # 发生错误时，显示默认值
-            self.songCountLabel.setText("0 首歌曲")
-            self.spaceUsageLabel.setText("0 KB 存储空间")
+            self.songCountLabel.setText(t("home.song_stats.song_count_text", song_count="0"))
+            self.spaceUsageLabel.setText(t("home.song_stats.space_usage_text", space_usage="0KB"))
             self.songCountIcon.setIcon(FIF.DOCUMENT)
             self.spaceUsageIcon.setIcon(FIF.REMOVE)
             logger.error(f"更新歌曲统计信息失败: {e}")
@@ -438,7 +433,7 @@ class HomeInterface(QWidget):
         self.welcomeCard = WelcomeCard(self.container)
         
         # 添加版本信息和版权声明
-        self.versionLabel = BodyLabel(f"版本: {VERSION} | NeuroSangSpider", self.container)
+        self.versionLabel = BodyLabel(f"{t('app.version')}: {VERSION} | NeuroSangSpider", self.container)
         self.versionLabel.setObjectName("versionLabel")
         
         # 添加小部件到布局

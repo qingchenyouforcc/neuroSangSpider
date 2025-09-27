@@ -16,6 +16,7 @@ from qfluentwidgets import (
     SwitchButton,
 )
 
+from i18n import t
 from src.app_context import app_context
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music
@@ -26,8 +27,8 @@ def changeDownloadType(selected_type: str) -> None:
     cfg.download_type.value = selected_type
     cfg.save()
     InfoBar.success(
-        "设置成功",
-        f"已将下载格式设为 {selected_type}",
+        t("common.settings_success"),
+        t("common.download_format_set", format=selected_type),
         orient=Qt.Orientation.Horizontal,
         position=InfoBarPosition.BOTTOM_RIGHT,
         duration=1500,
@@ -35,17 +36,44 @@ def changeDownloadType(selected_type: str) -> None:
     )
 
 
-THEME_DISPLAY = {
-    Theme.AUTO: "自动",
-    Theme.LIGHT: "浅色",
-    Theme.DARK: "深色",
-}
-THEME_DISPLAY_REVERSE = {v: k for k, v in THEME_DISPLAY.items()}
+def changeLanguage(language: str) -> None:
+    """
+    切换显示语言
+    切换语言需要重启应用程序才能生效
+    """
+    if language == cfg.language.value:
+        return
+
+    # 先通过i18n_manager设置语言，确保翻译状态一致
+    if hasattr(app_context, 'i18n_manager') and app_context.i18n_manager:
+        app_context.i18n_manager.set_language_with_restart(language, app_context.main_window)
+    
+    cfg.language.value = language
+    cfg.save()
+
+    if hasattr(app_context, 'main_window') and app_context.main_window:
+        app_context.main_window.close()
+
+
+def get_theme_display():
+    """获取主题显示文本"""
+    return {
+        Theme.AUTO: t("settings.theme_auto"),
+        Theme.LIGHT: t("settings.theme_light"),
+        Theme.DARK: t("settings.theme_dark"),
+    }
+
+
+def get_theme_display_reverse():
+    """获取主题显示文本的反向映射"""
+    theme_display = get_theme_display()
+    return {v: k for k, v in theme_display.items()}
 
 
 def on_theme_switched(current_text: str) -> None:
     """切换主题"""
-    theme = THEME_DISPLAY_REVERSE[current_text]
+    theme_display_reverse = get_theme_display_reverse()
+    theme = theme_display_reverse[current_text]
     try:
         cfg.set_theme(theme)
     except Exception:
@@ -57,39 +85,39 @@ class BiliApiDialog(MessageBoxBase):
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
-        self.setWindowTitle("Bilibili API 参数设置")
+        self.setWindowTitle(t("bili_api.title"))
 
-        self.descriptionLabel = SubtitleLabel("Bilibili API 参数设置\n用于请求 Bilibili API 时避免触发反爬", self)
+        self.descriptionLabel = SubtitleLabel(t("bili_api.desc"), self)
         self.viewLayout.addWidget(self.descriptionLabel)
 
         self.helpLink = HyperlinkButton(
             "https://nemo2011.github.io/bilibili-api/#/get-credential",
-            "查看获取方式",
+            t("bili_api.help_link"),
             self,
         )
         self.viewLayout.addWidget(self.helpLink)
 
         # SESSDATA 输入框
         self.sessdataEdit = LineEdit(self)
-        self.sessdataEdit.setPlaceholderText("SESSDATA")
+        self.sessdataEdit.setPlaceholderText(t("bili_api.sessdata_placeholder"))
         self.sessdataEdit.setText(cfg.bili_sessdata.value)
         self.viewLayout.addWidget(self.sessdataEdit)
 
         # bili_jct 输入框
         self.jctEdit = LineEdit(self)
-        self.jctEdit.setPlaceholderText("bili_jct")
+        self.jctEdit.setPlaceholderText(t("bili_api.jct_placeholder"))
         self.jctEdit.setText(cfg.bili_jct.value)
         self.viewLayout.addWidget(self.jctEdit)
 
         # buvid3 输入框
         self.buvid3Edit = LineEdit(self)
-        self.buvid3Edit.setPlaceholderText("buvid3")
+        self.buvid3Edit.setPlaceholderText(t("bili_api.buvid3_placeholder"))
         self.buvid3Edit.setText(cfg.bili_buvid3.value)
         self.viewLayout.addWidget(self.buvid3Edit)
 
         # 设置按钮文本
-        self.yesButton.setText("保存")
-        self.cancelButton.setText("取消")
+        self.yesButton.setText(t("common.save"))
+        self.cancelButton.setText(t("common.cancel"))
 
     def accept(self) -> None:
         """保存设置"""
@@ -106,8 +134,8 @@ class BiliApiDialog(MessageBoxBase):
 
         # 显示成功提示
         InfoBar.success(
-            "保存成功",
-            "Bilibili API 参数已更新",
+            t("bili_api.save_success"),
+            t("bili_api.saved"),
             duration=1500,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -121,8 +149,15 @@ class SettingsCard(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):  # pyright:ignore[reportIncompatibleVariableOverride]
         super().__init__(parent)
-        self.setTitle("基本设置")
+        self.setTitle(t("settings.basic_title"))
         self.setMinimumHeight(200)
+
+        # 显示语言设置
+        language_items = ["zh_CN", "en_US"]
+        self.languageComboBox = ComboBox(self)
+        self.languageComboBox.addItems(language_items)
+        self.languageComboBox.setCurrentIndex(language_items.index(cfg.language.value))
+        self.languageComboBox.currentIndexChanged.connect(lambda idx: changeLanguage(language_items[idx]))
 
         # 下载格式设置（保持原有代码）
         items = ["mp3", "ogg", "wav"]
@@ -132,18 +167,19 @@ class SettingsCard(GroupHeaderCardWidget):
         self.downloadFormatComboBox.currentIndexChanged.connect(lambda idx: changeDownloadType(items[idx]))
 
         # 主题模式设置
-        theme_items = [THEME_DISPLAY[t] for t in Theme]
+        theme_display = get_theme_display()
+        theme_items = [theme_display[t] for t in Theme]
         self.themeComboBox = ComboBox(self)
         self.themeComboBox.addItems(theme_items)
-        self.themeComboBox.setCurrentText(THEME_DISPLAY[cfg.theme_mode.value])
+        self.themeComboBox.setCurrentText(theme_display[cfg.theme_mode.value])
         self.themeComboBox.currentTextChanged.connect(on_theme_switched)
 
         # 播放模式设置
         play_mode_items = {
-            PlayMode.LIST_LOOP: "列表循环",
-            PlayMode.SEQUENTIAL: "顺序播放",
-            PlayMode.SINGLE_LOOP: "单曲循环",
-            PlayMode.RANDOM: "随机播放",
+            PlayMode.LIST_LOOP: t("settings.play_mode_list_loop"),
+            PlayMode.SEQUENTIAL: t("settings.play_mode_sequential"),
+            PlayMode.SINGLE_LOOP: t("settings.play_mode_single_loop"),
+            PlayMode.RANDOM: t("settings.play_mode_random"),
         }
         self.playModeComboBox = ComboBox(self)
         self.playModeComboBox.addItems(play_mode_items.values())
@@ -163,64 +199,70 @@ class SettingsCard(GroupHeaderCardWidget):
         self.searchPageSpinBox.valueChanged.connect(self.change_search_page)
 
         # Bilibili API 参数设置
-        self.biliApiBtn = PushButton("Bilibili API 设置", self)
+        self.biliApiBtn = PushButton(t("settings.bili_api_settings"), self)
         self.biliApiBtn.clicked.connect(lambda: BiliApiDialog(self).exec())
 
         # 修复音频按钮
-        self.fixMusicBtn = PushButton("修复音频", self)
+        self.fixMusicBtn = PushButton(t("settings.fix_audio"), self)
         self.fixMusicBtn.clicked.connect(on_fix_music)
 
         # 从自定义歌曲文件夹下载
-        self.customSongsBtn = PushButton("下载", self)
+        self.customSongsBtn = PushButton(t("settings.download"), self)
         self.customSongsBtn.clicked.connect(lambda: import_custom_songs_and_download())
 
         # 添加到布局
         self.addGroup(
             FluentIcon.DOWNLOAD,
-            "下载格式",
-            "选择默认音乐格式",
+            t("settings.download_format"),
+            t("settings.download_format_desc"),
             self.downloadFormatComboBox,
         )
         self.addGroup(
+            FluentIcon.GLOBE,
+            t("settings.display_language"),
+            t("settings.display_language_desc"),
+            self.languageComboBox,
+        )
+        self.addGroup(
             FluentIcon.BRUSH,
-            "主题模式",
-            "设置应用主题（自动/浅色/深色）",
+            t("settings.theme_mode"),
+            t("settings.theme_mode_desc"),
             self.themeComboBox,
         )
         self.addGroup(
             FluentIcon.PLAY,
-            "播放模式",
-            "设置默认播放模式",
+            t("settings.play_mode"),
+            t("settings.play_mode_desc"),
             self.playModeComboBox,
         )
         self.addGroup(
             FluentIcon.LABEL,
-            "播放悬浮栏",
-            "开启或关闭播放悬浮栏",
+            t("settings.player_bar"),
+            t("settings.player_bar_desc"),
             self.playerBarSwitch,
         )
         self.addGroup(
             FluentIcon.SEARCH,
-            "搜索页数",
-            "设置每次搜索的页数 (1-10)",
+            t("settings.search_pages"),
+            t("settings.search_pages_desc"),
             self.searchPageSpinBox,
         )
         self.addGroup(
             FluentIcon.SETTING,
-            "Bilibili API 设置",
-            "设置 Bilibili API 的访问参数",
+            t("settings.bili_api_settings"),
+            t("settings.bili_api_settings_desc"),
             self.biliApiBtn,
         )
         self.addGroup(
             FluentIcon.MUSIC,
-            "修复音频文件",
-            "修复下载异常的音频文件",
+            t("settings.fix_audio"),
+            t("settings.fix_audio_desc"),
             self.fixMusicBtn,
         )
         self.addGroup(
             FluentIcon.DOWNLOAD,
-            "导入自定义 BV 列表",
-            "读取 data/custom_songs 下的txt(每行一个 BV)并下载音频[会卡顿一会！]",
+            t("settings.import_custom_bv"),
+            t("settings.import_custom_bv_desc"),
             self.customSongsBtn,
         )
 
@@ -231,8 +273,8 @@ class SettingsCard(GroupHeaderCardWidget):
         cfg.play_mode.value = mode
         cfg.save()
         InfoBar.success(
-            "设置成功",
-            f"已将播放模式设为 {text}",
+            t("common.settings_success"),
+            t("common.play_mode_set", play_mode=text),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
@@ -243,8 +285,8 @@ class SettingsCard(GroupHeaderCardWidget):
         cfg.search_page.value = value
         cfg.save()
         InfoBar.success(
-            "设置成功",
-            f"已将搜索页数设为 {value}",
+            t("common.settings_success"),
+            t("common.search_pages_set", value=value),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
@@ -254,8 +296,8 @@ class SettingsCard(GroupHeaderCardWidget):
         cfg.enable_player_bar.value = checked
         cfg.save()
         InfoBar.success(
-            "设置成功",
-            f"已将播放悬浮栏设为 {'开启' if checked else '关闭'}",
+            t("common.settings_success"),
+            t("common.player_bar_set", display_mode=t("common.enabled") if checked else t("common.disabled")),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,

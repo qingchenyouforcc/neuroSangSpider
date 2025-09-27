@@ -2,6 +2,7 @@ from loguru import logger
 from PyQt6.QtCore import Qt
 from qfluentwidgets import FluentIcon, InfoBar, InfoBarPosition, TransparentToolButton
 
+from i18n import t
 from src.config import cfg
 from src.app_context import app_context
 
@@ -10,8 +11,8 @@ def open_info_tip():
     if not cfg.enable_player_bar.value:
         logger.info("悬浮播放栏已禁用，不显示正在播放提示")
         InfoBar.info(
-            "提示",
-            "你已关闭悬浮播放栏，将不显示播放提示",
+            t("common.info"),
+            t("tipbar.player_bar_disabled"),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
@@ -23,11 +24,11 @@ def open_info_tip():
     else:
         logger.info(f"正在播放{app_context.playing_now}")
         
-    song_name = app_context.playing_now.rsplit('.', 1)[0] if app_context.playing_now else "未知歌曲"
+    song_name = app_context.playing_now.rsplit('.', 1)[0] if app_context.playing_now else t("tipbar.unknown_song")
 
     info = InfoBar.new(
         icon=FluentIcon.MUSIC,
-        title="正在播放",
+        title=t("tipbar.now_playing"),
         content=f"{song_name}",
         orient=Qt.Orientation.Horizontal,
         isClosable=True,
@@ -41,15 +42,15 @@ def open_info_tip():
     try:
         playBtn = TransparentToolButton(FluentIcon.PAUSE, info)
         info.hBoxLayout.addWidget(playBtn, 0, Qt.AlignmentFlag.AlignLeft)
-        playBtn.setToolTip("暂停/播放")
+        playBtn.setToolTip(t("tipbar.play_pause"))
         playBtn.clicked.connect(infoPlayBtnClicked)
         info.closeButton.clicked.connect(infoCloseBtnClicked)
         app_context.info_bar_play_btn = playBtn
 
     except AttributeError:
         InfoBar.error(
-            "错误",
-            "没有正在播放的音乐",
+            t("common.error"),
+            t("tipbar.no_music_playing"),
             duration=1000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -58,8 +59,8 @@ def open_info_tip():
     except Exception as e:
         logger.warning("打开播放提示栏时发生未知错误")
         InfoBar.error(
-            "未知错误",
-            f"请在github上提交issue并上传日志文件:\n{e!r}",
+            t("common.unknown_error"),
+            t("tipbar.github_issue", e=e),
             duration=2000,
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
@@ -75,7 +76,7 @@ def infoCloseBtnClicked():
 
 def infoPlayBtnClicked():
     """悬浮栏播放按钮事件"""
-    assert app_context.player is not None, "播放器未初始化"
+    assert app_context.player is not None, t("tipbar.player_uninitialized")
     app_context.player.togglePlayState()
     update_info_tip()
 

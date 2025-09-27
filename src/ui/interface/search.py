@@ -18,6 +18,7 @@ from qfluentwidgets import (
     TitleLabel,
 )
 
+from i18n import t
 from src.app_context import app_context
 from src.bili_api import create_video_list_file, run_music_download, search_on_bilibili, search_song_list
 from src.config import ASSETS_DIR, MUSIC_DIR, cfg
@@ -87,14 +88,14 @@ class SearchInterface(QWidget):
         btnGroup = QWidget()
         btnLayout = QHBoxLayout(btnGroup)
 
-        self.GetVideoBtn = PushButton("获取歌曲列表", self)
+        self.GetVideoBtn = PushButton(t("search.get_video_list"), self)
         self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
 
-        self.DownloadBtn = PushButton("下载歌曲", self)
+        self.DownloadBtn = PushButton(t("search.download_song"), self)
         self.DownloadBtn.clicked.connect(self.Download_btn)
 
         self.search_input = SearchLineEdit(self)
-        self.search_input.setPlaceholderText("输入关键词搜索本地歌曲")
+        self.search_input.setPlaceholderText(t("search.input_placeholder"))
         self.search_input.setClearButtonEnabled(True)
         self.search_input.searchButton.clicked.connect(self.search_btn)
         self.search_input.returnPressed.connect(self.search_btn)
@@ -103,7 +104,7 @@ class SearchInterface(QWidget):
         btnLayout.addWidget(self.DownloadBtn)
         btnGroup.setLayout(btnLayout)
 
-        self._layout.addWidget(TitleLabel("搜索歌回", self))
+        self._layout.addWidget(TitleLabel(t("search.title"), self))
         self._layout.addWidget(self.tableView)
         self._layout.addWidget(btnGroup)
         self._layout.addWidget(self.search_input, Qt.AlignmentFlag.AlignBottom)
@@ -120,8 +121,8 @@ class SearchInterface(QWidget):
 
         if success:
             InfoBar.success(
-                title="完成",
-                content="歌曲下载完成",
+                title=t("common.success"),
+                content=t("search.download_complete"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -130,8 +131,8 @@ class SearchInterface(QWidget):
             )
         else:
             InfoBar.error(
-                title="错误",
-                content="下载失败，请检查网络与日志",
+                title=t("common.error"),
+                content=t("search.download_failed"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -153,11 +154,11 @@ class SearchInterface(QWidget):
 
             # 显示进度条
             if self.stateTooltip:
-                self.stateTooltip.setContent("获取列表完成!!!")
+                self.stateTooltip.setContent(t("search.list_complete"))
                 self.stateTooltip.setState(True)
                 self.stateTooltip = None
             else:
-                self.stateTooltip = StateToolTip("正在获取歌曲列表...", "请耐心等待<3", self)
+                self.stateTooltip = StateToolTip(t("search.getting_list"), t("search.getting_list_wait"), self)
                 self.stateTooltip.move(self.stateTooltip.getSuitablePos())
                 self.stateTooltip.show()
 
@@ -191,7 +192,7 @@ class SearchInterface(QWidget):
 
                 # 本地查找成功，追加使用bilibili搜索查找
                 # TODO: 可以加入一个设置项配置是否联网搜索
-                logger.info("在本地列表找到该歌曲，继续尝试bilibili搜索")
+                logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
                 try:
                     sync(search_on_bilibili(search_content))
                     if more_search_list := search_song_list(search_content):
@@ -204,8 +205,8 @@ class SearchInterface(QWidget):
 
         except Exception as e:
             InfoBar.error(
-                "未知错误",
-                f"请在github上提交issue并上传日志文件:\n{e!r}",
+                t("common.unknown_error"),
+                t("search.github_issue", e=str(e)),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
@@ -216,10 +217,10 @@ class SearchInterface(QWidget):
 
         else:
             if main_search_list is None:
-                logger.warning("搜索结果为空")
+                logger.warning(t("search.search_result_empty"))
                 InfoBar.warning(
-                    title="警告",
-                    content="没有找到任何结果",
+                    title=t("common.warning"),
+                    content=t("search.no_results"),
                     orient=Qt.Orientation.Horizontal,
                     isClosable=True,
                     position=InfoBarPosition.BOTTOM_RIGHT,
@@ -248,7 +249,7 @@ class SearchInterface(QWidget):
 
         logger.success("搜索完成！")
         if self.search_tip is not None:
-            self.search_tip.setContent("搜索完成")
+            self.search_tip.setContent(t("search.search_complete"))
             self.search_tip.setState(True)
             self.search_tip = None
 
@@ -259,13 +260,16 @@ class SearchInterface(QWidget):
 
         self.tableView.clear()
         self.tableView.setColumnCount(4)
-        self.tableView.setHorizontalHeaderLabels(["标题", "UP主", "日期", "BV号"])
+        self.tableView.setHorizontalHeaderLabels([t("common.header_title"),
+                                                  t("common.video_blogger"),
+                                                  t("common.date"),
+                                                  t("common.bvid")])
         self.search_result.clear()
 
         # 显示加载动画
         self.loading = showLoading(self.search_input)
 
-        tip = StateToolTip("正在搜索歌曲...", "请耐心等待<3", self)
+        tip = StateToolTip(t("search.searching_song"), t("search.please_wait"), self)
         tip.move(tip.getSuitablePos())
         tip.show()
         self.search_tip = tip
@@ -289,7 +293,7 @@ class SearchInterface(QWidget):
 
         logger.success("获取歌曲列表完成！")
         if self.stateTooltip is not None:
-            self.stateTooltip.setContent("获取列表完成!!!")
+            self.stateTooltip.setContent(t("search.list_complete"))
             self.stateTooltip.setState(True)
             self.stateTooltip = None
 
@@ -310,8 +314,8 @@ class SearchInterface(QWidget):
         index = self.tableView.currentRow()
         if index < 0:
             InfoBar.warning(
-                title="提示",
-                content="请先在表格中选择一首歌曲",
+                title=t("common.info"),
+                content=t("search.select_song_first"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
@@ -323,8 +327,8 @@ class SearchInterface(QWidget):
         # 已有下载任务在运行时阻止并发启动
         if self._download_thread is not None and self._download_thread.isRunning():
             InfoBar.info(
-                title="提示",
-                content="已有下载任务正在进行，请稍候",
+                title=t("common.info"),
+                content=t("search.download_in_progress"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
@@ -343,17 +347,17 @@ class SearchInterface(QWidget):
 
         # 如果文件存在，先在主线程弹出提示窗口
         if output_file.exists():
-            m = MessageBox("提示", "文件已存在，是否覆盖？", self.main_window)
+            m = MessageBox(t("common.info"), t("search.file_exists_overwrite"), self.main_window)
             if not m.exec():
                 logger.info("用户取消下载")
                 return
 
         InfoBar.info(
-            title="提示",
-            content="开始下载歌曲，请耐心等待",
+            title=t("common.info"),
+            content=t("search.start_download_wait"),
             orient=Qt.Orientation.Horizontal,
             isClosable=True,
-            position=InfoBarPosition.TOP,
+            position=InfoBarPosition.TOP_RIGHT,
             duration=1500,
             parent=self,
         )

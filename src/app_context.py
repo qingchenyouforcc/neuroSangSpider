@@ -1,11 +1,12 @@
 from pathlib import Path
 from qfluentwidgets import QConfig, InfoBar, ToolButton
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from src.config import DATA_DIR
 if TYPE_CHECKING:
     from src.ui.main_window import MainWindow
     from src.ui.widgets.media_player_bar import CustomMediaPlayBar
+    from src.i18n.manager import I18nManager
 
 
 class AppContext(QConfig):
@@ -22,6 +23,7 @@ class AppContext(QConfig):
         self.player: 'CustomMediaPlayBar | None' = None
         self.info_bar: InfoBar | None = None
         self.info_bar_play_btn: ToolButton | None = None
+        self.i18n_manager: Optional['I18nManager'] = None
         
 CONFIG_PATH = DATA_DIR / "config.json"
 app_context = AppContext(CONFIG_PATH)

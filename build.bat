@@ -1,4 +1,5 @@
 @echo off
+chcp 65001
 echo NeuroSongSpider 自动打包脚本
 echo ==============================
 
