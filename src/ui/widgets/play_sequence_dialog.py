@@ -19,7 +19,7 @@ from qfluentwidgets import (
     isDarkTheme,
 )
 
-from i18n import t
+from src.i18n import t
 from src.config import cfg
 from src.app_context import app_context
 from src.core.player import save_play_sequence, load_play_sequence, delete_play_sequence, get_play_sequence_names

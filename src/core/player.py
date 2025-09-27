@@ -8,7 +8,7 @@ from qfluentwidgets import InfoBar, InfoBarPosition
 
 from src.app_context import app_context
 from src.config import MUSIC_DIR, PlayMode, cfg
-from i18n import t
+from src.i18n import t
 
 from src.ui.widgets.tipbar import open_info_tip
 

@@ -18,7 +18,7 @@ from qfluentwidgets import (
     TitleLabel,
 )
 
-from i18n import t
+from src.i18n import t
 from src.app_context import app_context
 from src.bili_api import create_video_list_file, run_music_download, search_on_bilibili, search_song_list
 from src.config import ASSETS_DIR, MUSIC_DIR, cfg

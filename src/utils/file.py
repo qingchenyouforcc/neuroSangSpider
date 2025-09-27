@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import InfoBar, InfoBarPosition
 from tqdm import tqdm
 
-from i18n import t
+from src.i18n import t
 from src.config import FFMPEG_PATH, MUSIC_DIR, subprocess_options
 from src.app_context import app_context
 from src.bili_api.converters import url2bv

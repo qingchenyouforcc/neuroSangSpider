@@ -17,7 +17,7 @@ from qfluentwidgets import (
     SwitchButton,
 )
 
-from i18n import t
+from src.i18n import t
 from src.app_context import app_context
 from src.bili_api import get_up_name, get_up_names
 from src.config import cfg

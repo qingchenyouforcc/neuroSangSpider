@@ -2,7 +2,7 @@ from loguru import logger
 from PyQt6.QtCore import Qt
 from qfluentwidgets import FluentIcon, InfoBar, InfoBarPosition, TransparentToolButton
 
-from i18n import t
+from src.i18n import t
 from src.config import cfg
 from src.app_context import app_context
 

@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QV
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
-from i18n import t
+from src.i18n import t
 from src.app_context import app_context
 from src.config import MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info

@@ -16,7 +16,7 @@ from qfluentwidgets import (
     SwitchButton,
 )
 
-from i18n import t
+from src.i18n import t
 from src.app_context import app_context
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music

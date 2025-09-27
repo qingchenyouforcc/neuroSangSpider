@@ -2,7 +2,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QVBoxLayout, QWidget
 from qfluentwidgets import ScrollArea, TitleLabel
 
-from i18n import t
+from src.i18n import t
 from src.config import cfg
 
 from .card import SettingsCard

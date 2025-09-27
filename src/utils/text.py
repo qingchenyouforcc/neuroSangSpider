@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 from loguru import logger
 
-from i18n import t
+from src.i18n import t
 
 
 def contain_text(words_set: Iterable[str], text: str) -> bool:

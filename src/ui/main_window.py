@@ -9,7 +9,7 @@ from qfluentwidgets import SplashScreen
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition, SystemThemeListener
 
-from i18n import t
+from src.i18n import t
 from src.config import ASSETS_DIR, cfg, Theme
 from src.app_context import app_context
 
