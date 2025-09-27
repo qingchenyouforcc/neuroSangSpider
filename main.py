@@ -6,7 +6,7 @@ from loguru import logger
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QDialog
 
-from src.config import ASSETS_DIR
+from src.config import ASSETS_DIR, I18N_DIR
 from src.i18n.manager import I18nManager
 from src.app_context import app_context
 from src.ui import MainWindow
@@ -50,7 +50,21 @@ if __name__ == "__main__":
 
     setup_logger()
 
-    language_file_dir = ASSETS_DIR / "i18n"
+    # 语言资源目录迁移到 data/i18n，若为空则从 assets 引导复制
+    language_file_dir = I18N_DIR
+    try:
+        if not any(language_file_dir.glob("*.properties")):
+            language_file_dir.mkdir(parents=True, exist_ok=True)
+            src_dir = ASSETS_DIR / "i18n"
+            if src_dir.exists():
+                for fp in src_dir.glob("*.properties"):
+                    # 避免覆盖已存在文件
+                    target = language_file_dir / fp.name
+                    if not target.exists():
+                        target.write_bytes(fp.read_bytes())
+    except Exception as e:
+        logger.error(f"初始化语言文件失败: {e}")
+
     app_context.i18n_manager = I18nManager(language_file_dir)
     app = QApplication(sys.argv)
 
