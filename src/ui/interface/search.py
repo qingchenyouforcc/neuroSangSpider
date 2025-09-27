@@ -121,7 +121,7 @@ class SearchInterface(QWidget):
 
         if success:
             InfoBar.success(
-                title=t("search.complete"),
+                title=t("common.success"),
                 content=t("search.download_complete"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
@@ -131,7 +131,7 @@ class SearchInterface(QWidget):
             )
         else:
             InfoBar.error(
-                title=t("search.error"),
+                title=t("common.error"),
                 content=t("search.download_failed"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
@@ -144,7 +144,7 @@ class SearchInterface(QWidget):
     def getVideo_btn(self):
         """获取歌曲列表按钮功能实现"""
         try:
-            logger.info(t("search.getting_list_log"))
+            logger.info("获取歌曲列表中...")
             self.GetVideoBtn.setEnabled(False)
 
             # 显示加载动画
@@ -167,7 +167,7 @@ class SearchInterface(QWidget):
             self._thread.task_finished.connect(self.on_c_task_finished)
             self._thread.start()
         except Exception:
-            logger.exception(t("search.get_list_failed"))
+            logger.exception("获取歌曲列表失败")
 
     @staticmethod
     def do_search(search_content: str):
@@ -176,15 +176,15 @@ class SearchInterface(QWidget):
             main_search_list = search_song_list(search_content)
             if main_search_list is None:
                 # 本地查找失败时，尝试使用bilibili搜索查找
-                logger.info(t("search.not_found_local_try_bilibili"))
+                logger.info("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
                 try:
                     sync(search_on_bilibili(search_content))
                     main_search_list = search_song_list(search_content)
                 except Exception:
-                    logger.exception(t("search.bilibili_search_failed"))
+                    logger.exception("bilibili搜索失败")
                 else:
                     if main_search_list is None:
-                        logger.warning(t("search.bilibili_search_empty"))
+                        logger.warning("bilibili搜索结果为空")
 
             else:
                 logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
@@ -192,28 +192,28 @@ class SearchInterface(QWidget):
 
                 # 本地查找成功，追加使用bilibili搜索查找
                 # TODO: 可以加入一个设置项配置是否联网搜索
-                logger.info(t("search.found_local_continue_bilibili"))
+                logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
                 try:
                     sync(search_on_bilibili(search_content))
                     if more_search_list := search_song_list(search_content):
                         delta = len(more_search_list.get_data()) - len(main_search_list.get_data())
-                        logger.info(t("search.bilibili_got_data", count=delta))
+                        logger.info(f"bilibili获取 {delta} 个有效视频数据:")
                         main_search_list.append_list(more_search_list)
 
                 except Exception:
-                    logger.exception(t("search.bilibili_search_failed"))
+                    logger.exception("bilibili搜索失败")
 
         except Exception as e:
             InfoBar.error(
                 t("common.unknown_error"),
-                t("search.github_issue", error=str(e)),
+                t("search.github_issue", e=str(e)),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP_RIGHT,
                 parent=app_context.main_window,
                 duration=2000,
             )
-            logger.exception(t("search.search_error_log"))
+            logger.exception("执行搜索时发生未知错误")
 
         else:
             if main_search_list is None:
@@ -247,7 +247,7 @@ class SearchInterface(QWidget):
 
         self.main_window.setEnabled(True)
 
-        logger.success(t("search.search_complete_log"))
+        logger.success("搜索完成！")
         if self.search_tip is not None:
             self.search_tip.setContent(t("search.search_complete"))
             self.search_tip.setState(True)
@@ -260,7 +260,10 @@ class SearchInterface(QWidget):
 
         self.tableView.clear()
         self.tableView.setColumnCount(4)
-        self.tableView.setHorizontalHeaderLabels(["标题", "UP主", "日期", "BV号"])
+        self.tableView.setHorizontalHeaderLabels([t("common.header_title"),
+                                                  t("common.video_blogger"),
+                                                  t("common.date"),
+                                                  t("common.bvid")])
         self.search_result.clear()
 
         # 显示加载动画
@@ -273,7 +276,7 @@ class SearchInterface(QWidget):
         self.searching = True
         self.search_input.searchButton.setEnabled(False)
 
-        logger.info(t("search.search_start_log"))
+        logger.info("---搜索开始---")
         search_content = self.search_input.text().lower()
         self._search_ = self.do_search(search_content)
         self.on_search_finished(self._search_)
@@ -288,7 +291,7 @@ class SearchInterface(QWidget):
         self.GetVideoBtn.setEnabled(True)
         self.setWindowModality(Qt.WindowModality.NonModal)  # 恢复正常模式
 
-        logger.success(t("search.get_list_complete_log"))
+        logger.success("获取歌曲列表完成！")
         if self.stateTooltip is not None:
             self.stateTooltip.setContent(t("search.list_complete"))
             self.stateTooltip.setState(True)
@@ -346,7 +349,7 @@ class SearchInterface(QWidget):
         if output_file.exists():
             m = MessageBox(t("common.info"), t("search.file_exists_overwrite"), self.main_window)
             if not m.exec():
-                logger.info(t("search.user_cancel_download"))
+                logger.info("用户取消下载")
                 return
 
         InfoBar.info(
