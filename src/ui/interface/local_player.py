@@ -2,10 +2,7 @@ from pathlib import Path
 from loguru import logger
 from typing import TYPE_CHECKING, Any
 from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtWidgets import (
-    QAbstractItemView, QHBoxLayout, QTableWidgetItem, 
-    QVBoxLayout, QWidget
-)
+from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
@@ -26,26 +23,26 @@ if TYPE_CHECKING:
 
 class NumericTableWidgetItem(QTableWidgetItem):
     """支持数值排序的表格项"""
-    
+
     def __init__(self, value):
         # 存储值并显示为字符串
         super().__init__(str(value))
         self._value = int(value) if isinstance(value, (int, float)) else 0
-    
+
     def data(self, role):
         # 对于排序角色，返回数值类型
         if role == Qt.ItemDataRole.EditRole or role == Qt.ItemDataRole.UserRole:
             return self._value
-        
+
         # 对于显示角色，使用父类的实现（即显示为字符串）
         return super().data(role)
-    
+
     def __lt__(self, other):
         # 确保排序时比较数值大小
         if isinstance(other, NumericTableWidgetItem):
             return self._value < other._value
         return super().__lt__(other)
-        
+
     def setText(self, atext):
         """设置显示文本，但不影响内部排序值"""
         super().setText(atext)
@@ -59,7 +56,7 @@ class LocalPlayerInterface(QWidget):
         self.stateTooltip = None
         self.main_window = main_window
         self._first_load = True  # 标记首次加载，用于控制无效文件提示
-        
+
         self.setAcceptDrops(True)
         self.setObjectName("locPlayerInterface")
         self.setStyleSheet("LocPlayerInterface{background: transparent}")
@@ -71,7 +68,7 @@ class LocalPlayerInterface(QWidget):
         self._layout.setSpacing(15)
 
         self.tableView.setBorderVisible(True)
-        self.tableView.setSortingEnabled(True) 
+        self.tableView.setSortingEnabled(True)
         self.tableView.setBorderRadius(8)
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -113,7 +110,7 @@ class LocalPlayerInterface(QWidget):
 
         # 处理双击事件：无论点击哪一列，都会传递行和列索引
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
-        
+
         self.refreshButton.clicked.connect(self.load_local_songs)
         self.addQueueButton.clicked.connect(self.add_to_queue)
         self.openPlayer.clicked.connect(open_player)
@@ -127,12 +124,12 @@ class LocalPlayerInterface(QWidget):
         try:
             # 清理无效文件
             self._clean_invalid_files()
-            
+
             # 记录当前排序状态
             header = self.tableView.horizontalHeader()
             sort_column = -1
             sort_order = Qt.SortOrder.AscendingOrder
-            
+
             try:
                 # 尝试获取当前排序状态
                 if header:
@@ -140,55 +137,61 @@ class LocalPlayerInterface(QWidget):
                     sort_order = header.sortIndicatorOrder()
             except Exception:
                 logger.debug("无法获取当前排序状态")
-            
+
             # 临时关闭排序功能，防止添加数据时自动排序
             self.tableView.setSortingEnabled(False)
-            
+
             self.tableView.clear()
             songs = read_all_audio_info(MUSIC_DIR)
             self.tableView.setRowCount(len(songs))
             self.tableView.setColumnCount(3)
-            self.tableView.setHorizontalHeaderLabels([t("local_player.header_filename"), t("local_player.header_duration"), t("local_player.header_play_count")])
+            self.tableView.setHorizontalHeaderLabels(
+                [
+                    t("local_player.header_filename"),
+                    t("local_player.header_duration"),
+                    t("local_player.header_play_count"),
+                ]
+            )
 
             for i, (filename, duration) in enumerate(songs):
                 file_item = QTableWidgetItem(filename)
                 # 存储原始文件名作为隐藏数据，用于后续查找
                 file_item.setData(Qt.ItemDataRole.UserRole, filename)
-                
+
                 self.tableView.setItem(i, 0, file_item)
-                
+
                 # 时长也应该按照数字排序
                 duration_item = NumericTableWidgetItem(duration)
-                duration_mod_second = duration%60 * 10 if 0 <= duration%60 < 10 else duration%60
-                duration_item.setText(f"{int(duration/60):02}:{duration_mod_second:.0f}") 
+                duration_mod_second = duration % 60 * 10 if 0 <= duration % 60 < 10 else duration % 60
+                duration_item.setText(f"{int(duration / 60):02}:{duration_mod_second:.0f}")
                 self.tableView.setItem(i, 1, duration_item)
-            
+
                 # 从配置中获取播放次数
                 play_count = cfg.play_count.value.get(str(filename), 0)
                 logger.debug(f"歌曲 {filename} 的播放次数: {play_count}")
-                
+
                 # 创建一个特殊的表格项，确保按照数字大小排序
                 count_item = NumericTableWidgetItem(play_count)
                 self.tableView.setItem(i, 2, count_item)
-            
+
             self.tableView.resizeColumnsToContents()
-            
+
             # 重新启用排序并应用之前的排序设置
             self.tableView.setSortingEnabled(True)
-            
+
             try:
                 # 尝试恢复排序状态
                 if sort_column >= 0 and header:
                     header.setSortIndicator(sort_column, sort_order)
             except Exception:
                 logger.debug("无法恢复之前的排序状态")
-                
+
         except Exception:
             logger.exception("加载本地歌曲失败")
 
     def play_selected_song(self, row, column=None):
         """双击播放指定行的歌曲
-        
+
         Args:
             row: 行号
             column: 列号，无论点击哪一列，都会传递给第0列（文件名列）获取歌曲信息
@@ -222,7 +225,7 @@ class LocalPlayerInterface(QWidget):
             if file_path not in app_context.play_queue:
                 app_context.play_queue.append(file_path)
                 logger.info(f"已将 {item.text()} 添加到播放队列")
-                
+
             # 更新播放索引
             app_context.play_queue_index = app_context.play_queue.index(file_path)
             logger.info(f"当前播放歌曲队列位置：{app_context.play_queue_index}")
@@ -231,7 +234,7 @@ class LocalPlayerInterface(QWidget):
 
     def add_to_queue(self, row=None):
         """添加到播放列表
-        
+
         Args:
             row: 指定行号，如果为None则使用当前选中行
         """
@@ -244,15 +247,15 @@ class LocalPlayerInterface(QWidget):
                 if current_item is None:
                     logger.warning("没有选中的歌曲")
                     return
-                
+
                 # 获取当前选中项所在行的第0列项（文件名列）
                 current_row = current_item.row()
                 item = self.tableView.item(current_row, 0)
-            
+
             if item is None:
                 logger.warning("无法获取歌曲信息")
                 return
-            
+
             # 获取文件路径并添加到播放队列
             if file_path := getMusicLocal(item):
                 if file_path in app_context.play_queue:
@@ -289,25 +292,25 @@ class LocalPlayerInterface(QWidget):
             if current_item is None:
                 logger.warning("没有选中的歌曲")
                 return
-                
+
             # 获取当前选中项所在行的第0列项（文件名列）
             current_row = current_item.row()
             item = self.tableView.item(current_row, 0)
-            
+
             if item is None:
                 logger.warning("无法获取歌曲信息")
                 return
-                
+
             # 获取文件路径并删除
             if (file_path := getMusicLocal(item)) and (fp := Path(file_path)).exists():
                 # 删除文件
                 fp.unlink()
-                
+
                 # 如果文件在播放队列中，从队列中移除
                 if file_path in app_context.play_queue:
                     app_context.play_queue.remove(file_path)
                     logger.info(f"已从播放队列中移除: {item.text()}")
-                
+
                 # 显示成功消息
                 InfoBar.success(
                     t("common.success"),
@@ -317,7 +320,7 @@ class LocalPlayerInterface(QWidget):
                     duration=1000,
                     parent=self.parent(),
                 )
-                
+
                 # 重新加载歌曲列表
                 self.load_local_songs()
             else:
@@ -349,7 +352,7 @@ class LocalPlayerInterface(QWidget):
             added_count = 0
             already_exists_count = 0
             invalid_count = 0
-            
+
             # 显示进度开始提示
             InfoBar.info(
                 "添加中",
@@ -359,7 +362,7 @@ class LocalPlayerInterface(QWidget):
                 duration=1500,
                 parent=self.parent(),
             )
-            
+
             for i in range(total_files):
                 # 在每次循环中都获取当前行的第0列（文件名列）项
                 item = self.tableView.item(i, 0)
@@ -396,7 +399,7 @@ class LocalPlayerInterface(QWidget):
                 message += t("local_player.already_exists_count", already_exists_count=already_exists_count)
             if invalid_count > 0:
                 message += t("local_player.invalid_count", invalid_count=invalid_count)
-                
+
             InfoBar.success(
                 t("common.add_song_success"),
                 message,
@@ -405,7 +408,7 @@ class LocalPlayerInterface(QWidget):
                 duration=2000,
                 parent=self.parent(),
             )
-            
+
             logger.info(f"添加完成: 新增 {added_count}, 已存在 {already_exists_count}, 无效 {invalid_count}")
             logger.debug(f"当前播放列表: {app_context.play_queue}")
 
@@ -429,13 +432,13 @@ class LocalPlayerInterface(QWidget):
                 # 检查是否为音频文件
                 for url in mime_data.urls():
                     file_path = url.toLocalFile()
-                    if Path(file_path).suffix.lower() in ['.mp3', '.wav', '.ogg', '.flac', '.m4a']:
+                    if Path(file_path).suffix.lower() in [".mp3", ".wav", ".ogg", ".flac", ".m4a"]:
                         a0.acceptProposedAction()
                         return
             a0.ignore()
         except Exception as e:
             logger.exception(f"拖拽进入事件处理失败: {e}")
-        
+
     def dragMoveEvent(self, a0: Any):
         """当用户在窗口内移动拖放物时触发"""
         try:
@@ -445,7 +448,7 @@ class LocalPlayerInterface(QWidget):
                 a0.ignore()
         except Exception as e:
             logger.exception(f"拖拽移动事件处理失败: {e}")
-            
+
     def dropEvent(self, a0: Any):
         """当用户释放拖放物时触发"""
         try:
@@ -454,7 +457,7 @@ class LocalPlayerInterface(QWidget):
                 imported_count = 0
                 for url in mime_data.urls():
                     file_path = Path(url.toLocalFile())
-                    if file_path.is_file() and file_path.suffix.lower() in ['.mp3', '.wav', '.ogg', '.flac', '.m4a']:
+                    if file_path.is_file() and file_path.suffix.lower() in [".mp3", ".wav", ".ogg", ".flac", ".m4a"]:
                         try:
                             self._import_audio_file(file_path)
                             imported_count += 1
@@ -464,49 +467,49 @@ class LocalPlayerInterface(QWidget):
                         # 处理文件夹导入
                         folder_import_count = self._import_audio_folder(file_path)
                         imported_count += folder_import_count
-                
+
                 if imported_count > 0:
                     self.load_local_songs()  # 刷新歌曲列表
                     self._show_import_success_message(imported_count)
-                
+
                 a0.acceptProposedAction()
             else:
                 a0.ignore()
         except Exception as e:
             logger.exception(f"拖拽释放事件处理失败: {e}")
-            
+
     def _import_audio_file(self, source_path: Path) -> Path:
         """导入音频文件到音乐目录"""
         target_path = MUSIC_DIR / source_path.name
-        
+
         # 如果文件已存在，添加时间戳
         if target_path.exists():
             timestamp = int(time.time())
             new_name = f"{source_path.stem}_{timestamp}{source_path.suffix}"
             target_path = MUSIC_DIR / new_name
-        
+
         # 复制文件
         shutil.copy2(source_path, target_path)
-        
+
         logger.info(f"已导入音频文件: {target_path}")
         return target_path
-        
+
     def _import_audio_folder(self, folder_path: Path) -> int:
         """导入文件夹中的所有音频文件，返回导入的文件数量"""
         if not folder_path.is_dir():
             return 0
-            
+
         imported_count = 0
         for file_path in folder_path.glob("*"):
-            if file_path.is_file() and file_path.suffix.lower() in ['.mp3', '.wav', '.ogg', '.flac', '.m4a']:
+            if file_path.is_file() and file_path.suffix.lower() in [".mp3", ".wav", ".ogg", ".flac", ".m4a"]:
                 try:
                     self._import_audio_file(file_path)
                     imported_count += 1
                 except Exception as e:
                     logger.error(f"导入文件 {file_path} 失败: {e}")
-        
+
         return imported_count
-        
+
     def _show_import_success_message(self, count):
         """显示导入成功的消息"""
         InfoBar.success(
@@ -520,7 +523,7 @@ class LocalPlayerInterface(QWidget):
 
     def _mark_invalid_file(self, filename: str):
         """标记无效文件并从配置中清除其相关信息
-        
+
         Args:
             filename: 文件名
         """
@@ -530,7 +533,7 @@ class LocalPlayerInterface(QWidget):
                 logger.info(f"从播放计数中移除无效文件: {filename}")
                 del cfg.play_count.value[filename]
                 cfg.save()
-                
+
             # 从播放序列中移除
             play_sequences = cfg.play_sequences.value
             for seq_name, files in list(play_sequences.items()):
@@ -540,11 +543,11 @@ class LocalPlayerInterface(QWidget):
                     # 如果序列变为空，考虑是否需要删除该序列
                     if not play_sequences[seq_name]:
                         logger.warning(f"播放序列 {seq_name} 已变为空")
-            
+
             # 更新播放序列配置
             cfg.play_sequences.value = play_sequences
             cfg.save()
-            
+
             # 从恢复的播放队列中移除
             last_play_data = cfg.last_play_queue.value
             if isinstance(last_play_data, dict) and "queue" in last_play_data:
@@ -556,30 +559,30 @@ class LocalPlayerInterface(QWidget):
                     cfg.save()
         except Exception as e:
             logger.error(f"标记无效文件时出错: {e}")
-            
+
     def _clean_invalid_files(self):
         """清理界面上的无效文件并更新相关配置"""
         try:
             invalid_files = []
-            
+
             # 扫描表格中的所有文件
             for i in range(self.tableView.rowCount()):
                 item = self.tableView.item(i, 0)
                 if item is None:
                     continue
-                
+
                 file_path = getMusicLocal(item)
                 if file_path is None or not file_path.exists():
-                    invalid_files.append(item.text())                # 如果有无效文件，进行清理
+                    invalid_files.append(item.text())  # 如果有无效文件，进行清理
             if invalid_files:
                 # 打印无效文件列表
                 logger.warning(f"发现 {len(invalid_files)} 个无效文件")
                 for f in invalid_files:
                     logger.warning(f"  - {f}")
                     self._mark_invalid_file(f)
-                
+
                 # 仅当首次加载时显示清理提示，避免频繁打扰用户
-                if hasattr(self, '_first_load') and self._first_load:
+                if hasattr(self, "_first_load") and self._first_load:
                     InfoBar.info(
                         t("local_player.remove_invalid_files_title"),
                         t("local_player.remove_invalid_files_desc", count=len(invalid_files)),
@@ -588,9 +591,9 @@ class LocalPlayerInterface(QWidget):
                         duration=2000,
                         parent=self,
                     )
-            
+
             # 标记非首次加载
-            if not hasattr(self, '_first_load'):
+            if not hasattr(self, "_first_load"):
                 self._first_load = False
             else:
                 self._first_load = False

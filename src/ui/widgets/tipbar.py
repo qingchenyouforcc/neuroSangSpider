@@ -6,6 +6,7 @@ from i18n import t
 from src.config import cfg
 from src.app_context import app_context
 
+
 def open_info_tip():
     """打开正在播放提示"""
     if not cfg.enable_player_bar.value:
@@ -23,8 +24,8 @@ def open_info_tip():
         app_context.info_bar.close()
     else:
         logger.info(f"正在播放{app_context.playing_now}")
-        
-    song_name = app_context.playing_now.rsplit('.', 1)[0] if app_context.playing_now else t("tipbar.unknown_song")
+
+    song_name = app_context.playing_now.rsplit(".", 1)[0] if app_context.playing_now else t("tipbar.unknown_song")
 
     info = InfoBar.new(
         icon=FluentIcon.MUSIC,

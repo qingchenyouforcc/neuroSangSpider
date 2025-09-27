@@ -104,9 +104,9 @@ class CustomMediaPlayBar(MediaPlayBarBase):
                 cfg.play_count.value[song_name] += 1
             else:
                 cfg.play_count.value[song_name] = 1
-                
+
             cfg.save()
-            
+
             match cfg.play_mode.value:
                 case PlayMode.LIST_LOOP:
                     logger.info("歌曲播放完毕，自动播放下一首。")

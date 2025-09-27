@@ -56,8 +56,9 @@ _DEFAULT_FILTER_WORDS = [
 
 _SUPPORTED_LANGUAGES = [
     "en_US",
-    "zh_CN"
+    "zh_CN",
 ]
+
 
 class Config(QConfig):
     """应用程序配置类"""
@@ -85,7 +86,7 @@ class Config(QConfig):
         Theme.AUTO,
         OptionsValidator([Theme.AUTO, Theme.LIGHT, Theme.DARK]),
     )
-    
+
     play_count = ConfigItem("Player", "PlayCount", {})
     play_sequences = ConfigItem("Player", "PlaySequences", {})
     last_play_queue = ConfigItem("Player", "LastPlayQueue", {"queue": [], "index": 0})
@@ -94,7 +95,7 @@ class Config(QConfig):
     bili_sessdata = ConfigItem("Bilibili", "SESSDATA", "")
     bili_jct = ConfigItem("Bilibili", "BILI_JCT", "")
     bili_buvid3 = ConfigItem("Bilibili", "BUVID3", "")
-    
+
     def __init__(self, path: Path):
         # 指定配置文件路径
         super().__init__()
@@ -183,17 +184,17 @@ if CONFIG_PATH.exists():
     #     case Theme.AUTO:
     #         cfg.set_theme(Theme.AUTO)
     #         logger.info("应用主题: AUTO")
-    #     case Theme.LIGHT: 
+    #     case Theme.LIGHT:
     #         cfg.set_theme(Theme.LIGHT)
     #         logger.info("应用主题: LIGHT")
-    #     case Theme.DARK: 
-    #         cfg.set_theme(Theme.DARK) 
+    #     case Theme.DARK:
+    #         cfg.set_theme(Theme.DARK)
     #         logger.info("应用主题: DARK")
-    
+
 else:
     logger.info("未找到配置文件，正在应用默认主题: AUTO")
-    cfg.set_theme(Theme.AUTO) 
-    setTheme(QtTheme.AUTO)     
+    cfg.set_theme(Theme.AUTO)
+    setTheme(QtTheme.AUTO)
 
 
 VERSION = "1.2.0"

@@ -1,4 +1,6 @@
 ALPHABET = "fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF"
+
+
 def av2bv(x: int) -> str:
     """av to bv"""
     x = (x ^ 0x0A93_B324) + 0x2_0840_07C0

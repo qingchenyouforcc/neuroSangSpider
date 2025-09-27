@@ -35,7 +35,6 @@ def setup_logger() -> None:
     )
 
 
-
 if __name__ == "__main__":
     # --- 启用高 DPI 支持 ---
     if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling"):
@@ -57,7 +56,7 @@ if __name__ == "__main__":
 
     # 检查是否为首次运行
     from src.ui import WelcomeDialog
-    
+
     if WelcomeDialog.is_first_run():
         welcome_dialog = WelcomeDialog()
         if welcome_dialog.exec() != QDialog.DialogCode.Accepted:
@@ -68,15 +67,15 @@ if __name__ == "__main__":
     logger.info("主窗口创建完成")
 
     # 检查是否是语言切换重启
-    is_language_restart = os.environ.get('LANGUAGE_RESTART', '0') == '1'
+    is_language_restart = os.environ.get("LANGUAGE_RESTART", "0") == "1"
     window.is_language_restart = is_language_restart
     if is_language_restart:
         # 清除环境变量
-        os.environ['LANGUAGE_RESTART'] = '0'
+        os.environ["LANGUAGE_RESTART"] = "0"
         window.is_language_restart = False
 
     window.show()
     logger.info("主窗口显示")
-    
+
     logger.info("开始应用程序主循环")
     sys.exit(app.exec())

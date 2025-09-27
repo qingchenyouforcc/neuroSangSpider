@@ -49,7 +49,7 @@ class PlayQueueInterface(QWidget):
 
         self.downSongButton = TransparentToolButton(FIF.DOWN, self)
         self.downSongButton.setToolTip(t("play_queue.down_tooltip"))
-        
+
         # 添加播放序列管理按钮
         self.sequenceButton = TransparentToolButton(FIF.SAVE, self)
         self.sequenceButton.setToolTip(t("play_queue.sequence_tooltip"))
@@ -149,16 +149,16 @@ class PlayQueueInterface(QWidget):
             playSongByIndex()
         except Exception:
             logger.exception(f"播放 {row=} 的歌曲时出错")
-            
+
     def showEvent(self, a0):
         """当页面显示时触发刷新"""
         super().showEvent(a0)
-        
+
         # 第一次显示界面且播放队列为空时，尝试恢复上次的播放队列
         try:
             if self.is_first_show and not app_context.play_queue:
                 from src.core.player import restore_last_play_queue
-                
+
                 logger.info("尝试恢复上次播放队列")
                 if restore_last_play_queue():
                     InfoBar.success(
@@ -172,28 +172,28 @@ class PlayQueueInterface(QWidget):
                 self.is_first_show = False
         except Exception as e:
             logger.exception(f"恢复播放队列时出错: {e}")
-            
+
         self.load_play_queue()
-        
+
         # 打开播放序列对话框时，检查并应用当前主题
-        
+
     def open_sequence_dialog(self):
         """打开播放序列管理对话框"""
         logger.info("正在打开播放序列管理对话框")
         try:
             # 创建对话框并设置父窗口
             dialog = PlaySequenceDialog(self.main_window)
-            
+
             # 确保对话框显示前应用当前主题样式
             dialog._update_card_style()
-            
+
             # 显示对话框
             logger.info("即将显示播放序列对话框")
             # 使用show()和exec()的组合以确保对话框显示在前端
             dialog.show()
             result = dialog.exec()
             logger.info(f"对话框返回结果: {result}")
-            
+
             if result:
                 # 对话框被接受（如加载了序列），刷新界面
                 self.load_play_queue()

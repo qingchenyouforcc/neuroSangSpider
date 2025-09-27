@@ -61,10 +61,13 @@
 git clone https://github.com/qingchenyouforcc/neuroSangSpider
 
 # 进入目录
-cd neuroSongSpider
+cd neuroSangSpider
 
 # 安装依赖
 uv sync
+
+# 安装 pre-commit 钩子
+uv run pre-commit install
 
 # 运行
 uv run main.py
