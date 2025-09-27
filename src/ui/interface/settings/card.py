@@ -1,5 +1,3 @@
-import sys
-from pathlib import Path
 from loguru import logger
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
@@ -19,7 +17,6 @@ from qfluentwidgets import (
 )
 
 from i18n import t
-from src.utils.app_restart import restart_app
 from src.app_context import app_context
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music

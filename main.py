@@ -6,7 +6,7 @@ from loguru import logger
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QDialog
 
-from src.config import ASSETS_DIR, cfg
+from src.config import ASSETS_DIR
 from src.i18n.manager import I18nManager
 from src.app_context import app_context
 from src.ui import MainWindow

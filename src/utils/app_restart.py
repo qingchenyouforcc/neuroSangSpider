@@ -3,9 +3,6 @@ import sys
 import subprocess
 from loguru import logger
 
-from src.app_context import app_context
-from i18n import t
-
 
 def restart_app():
     """
