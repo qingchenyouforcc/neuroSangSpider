@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -72,9 +73,26 @@ class SongList:
             logger.opt(exception=True).warning("去重模块错误:")
 
     def search_by_title(self, title: str):
-        """仅保留标题包含关键字的video项"""
-        songs = [songInfo for songInfo in self.dictInfo["data"] if title.lower() in songInfo["title"].lower()]
-        self.dictInfo = {"data": songs}
+        """按空格分词后进行 AND 匹配；空查询返回全部。"""
+        try:
+            q = (title or "").strip()
+            # 将连续空白（包含全角空格）作为分隔符
+            tokens = [t.lower() for t in re.split(r"\s+", q) if t]
+            if not tokens:
+                # 空查询：不筛选
+                return
+
+            data = self.dictInfo["data"]
+
+            def hit(s: str) -> bool:
+                tl = s.lower()
+                # 所有分词都需要命中
+                return all(tok in tl for tok in tokens)
+
+            songs = [songInfo for songInfo in data if hit(str(songInfo.get("title", "")))]
+            self.dictInfo = {"data": songs}
+        except Exception:
+            logger.opt(exception=True).warning("标题搜索匹配错误")
 
     def get_data(self) -> list[dict]:
         """获取歌曲信息dict的列表,列表项为"""
