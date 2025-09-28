@@ -1,9 +1,12 @@
 from collections.abc import Callable
+from datetime import datetime
 
 from bilibili_api import sync
 from loguru import logger
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
+from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView
+from PyQt6.QtGui import QFontMetrics
+import random
 from qfluentwidgets import (
     FluentWindow,
     InfoBar,
@@ -78,12 +81,29 @@ class SearchInterface(QWidget):
         self.tableView.setBorderRadius(8)
 
         self.tableView.setWordWrap(False)
+        # 超长文本显示省略号
+        try:
+            self.tableView.setTextElideMode(Qt.TextElideMode.ElideRight)  # type: ignore[attr-defined]
+        except Exception:
+            # 某些环境下枚举名可能不同，忽略
+            pass
         self.tableView.setRowCount(60)
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
         if header := self.tableView.verticalHeader():
             header.hide()
+
+        # 列宽策略：标题列可交互（便于我们动态控制上限），其他列按内容
+        if hheader := self.tableView.horizontalHeader():
+            hheader.setMinimumSectionSize(60)
+            hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+            for col in (1, 2, 3):
+                hheader.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+
+        # 界面尺寸变化时，更新标题列最大宽度
+        self._title_max_abs_px = 800  # 绝对上限（像素）
+        self._title_max_ratio = 0.6  # 相对上限（占可视宽度比例）
 
         btnGroup = QWidget()
         btnLayout = QHBoxLayout(btnGroup)
@@ -110,6 +130,30 @@ class SearchInterface(QWidget):
         self._layout.addWidget(self.search_input, Qt.AlignmentFlag.AlignBottom)
 
         self.search_result = SongList()
+
+        # 应用启动后自动获取一次歌曲列表
+        QTimer.singleShot(0, lambda: self.getVideo_btn(auto=True))
+
+    @staticmethod
+    def _parse_date(dt_str: str) -> datetime:
+        """尽力解析日期字符串为 datetime，用于排序。失败返回最小时间。"""
+        try:
+            # 尝试完整时间戳格式
+            if " " in dt_str:
+                return datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+            # 退化为仅日期，先规范化显示格式再解析
+            norm = format_date_str(dt_str)
+            return datetime.strptime(norm, "%Y-%m-%d")
+        except Exception:
+            return datetime.min
+
+    def _sort_list_by_date_desc(self, slist: SongList) -> None:
+        """将 SongList 按 date 从新到旧排序（原地）。"""
+        try:
+            data = slist.get_data()
+            data.sort(key=lambda x: self._parse_date(str(x.get("date", ""))), reverse=True)
+        except Exception:
+            logger.exception("排序列表时出错")
 
     def on_download_finished(self, success: bool):
         """下载任务结束时的回调"""
@@ -141,26 +185,28 @@ class SearchInterface(QWidget):
             )
         self._download_thread = None
 
-    def getVideo_btn(self):
+    def getVideo_btn(self, auto: bool = False):
         """获取歌曲列表按钮功能实现"""
         try:
             logger.info("获取歌曲列表中...")
             self.GetVideoBtn.setEnabled(False)
 
             # 显示加载动画
-            self.setWindowModality(Qt.WindowModality.ApplicationModal)  # 设置主窗口不可操作
-            self.loading = showLoading(self.GetVideoBtn)
-            self.main_window.setEnabled(False)
+            if not auto:
+                self.setWindowModality(Qt.WindowModality.ApplicationModal)  # 设置主窗口不可操作
+                self.loading = showLoading(self.GetVideoBtn)
+                self.main_window.setEnabled(False)
 
             # 显示进度条
-            if self.stateTooltip:
-                self.stateTooltip.setContent(t("search.list_complete"))
-                self.stateTooltip.setState(True)
-                self.stateTooltip = None
-            else:
-                self.stateTooltip = StateToolTip(t("search.getting_list"), t("search.getting_list_wait"), self)
-                self.stateTooltip.move(self.stateTooltip.getSuitablePos())
-                self.stateTooltip.show()
+            if not auto:
+                if self.stateTooltip:
+                    self.stateTooltip.setContent(t("search.list_complete"))
+                    self.stateTooltip.setState(True)
+                    self.stateTooltip = None
+                else:
+                    self.stateTooltip = StateToolTip(t("search.getting_list"), t("search.getting_list_wait"), self)
+                    self.stateTooltip.move(self.stateTooltip.getSuitablePos())
+                    self.stateTooltip.show()
 
             # 创建并启动工作线程
             self._thread = SimpleThread(create_video_list_file)
@@ -191,7 +237,6 @@ class SearchInterface(QWidget):
                 logger.info(main_search_list.get_data())
 
                 # 本地查找成功，追加使用bilibili搜索查找
-                # TODO: 可以加入一个设置项配置是否联网搜索
                 logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
                 try:
                     sync(search_on_bilibili(search_content))
@@ -232,12 +277,17 @@ class SearchInterface(QWidget):
     def on_search_finished(self, main_search_list: SongList | None) -> None:
         # 写入表格和数据
         if main_search_list is not None:
+            # 排序：按时间从新到旧
+            self._sort_list_by_date_desc(main_search_list)
             self.search_result = main_search_list
             self.writeList()
         if model := self.tableView.model():
             self.tableView.setCurrentIndex(model.index(0, 0))
-
-        self.tableView.resizeColumnsToContents()
+        # 调整除标题外的列宽
+        for col in (1, 2, 3):
+            self.tableView.resizeColumnToContents(col)
+        # 根据窗口大小给标题列设置一个自适应上限
+        self._update_title_column_width()
         self.searching = False
         self.search_input.searchButton.setEnabled(True)
 
@@ -295,6 +345,98 @@ class SearchInterface(QWidget):
             self.stateTooltip.setContent(t("search.list_complete"))
             self.stateTooltip.setState(True)
             self.stateTooltip = None
+
+        # 自动填充：读取全部列表（空关键字返回全部），按时间倒序显示
+        try:
+            self.tableView.clear()
+            self.tableView.setColumnCount(4)
+            self.tableView.setHorizontalHeaderLabels(
+                [t("common.header_title"), t("common.video_blogger"), t("common.date"), t("common.bvid")]
+            )
+
+            slist = search_song_list("")
+            if slist is not None:
+                self._sort_list_by_date_desc(slist)
+                self.search_result = slist
+                self.writeList()
+                if model := self.tableView.model():
+                    self.tableView.setCurrentIndex(model.index(0, 0))
+                for col in (1, 2, 3):
+                    self.tableView.resizeColumnToContents(col)
+                self._update_title_column_width()
+            else:
+                logger.warning("自动获取后未找到任何视频数据")
+        except Exception:
+            logger.exception("自动填充初始列表失败")
+
+    def resizeEvent(self, event):  # type: ignore[override]
+        super().resizeEvent(event)
+        # 窗口尺寸变化时更新标题列宽度上限
+        self._update_title_column_width()
+
+    def _update_title_column_width(self) -> None:
+        """根据表格可视宽度与其它列宽动态设置标题列宽度的上限。"""
+        try:
+            vp = self.tableView.viewport()
+            vpw = vp.width() if vp is not None else self.tableView.width()
+            other_w = sum(self.tableView.columnWidth(c) for c in (1, 2, 3)) + 8  # padding 估计
+            remaining = max(120, vpw - other_w)
+
+            # 基于样本的自适应宽度（像素）
+            suggested = self._compute_adaptive_title_width()
+
+            max_cap = min(int(vpw * self._title_max_ratio), self._title_max_abs_px)
+
+            if suggested and suggested > 0:
+                title_w = suggested
+            else:
+                title_w = remaining
+
+            # 夹紧：不能超过剩余空间与上限，也不要太小
+            title_w = max(200, min(title_w, remaining, max_cap))
+            self.tableView.setColumnWidth(0, title_w)
+        except Exception:
+            logger.exception("更新标题列宽度时出错")
+
+    def _compute_adaptive_title_width(self) -> int:
+        """按作者分组随机抽样（每个作者最多2条），基于当前字体计算标题平均像素宽度。"""
+        try:
+            data = self.search_result.get_data()
+            if not data:
+                return 0
+
+            # 按作者分组
+            groups: dict[str, list[str]] = {}
+            for item in data:
+                author = str(item.get("author", ""))
+                title = str(item.get("title", ""))
+                if not title:
+                    continue
+                groups.setdefault(author, []).append(title)
+
+            fm = QFontMetrics(self.tableView.font())
+            widths: list[int] = []
+
+            for titles in groups.values():
+                if not titles:
+                    continue
+                k = min(2, len(titles))
+                # 随机抽样 k 条
+                sample = random.sample(titles, k) if len(titles) > k else titles[:k]
+                for s in sample:
+                    w = fm.horizontalAdvance(s)
+                    widths.append(w)
+
+            if not widths:
+                return 0
+
+            avg = sum(widths) / len(widths)
+            # 留出表格内边距和排序指示空间
+            padding = 40
+            return int(avg + padding)
+        except Exception:
+            logger.exception("计算自适应标题宽度失败")
+            return 0
 
     def writeList(self):
         """将搜索结果写入表格"""
