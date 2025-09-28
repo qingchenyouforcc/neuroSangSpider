@@ -96,6 +96,18 @@ class SearchInterface(QWidget):
             for col in (1, 2, 3):
                 hheader.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
 
+        # 双击下载：双击任意单元格即触发下载当前行
+        try:
+            self.tableView.cellDoubleClicked.connect(self._on_table_double_click)  # type: ignore[attr-defined]
+        except Exception:
+            # 兼容性兜底（某些版本可用 itemDoubleClicked 信号）
+            try:  # noqa: SIM105
+                self.tableView.itemDoubleClicked.connect(
+                    lambda _item: self._on_table_double_click(self.tableView.currentRow(), 0)
+                )  # type: ignore[attr-defined]
+            except Exception:
+                logger.warning("未能绑定双击信号，双击下载功能不可用")
+
         # 标题列宽度控制参数
         self._title_max_abs_px = 800
         self._title_max_ratio = 0.6
@@ -384,6 +396,17 @@ class SearchInterface(QWidget):
             self.tableView.setItem(i, 1, QTableWidgetItem(songInfo["author"]))
             self.tableView.setItem(i, 2, QTableWidgetItem(format_date_str(songInfo["date"])))
             self.tableView.setItem(i, 3, QTableWidgetItem(songInfo["bv"]))
+
+    def _on_table_double_click(self, row: int, _column: int) -> None:
+        """表格双击时触发下载当前行。"""
+        try:
+            if row is None or row < 0:
+                return
+            # 聚焦到当前行第0列，保持与按钮下载一致的行为
+            self.tableView.setCurrentCell(row, 0)
+            self.Download_btn()
+        except Exception:
+            logger.exception("处理双击下载时出错")
 
     def Download_btn(self):
         index = self.tableView.currentRow()
