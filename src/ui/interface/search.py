@@ -1,7 +1,5 @@
 from collections.abc import Callable
-from datetime import datetime
 
-from bilibili_api import sync
 from loguru import logger
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView
@@ -23,9 +21,14 @@ from qfluentwidgets import (
 
 from src.i18n import t
 from src.app_context import app_context
-from src.bili_api import create_video_list_file, run_music_download, search_on_bilibili, search_song_list
+from src.bili_api import create_video_list_file, run_music_download, search_song_list
 from src.config import ASSETS_DIR, MUSIC_DIR, cfg
 from src.core.song_list import SongList
+from src.core.search_core import (
+    perform_search,
+    sort_song_list_by_date_desc,
+    sort_song_list_by_relevance,
+)
 from src.utils.text import fix_filename, format_date_str
 
 
@@ -126,83 +129,7 @@ class SearchInterface(QWidget):
         # 启动后自动获取列表（无加载动画）
         QTimer.singleShot(0, lambda: self.getVideo_btn(auto=True))
 
-    @staticmethod
-    def _parse_date(dt_str: str) -> datetime:
-        """尽力解析日期字符串为 datetime，用于排序。失败返回最小时间。"""
-        try:
-            # 尝试完整时间戳格式
-            if " " in dt_str:
-                return datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-            # 退化为仅日期，先规范化显示格式再解析
-            norm = format_date_str(dt_str)
-            return datetime.strptime(norm, "%Y-%m-%d")
-        except Exception:
-            return datetime.min
-
-    def _sort_list_by_date_desc(self, slist: SongList) -> None:
-        """将 SongList 按 date 从新到旧排序（原地）。"""
-        try:
-            data = slist.get_data()
-            data.sort(key=lambda x: self._parse_date(str(x.get("date", ""))), reverse=True)
-        except Exception:
-            logger.exception("排序列表时出错")
-
-    def _compute_relevance(self, item: dict, query: str) -> float:
-        """基于标题与作者的简单相关性评分。"""
-        try:
-            q = (query or "").strip().lower()
-            if not q:
-                return 0.0
-            tokens = [tok for tok in q.split() if tok]
-            title = str(item.get("title", "")).lower()
-            author = str(item.get("author", "")).lower()
-
-            score = 0.0
-            # 短语匹配加权
-            if q in title:
-                score += 5.0
-            # 首词前缀
-            if tokens and title.startswith(tokens[0]):
-                score += 2.0
-            # 逐词匹配
-            for tok in tokens:
-                if tok in title:
-                    score += 1.0
-                    # 多次出现的轻微加成
-                    occ = title.count(tok)
-                    if occ > 1:
-                        score += min(occ - 1, 3) * 0.3
-                if tok in author:
-                    score += 0.3
-
-            # 轻微长度规范化（更短标题略占优）
-            tl = len(title)
-            if tl > 0:
-                score += max(0.0, 1.5 - tl / 80.0)
-
-            return score
-        except Exception:
-            logger.exception("计算相关度失败")
-            return 0.0
-
-    def _sort_by_relevance(self, slist: SongList, query: str) -> None:
-        """按相关度排序；空查询则退化为日期倒序。"""
-        q = (query or "").strip()
-        try:
-            data = slist.get_data()
-            if not q:
-                data.sort(key=lambda x: self._parse_date(str(x.get("date", ""))), reverse=True)
-                return
-            data.sort(
-                key=lambda x: (
-                    self._compute_relevance(x, q),
-                    self._parse_date(str(x.get("date", ""))),
-                ),
-                reverse=True,
-            )
-        except Exception:
-            logger.exception("相关度排序失败，退化为日期排序")
-            self._sort_list_by_date_desc(slist)
+    # 算法已下沉至 core，UI 层仅调用
 
     def on_download_finished(self, success: bool):
         """下载任务结束时的回调"""
@@ -266,68 +193,25 @@ class SearchInterface(QWidget):
 
     @staticmethod
     def do_search(search_content: str):
-        try:
-            # 获取本地数据
-            main_search_list = search_song_list(search_content)
-            if main_search_list is None:
-                # 本地查找失败时，尝试使用bilibili搜索查找
-                logger.info("没有在本地列表找到该歌曲，正在尝试bilibili搜索")
-                try:
-                    sync(search_on_bilibili(search_content))
-                    main_search_list = search_song_list(search_content)
-                except Exception:
-                    logger.exception("bilibili搜索失败")
-                else:
-                    if main_search_list is None:
-                        logger.warning("bilibili搜索结果为空")
-
-            else:
-                logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
-                logger.info(main_search_list.get_data())
-
-                # 本地查找成功，追加使用bilibili搜索查找
-                logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
-                try:
-                    sync(search_on_bilibili(search_content))
-                    if more_search_list := search_song_list(search_content):
-                        delta = len(more_search_list.get_data()) - len(main_search_list.get_data())
-                        logger.info(f"bilibili获取 {delta} 个有效视频数据:")
-                        main_search_list.append_list(more_search_list)
-
-                except Exception:
-                    logger.exception("bilibili搜索失败")
-
-        except Exception as e:
-            InfoBar.error(
-                t("common.unknown_error"),
-                t("search.github_issue", e=str(e)),
+        result = perform_search(search_content)
+        if result is None:
+            logger.warning(t("search.search_result_empty"))
+            InfoBar.warning(
+                title=t("common.warning"),
+                content=t("search.no_results"),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
+                position=InfoBarPosition.BOTTOM_RIGHT,
                 parent=app_context.main_window,
                 duration=2000,
             )
-            logger.exception("执行搜索时发生未知错误")
-
-        else:
-            if main_search_list is None:
-                logger.warning(t("search.search_result_empty"))
-                InfoBar.warning(
-                    title=t("common.warning"),
-                    content=t("search.no_results"),
-                    orient=Qt.Orientation.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=app_context.main_window,
-                    duration=2000,
-                )
-            return main_search_list
+        return result
 
     def on_search_finished(self, main_search_list: SongList | None) -> None:
         # 写入表格和数据
         if main_search_list is not None:
             # 排序：按搜索相关度
-            self._sort_by_relevance(main_search_list, self._last_query)
+            sort_song_list_by_relevance(main_search_list, self._last_query)
             self.search_result = main_search_list
             self.writeList()
         if model := self.tableView.model():
@@ -406,7 +290,7 @@ class SearchInterface(QWidget):
 
             slist = search_song_list("")
             if slist is not None:
-                self._sort_list_by_date_desc(slist)
+                sort_song_list_by_date_desc(slist)
                 self.search_result = slist
                 self.writeList()
                 if model := self.tableView.model():
