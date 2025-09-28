@@ -17,6 +17,7 @@ from src.ui.widgets.tipbar import open_info_tip
 from src.ui.widgets.song_cell import build_song_cell
 from src.utils.cover import get_cover_pixmap
 from src.ui.widgets.pixmap_utils import rounded_pixmap
+from src.core.queue_service import queue_service
 
 import shutil
 import time
@@ -266,14 +267,10 @@ class LocalPlayerInterface(QWidget):
 
             open_info_tip()
 
-            # 确保歌曲在播放队列中
-            if file_path not in app_context.play_queue:
-                app_context.play_queue.append(file_path)
-                logger.info(f"已将 {file_name} 添加到播放队列")
-
-            # 更新播放索引
-            app_context.play_queue_index = app_context.play_queue.index(file_path)
-            logger.info(f"当前播放歌曲队列位置：{app_context.play_queue_index}")
+            # 确保歌曲在播放队列中 & 更新索引（通过服务）
+            idx = queue_service.ensure_in_queue(file_path)
+            queue_service.set_current_index(idx)
+            logger.info(f"当前播放歌曲队列位置：{idx}")
         except Exception:
             logger.exception("播放选中歌曲失败")
 
@@ -304,11 +301,10 @@ class LocalPlayerInterface(QWidget):
             # 获取文件路径并添加到播放队列
             file_name = item.data(Qt.ItemDataRole.UserRole) or item.text()
             if file_name and (file_path := getMusicLocalStr(str(file_name))):
-                if file_path in app_context.play_queue:
+                # 使用服务添加避免重复
+                if not queue_service.add(file_path):
                     logger.debug(f"歌曲 {file_name} 已在播放列表中")
                     return
-
-                app_context.play_queue.append(file_path)
                 InfoBar.success(
                     t("common.success"),
                     t("local_player.add_sang_success", name=str(file_name)),
@@ -317,7 +313,7 @@ class LocalPlayerInterface(QWidget):
                     duration=1500,
                     parent=self.parent(),
                 )
-                logger.info(f"当前播放列表:{app_context.play_queue}")
+                logger.info("已添加到播放队列")
             else:
                 InfoBar.error(
                     t("common.fail"),
@@ -354,9 +350,9 @@ class LocalPlayerInterface(QWidget):
                 fp.unlink()
 
                 # 如果文件在播放队列中，从队列中移除
-                if file_path in app_context.play_queue:
-                    app_context.play_queue.remove(file_path)
-                    logger.info(f"已从播放队列中移除: {file_name}")
+                # 同步移除播放队列中的文件
+                queue_service.remove_path(file_path)
+                logger.info(f"已从播放队列中移除: {file_name}")
 
                 # 显示成功消息
                 InfoBar.success(
@@ -427,15 +423,11 @@ class LocalPlayerInterface(QWidget):
                     invalid_count += 1
                     continue
 
-                if file_path in app_context.play_queue:
-                    # 不再为每个已存在的文件显示提示，只记录日志和计数
-                    filename = str(file_name) if file_name else t("common.unknown_file")
-                    logger.debug(f"歌曲 {filename} 已在播放列表中")
+                # 通过服务添加
+                if queue_service.add(file_path):
+                    added_count += 1
+                else:
                     already_exists_count += 1
-                    continue
-
-                app_context.play_queue.append(file_path)
-                added_count += 1
                 filename = str(file_name) if file_name else t("common.unknown_file")
                 logger.success(f"已添加 {filename} 到播放列表")
 
@@ -456,7 +448,7 @@ class LocalPlayerInterface(QWidget):
             )
 
             logger.info(f"添加完成: 新增 {added_count}, 已存在 {already_exists_count}, 无效 {invalid_count}")
-            logger.debug(f"当前播放列表: {app_context.play_queue}")
+            logger.debug(f"当前播放列表大小: {queue_service.length()}")
 
         except Exception as exc:
             InfoBar.error(

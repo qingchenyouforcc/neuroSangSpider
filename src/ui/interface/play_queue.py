@@ -13,8 +13,10 @@ from qfluentwidgets import (
 )
 
 from src.i18n import t
-from src.core.player import playSongByIndex, sequencePlay
-from src.app_context import app_context
+from src.core.player import sequencePlay
+from src.core.queue_service import queue_service
+
+# from src.app_context import app_context  # 不再直接使用全局上下文，改由 service 管理
 from src.ui.widgets.play_sequence_dialog import PlaySequenceDialog
 from src.utils.cover import get_cover_pixmap
 from src.config import cfg
@@ -36,9 +38,9 @@ class PlayQueueInterface(QWidget):
         self.setObjectName("playQueueInterface")
         self.is_first_show = True  # 标记是否是第一次显示
 
+        # 主布局与表格
         self._layout = QVBoxLayout(self)
         self.tableView = TableWidget(self)
-
         self._layout.setContentsMargins(30, 30, 30, 30)
         self._layout.setSpacing(15)
 
@@ -51,27 +53,19 @@ class PlayQueueInterface(QWidget):
         self.cover_icon_size = 40
         self.tableView.setIconSize(QSize(self.cover_icon_size, self.cover_icon_size))
 
-        # 创建标题和按钮的水平布局
+        # 标题栏与按钮
         title_layout = QHBoxLayout()
-
         self.titleLabel = TitleLabel(t("play_queue.title"), self)
-
         self.seqPlayBtn = TransparentToolButton(FIF.MENU, self)
         self.seqPlayBtn.setToolTip(t("play_queue.seq_play_tooltip"))
-
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip(t("play_queue.refresh_tooltip"))
-
         self.delQueueButton = TransparentToolButton(FIF.DELETE, self)
         self.delQueueButton.setToolTip(t("play_queue.delete_tooltip"))
-
         self.upSongButton = TransparentToolButton(FIF.UP, self)
         self.upSongButton.setToolTip(t("play_queue.up_tooltip"))
-
         self.downSongButton = TransparentToolButton(FIF.DOWN, self)
         self.downSongButton.setToolTip(t("play_queue.down_tooltip"))
-
-        # 添加播放序列管理按钮
         self.sequenceButton = TransparentToolButton(FIF.SAVE, self)
         self.sequenceButton.setToolTip(t("play_queue.sequence_tooltip"))
 
@@ -87,6 +81,7 @@ class PlayQueueInterface(QWidget):
         self._layout.addLayout(title_layout)
         self._layout.addWidget(self.tableView)
 
+        # 信号连接
         self.seqPlayBtn.clicked.connect(sequencePlay)
         self.upSongButton.clicked.connect(self.move_up)
         self.downSongButton.clicked.connect(self.move_down)
@@ -95,6 +90,7 @@ class PlayQueueInterface(QWidget):
         self.sequenceButton.clicked.connect(self.open_sequence_dialog)
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
 
+        # 初次加载
         self.load_play_queue()
 
     def _build_song_cell(self, display_name: str) -> QWidget:
@@ -102,7 +98,7 @@ class PlayQueueInterface(QWidget):
         return build_song_cell(display_name, parent=self.tableView)
 
     def load_play_queue(self):
-        if not app_context.play_queue:
+        if not queue_service.get_queue():
             InfoBar.warning(
                 t("common.info"),
                 t("play_queue.empty"),
@@ -115,7 +111,7 @@ class PlayQueueInterface(QWidget):
             return
 
         try:
-            self.tableView.setRowCount(len(app_context.play_queue))
+            self.tableView.setRowCount(queue_service.length())
             show_cover = bool(cfg.enable_cover.value)
             self.tableView.setColumnCount(2 if show_cover else 1)
             if show_cover:
@@ -125,7 +121,7 @@ class PlayQueueInterface(QWidget):
 
             icon_size = self.cover_icon_size
 
-            for i, song_path in enumerate(app_context.play_queue):
+            for i, song_path in enumerate(queue_service.get_queue()):
                 if show_cover:
                     # 封面
                     cover_item = QTableWidgetItem()
@@ -155,40 +151,24 @@ class PlayQueueInterface(QWidget):
 
     def move_up(self):
         index = self.tableView.currentIndex().row()
-        if index > 0:
-            app_context.play_queue[index - 1], app_context.play_queue[index] = (
-                app_context.play_queue[index],
-                app_context.play_queue[index - 1],
-            )
-            if model := self.tableView.model():
-                self.tableView.setCurrentIndex(model.index(index - 1, 0))
-
-            if app_context.play_queue_index == index:
-                app_context.play_queue_index -= 1
-
+        new_index = queue_service.move_up(index)
+        if model := self.tableView.model():
+            self.tableView.setCurrentIndex(model.index(new_index, 0))
         self.load_play_queue()
 
     def move_down(self):
         index = self.tableView.currentIndex().row()
-        if index < len(app_context.play_queue) - 1:
-            app_context.play_queue[index + 1], app_context.play_queue[index] = (
-                app_context.play_queue[index],
-                app_context.play_queue[index + 1],
-            )
-            if model := self.tableView.model():
-                self.tableView.setCurrentIndex(model.index(index + 1, 0))
-
-            if app_context.play_queue_index == index:
-                app_context.play_queue_index += 1
-
+        new_index = queue_service.move_down(index)
+        if model := self.tableView.model():
+            self.tableView.setCurrentIndex(model.index(new_index, 0))
         self.load_play_queue()
 
     def del_queue(self):
         index = self.tableView.currentIndex().row()
         if index >= 0:
             try:
-                logger.info(f"删除歌曲: {app_context.play_queue[index]}, 位置: {index}")
-                app_context.play_queue.pop(index)
+                removed = queue_service.remove_at(index)
+                logger.info(f"删除歌曲: {removed}, 位置: {index}")
                 self.load_play_queue()
             except Exception:
                 logger.exception("删除歌曲失败")
@@ -197,8 +177,7 @@ class PlayQueueInterface(QWidget):
     def play_selected_song(row):
         """双击播放指定行的歌曲"""
         try:
-            app_context.play_queue_index = row
-            playSongByIndex()
+            queue_service.play_index(row)
         except Exception:
             logger.exception(f"播放 {row=} 的歌曲时出错")
 
@@ -208,11 +187,9 @@ class PlayQueueInterface(QWidget):
 
         # 第一次显示界面且播放队列为空时，尝试恢复上次的播放队列
         try:
-            if self.is_first_show and not app_context.play_queue:
-                from src.core.player import restore_last_play_queue
-
+            if self.is_first_show and not queue_service.get_queue():
                 logger.info("尝试恢复上次播放队列")
-                if restore_last_play_queue():
+                if queue_service.restore_last_queue():
                     InfoBar.success(
                         t("common.info"),
                         t("play_queue.restored"),
