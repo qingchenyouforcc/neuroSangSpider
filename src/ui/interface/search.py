@@ -70,68 +70,60 @@ class SearchInterface(QWidget):
         self.setObjectName("searchInterface")
         self._download_thread: SimpleThread | None = None
 
+        # 布局与表格
         self._layout = QVBoxLayout(self)
         self.tableView = TableWidget(self)
-
         self._layout.setContentsMargins(30, 30, 30, 30)
         self._layout.setSpacing(15)
-
-        # enable border
         self.tableView.setBorderVisible(True)
         self.tableView.setBorderRadius(8)
-
         self.tableView.setWordWrap(False)
-        # 超长文本显示省略号
         try:
             self.tableView.setTextElideMode(Qt.TextElideMode.ElideRight)  # type: ignore[attr-defined]
         except Exception:
-            # 某些环境下枚举名可能不同，忽略
             pass
         self.tableView.setRowCount(60)
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-
         if header := self.tableView.verticalHeader():
             header.hide()
-
-        # 列宽策略：标题列可交互（便于我们动态控制上限），其他列按内容
         if hheader := self.tableView.horizontalHeader():
             hheader.setMinimumSectionSize(60)
             hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
             for col in (1, 2, 3):
                 hheader.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
 
-        # 界面尺寸变化时，更新标题列最大宽度
-        self._title_max_abs_px = 800  # 绝对上限（像素）
-        self._title_max_ratio = 0.6  # 相对上限（占可视宽度比例）
+        # 标题列宽度控制参数
+        self._title_max_abs_px = 800
+        self._title_max_ratio = 0.6
 
+        # 控件
         btnGroup = QWidget()
         btnLayout = QHBoxLayout(btnGroup)
-
         self.GetVideoBtn = PushButton(t("search.get_video_list"), self)
         self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
-
         self.DownloadBtn = PushButton(t("search.download_song"), self)
         self.DownloadBtn.clicked.connect(self.Download_btn)
-
         self.search_input = SearchLineEdit(self)
         self.search_input.setPlaceholderText(t("search.input_placeholder"))
         self.search_input.setClearButtonEnabled(True)
         self.search_input.searchButton.clicked.connect(self.search_btn)
         self.search_input.returnPressed.connect(self.search_btn)
-
         btnLayout.addWidget(self.GetVideoBtn)
         btnLayout.addWidget(self.DownloadBtn)
         btnGroup.setLayout(btnLayout)
 
+        # 组装
         self._layout.addWidget(TitleLabel(t("search.title"), self))
         self._layout.addWidget(self.tableView)
         self._layout.addWidget(btnGroup)
         self._layout.addWidget(self.search_input, Qt.AlignmentFlag.AlignBottom)
 
+        # 状态
         self.search_result = SongList()
+        self._last_query = ""
 
-        # 应用启动后自动获取一次歌曲列表
+        # 启动后自动获取列表（无加载动画）
         QTimer.singleShot(0, lambda: self.getVideo_btn(auto=True))
 
     @staticmethod
@@ -154,6 +146,63 @@ class SearchInterface(QWidget):
             data.sort(key=lambda x: self._parse_date(str(x.get("date", ""))), reverse=True)
         except Exception:
             logger.exception("排序列表时出错")
+
+    def _compute_relevance(self, item: dict, query: str) -> float:
+        """基于标题与作者的简单相关性评分。"""
+        try:
+            q = (query or "").strip().lower()
+            if not q:
+                return 0.0
+            tokens = [tok for tok in q.split() if tok]
+            title = str(item.get("title", "")).lower()
+            author = str(item.get("author", "")).lower()
+
+            score = 0.0
+            # 短语匹配加权
+            if q in title:
+                score += 5.0
+            # 首词前缀
+            if tokens and title.startswith(tokens[0]):
+                score += 2.0
+            # 逐词匹配
+            for tok in tokens:
+                if tok in title:
+                    score += 1.0
+                    # 多次出现的轻微加成
+                    occ = title.count(tok)
+                    if occ > 1:
+                        score += min(occ - 1, 3) * 0.3
+                if tok in author:
+                    score += 0.3
+
+            # 轻微长度规范化（更短标题略占优）
+            tl = len(title)
+            if tl > 0:
+                score += max(0.0, 1.5 - tl / 80.0)
+
+            return score
+        except Exception:
+            logger.exception("计算相关度失败")
+            return 0.0
+
+    def _sort_by_relevance(self, slist: SongList, query: str) -> None:
+        """按相关度排序；空查询则退化为日期倒序。"""
+        q = (query or "").strip()
+        try:
+            data = slist.get_data()
+            if not q:
+                data.sort(key=lambda x: self._parse_date(str(x.get("date", ""))), reverse=True)
+                return
+            data.sort(
+                key=lambda x: (
+                    self._compute_relevance(x, q),
+                    self._parse_date(str(x.get("date", ""))),
+                ),
+                reverse=True,
+            )
+        except Exception:
+            logger.exception("相关度排序失败，退化为日期排序")
+            self._sort_list_by_date_desc(slist)
 
     def on_download_finished(self, success: bool):
         """下载任务结束时的回调"""
@@ -277,8 +326,8 @@ class SearchInterface(QWidget):
     def on_search_finished(self, main_search_list: SongList | None) -> None:
         # 写入表格和数据
         if main_search_list is not None:
-            # 排序：按时间从新到旧
-            self._sort_list_by_date_desc(main_search_list)
+            # 排序：按搜索相关度
+            self._sort_by_relevance(main_search_list, self._last_query)
             self.search_result = main_search_list
             self.writeList()
         if model := self.tableView.model():
@@ -327,6 +376,7 @@ class SearchInterface(QWidget):
 
         logger.info("---搜索开始---")
         search_content = self.search_input.text().lower()
+        self._last_query = search_content
         self._search_ = self.do_search(search_content)
         self.on_search_finished(self._search_)
 
