@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
-from typing import Dict, Callable, List
+from typing import Dict, Callable
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from src.config import cfg
+from src.config import cfg, ASSETS_DIR
 from src.i18n.loader import PropertiesLoader
 
 
@@ -13,8 +13,11 @@ class I18nManager(QObject):
     def __init__(self, resources_dir: Path):
         super().__init__()
         self.logger = logging.getLogger(__name__)
+        # 用户数据目录下的语言文件
         self.loader = PropertiesLoader(resources_dir)
-        self._translations: Dict[str, Dict[str, str]] = {}
+        # 内置资源目录下的语言文件（作为补全与回退）
+        self.assets_loader = PropertiesLoader(ASSETS_DIR / "i18n")
+        self._translations = {}
 
         # 处理cfg.language.value可能为列表的情况
         lang_value = cfg.language.value
@@ -27,19 +30,31 @@ class I18nManager(QObject):
             self._current_language = lang_value
 
         self._fallback_language = "en_US"
-        self._listeners: List[Callable] = []
+        self._listeners = []
 
         self._preload_languages()
 
     def _preload_languages(self):
-        """预加载所有可用的语言文件"""
-        available_langs = self.loader.get_available_languages()
+        """预加载所有可用的语言文件，合并内置资源作为回退与增量补全"""
+        data_langs = self.loader.get_available_languages()
+        assets_langs = self.assets_loader.get_available_languages()
 
-        for lang_code in available_langs.keys():
-            file_path = self.loader.resources_dir / f"{lang_code}.properties"
-            self._translations[lang_code] = self.loader.load_properties(file_path)
+        # 取并集，保证即使用户目录缺少某些语言也能加载内置版本
+        lang_codes = set(data_langs.keys()) | set(assets_langs.keys())
 
-        self.logger.info(f"预加载了 {len(self._translations)} 种语言")
+        for lang_code in lang_codes:
+            data_fp = self.loader.resources_dir / f"{lang_code}.properties"
+            asset_fp = self.assets_loader.resources_dir / f"{lang_code}.properties"
+
+            data_map = self.loader.load_properties(data_fp) if data_fp.exists() else {}
+            asset_map = self.assets_loader.load_properties(asset_fp) if asset_fp.exists() else {}
+
+            # 合并：优先使用用户数据目录的翻译，缺失项由内置资源补全
+            merged = dict(asset_map)
+            merged.update(data_map)
+            self._translations[lang_code] = merged
+
+        self.logger.info(f"预加载了 {len(self._translations)} 种语言（含内置资源合并）")
 
     def i18n(self, key: str, default: str | None = None, **kwargs: object) -> str:
         if not key:
@@ -112,7 +127,10 @@ class I18nManager(QObject):
         return self._current_language
 
     def get_available_languages(self) -> Dict[str, str]:
-        return self.loader.get_available_languages()
+        # 合并两处来源的语言清单，用户目录优先生效
+        result = self.assets_loader.get_available_languages()
+        result.update(self.loader.get_available_languages())
+        return result
 
     def add_change_listener(self, listener: Callable):
         """添加语言改变监听器"""

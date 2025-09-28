@@ -91,6 +91,13 @@ class Config(QConfig):
     enable_cover = ConfigItem("Appearance", "EnableCover", True)
     cover_corner_radius = ConfigItem("Appearance", "CoverCornerRadius", 10)
 
+    # 亚克力背景设置（主页正在播放卡片使用）
+    acrylic_enabled = ConfigItem("Appearance", "AcrylicEnabled", True)
+    acrylic_blur_radius = ConfigItem("Appearance", "AcrylicBlurRadius", 3)
+    # 颜色以 RGBA 数组保存，便于 JSON 序列化
+    acrylic_tint_rgba = ConfigItem("Appearance", "AcrylicTintRGBA", [242, 242, 242, 140])
+    acrylic_luminosity_rgba = ConfigItem("Appearance", "AcrylicLuminosityRGBA", [255, 255, 255, 12])
+
     play_count = ConfigItem("Player", "PlayCount", {})
     play_sequences = ConfigItem("Player", "PlaySequences", {})
     last_play_queue = ConfigItem("Player", "LastPlayQueue", {"queue": [], "index": 0})

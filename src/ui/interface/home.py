@@ -1,6 +1,6 @@
-from PyQt6.QtCore import Qt, QTimer, QSize, QEvent
+from PyQt6.QtCore import Qt, QTimer, QEvent
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLabel
-from PyQt6.QtGui import QIcon, QPainter, QPainterPath
+from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor, QPixmap
 from qfluentwidgets import (
     BodyLabel,
     SubtitleLabel,
@@ -13,6 +13,15 @@ from qfluentwidgets import (
     ScrollArea,
     isDarkTheme,
 )
+
+try:
+    # 优先从公开导出导入
+    from qfluentwidgets import AcrylicBrush  # type: ignore
+except Exception:  # pragma: no cover - 兼容不同版本的导出位置
+    try:
+        from qfluentwidgets.components.widgets.acrylic_label import AcrylicBrush  # type: ignore
+    except Exception:
+        AcrylicBrush = None  # type: ignore
 from loguru import logger
 
 from src.i18n.i18n import t
@@ -23,6 +32,19 @@ from src.ui.widgets.custom_label import ScrollingLabel
 from src.utils.cover import get_cover_pixmap
 
 
+def _rgba_to_qcolor(rgba, fallback=(255, 255, 255, 255)) -> QColor:
+    """将 [r,g,b,a] 转为 QColor，数值自动裁剪到 0-255。"""
+    try:
+        if not rgba or len(rgba) != 4:
+            r, g, b, a = fallback
+        else:
+            r, g, b, a = [int(max(0, min(255, int(x)))) for x in rgba]
+        return QColor(r, g, b, a)
+    except Exception:
+        r, g, b, a = fallback
+        return QColor(r, g, b, a)
+
+
 class NowPlayingCard(CardWidget):
     """当前播放音乐卡片"""
 
@@ -31,6 +53,9 @@ class NowPlayingCard(CardWidget):
         self.setObjectName("nowPlayingCard")
         # 记录上一次用于封面的歌曲名，避免重复刷新
         self._last_cover_song_name = None
+        self._acrylic_ready = (
+            bool(AcrylicBrush) and getattr(cfg, "acrylic_enabled", None) and bool(cfg.acrylic_enabled.value)
+        )
 
         # 设置卡片大小
         self.setFixedHeight(200)
@@ -40,6 +65,83 @@ class NowPlayingCard(CardWidget):
         self.vBoxLayout = QVBoxLayout(self)
         self.vBoxLayout.setContentsMargins(16, 16, 16, 16)
         self.vBoxLayout.setSpacing(10)
+
+        # 背景：亚克力材质（使用歌曲封面）
+        # 使用独立子控件承载亚克力绘制，避免与 CardWidget 的绘制顺序冲突
+        class _AcrylicBackground(QWidget):
+            def __init__(self, parent_card: "NowPlayingCard"):
+                super().__init__(parent_card)
+                self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+                self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+                self._has_image = False
+                self._radius = 12
+                # 依据配置创建亚克力画刷
+                self._brush = None
+                self.build_brush_from_cfg()
+
+            def build_brush_from_cfg(self):
+                """按当前配置重建亚克力画刷。"""
+                self._brush = None
+                if not AcrylicBrush:
+                    return
+                if not (getattr(cfg, "acrylic_enabled", None) and bool(cfg.acrylic_enabled.value)):
+                    return
+                try:
+                    tint_list = list(cfg.acrylic_tint_rgba.value)
+                except Exception:
+                    tint_list = [242, 242, 242, 140]
+                try:
+                    lum_list = list(cfg.acrylic_luminosity_rgba.value)
+                except Exception:
+                    lum_list = [255, 255, 255, 12]
+                try:
+                    blur_r = int(cfg.acrylic_blur_radius.value)
+                except Exception:
+                    blur_r = 18
+                tint = _rgba_to_qcolor(tint_list)
+                luminosity = _rgba_to_qcolor(lum_list)
+                self._brush = AcrylicBrush(self, blurRadius=blur_r, tintColor=tint, luminosityColor=luminosity)
+                # 刷新裁剪路径
+                self._updateClipPath()
+
+            def setPixmap(self, pix: QPixmap | None):
+                if not self._brush:
+                    return
+                if isinstance(pix, QPixmap) and not pix.isNull():
+                    self._brush.setImage(pix)
+                    self._has_image = True
+                else:
+                    # 传入空图时清空显示
+                    self._has_image = False
+                self.update()
+
+            def _updateClipPath(self):
+                if not self._brush:
+                    return
+                r = int(getattr(getattr(cfg, "cover_corner_radius", None), "value", 12) or 12)
+                r = max(0, r)
+                self._radius = r
+                path = QPainterPath()
+                w, h = self.width(), self.height()
+                path.addRoundedRect(0.0, 0.0, float(w), float(h), float(r), float(r))
+                self._brush.setClipPath(path)
+
+            def resizeEvent(self, a0):
+                super().resizeEvent(a0)
+                self._updateClipPath()
+
+            def paintEvent(self, a0):
+                super().paintEvent(a0)
+                if not self._brush or not self._has_image:
+                    return
+                try:
+                    self._brush.paint()
+                except Exception:
+                    # 亚克力绘制失败时，不影响其它内容
+                    pass
+
+        self._acrylicBg = _AcrylicBackground(self)
+        self._acrylicBg.lower()
 
         # 标题栏
         self.headerLayout = QHBoxLayout()
@@ -52,16 +154,6 @@ class NowPlayingCard(CardWidget):
 
         # 歌曲信息
         self.infoLayout = QHBoxLayout()
-
-        # 封面图片
-        self.coverLabel = QLabel(self)
-        self.coverLabel.setFixedSize(100, 100)
-        self.coverLabel.setScaledContents(True)
-
-        # 使用已有的图标作为默认封面
-        self.musicIcon = QIcon(FIF.MUSIC.path())
-        self.defaultCover = self.musicIcon.pixmap(QSize(100, 100))
-        self.coverLabel.setPixmap(self.defaultCover)
 
         # 歌曲详情
         self.detailLayout = QVBoxLayout()
@@ -99,8 +191,7 @@ class NowPlayingCard(CardWidget):
         self.detailLayout.addStretch(1)
 
         # 添加到信息布局
-        self.infoLayout.addWidget(self.coverLabel)
-        self.infoLayout.addSpacing(10)
+        # 移除左侧封面占位，详情占据整行
         self.infoLayout.addLayout(self.detailLayout, 1)
 
         # 添加到主布局
@@ -113,7 +204,7 @@ class NowPlayingCard(CardWidget):
         self.playButton.clicked.connect(self._togglePlay)
         self.nextButton.clicked.connect(nextSong)
 
-        # 创建定时器，用于更新播放进度
+        # 创建定时器，用于更新播放进度（去重后保留一份）
         self.updateTimer = QTimer(self)
         self.updateTimer.setInterval(1000)  # 每秒更新一次
         self.updateTimer.timeout.connect(self.updatePlayingInfo)
@@ -122,15 +213,15 @@ class NowPlayingCard(CardWidget):
         # 初始化
         self.updatePlayingInfo()
         self._updateStyle()
-        # 创建定时器，用于更新播放进度
-        self.updateTimer = QTimer(self)
-        self.updateTimer.setInterval(1000)  # 每秒更新一次
-        self.updateTimer.timeout.connect(self.updatePlayingInfo)
-        self.updateTimer.start()
 
-        # 初始化
-        self.updatePlayingInfo()
-        self._updateStyle()
+        # 监听配置变化，实时重建亚克力参数
+        try:
+            cfg.acrylic_enabled.valueChanged.connect(lambda *_: self.rebuildAcrylicFromConfig())
+            cfg.acrylic_blur_radius.valueChanged.connect(lambda *_: self.rebuildAcrylicFromConfig())
+            cfg.acrylic_tint_rgba.valueChanged.connect(lambda *_: self.rebuildAcrylicFromConfig())
+            cfg.acrylic_luminosity_rgba.valueChanged.connect(lambda *_: self.rebuildAcrylicFromConfig())
+        except Exception:
+            pass
 
     def _togglePlay(self):
         """切换播放/暂停状态"""
@@ -146,9 +237,9 @@ class NowPlayingCard(CardWidget):
             self.currentTimeLabel.setText("0:00")
             self.totalTimeLabel.setText("0:00")
             self.playButton.setIcon(FIF.PLAY_SOLID)
-            # 恢复默认封面
-            if self.coverLabel.pixmap() != self.defaultCover:
-                self.coverLabel.setPixmap(self.defaultCover)
+            # 清理亚克力背景
+            if self._acrylic_ready:
+                self._acrylicBg.setPixmap(None)
             # 恢复标题图标为音乐图标
             self.titleIcon.setIcon(FIF.MUSIC)
             self._last_cover_song_name = None
@@ -197,33 +288,23 @@ class NowPlayingCard(CardWidget):
             self.currentTimeLabel.setText(self._formatTime(position))
             self.totalTimeLabel.setText(self._formatTime(duration))
 
-        # 更新封面（仅在歌曲变更时刷新，避免每秒拉取）
+        # 更新亚克力封面背景（仅在歌曲变更时刷新，避免每秒拉取）
         try:
             current_name = app_context.playing_now
             if current_name and current_name != self._last_cover_song_name:
                 path = getMusicLocalStr(current_name)
                 if path:
                     # 先取较大尺寸以获得更清晰裁切，再中心裁切到目标显示尺寸
-                    target_w, target_h = self.coverLabel.width(), self.coverLabel.height()
-                    base_size = max(target_w, target_h, 256)
+                    # 对背景，我们按卡片尺寸生成更大底图
+                    target_w, target_h = max(self.width(), 300), max(self.height(), 200)
+                    base_size = max(target_w, target_h, 512)
                     pix = get_cover_pixmap(path, size=base_size)
-                    pix = self._scale_center_crop(pix, target_w, target_h)
-                    # 圆角裁剪，保持与设置一致
-                    radius = max(0, int(cfg.cover_corner_radius.value)) if hasattr(cfg, "cover_corner_radius") else 10
-                    if not pix.isNull() and radius > 0:
-                        w, h = pix.width(), pix.height()
-                        rounded = pix.__class__(w, h)
-                        rounded.fill(Qt.GlobalColor.transparent)
-                        painter = QPainter(rounded)
-                        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-                        path2 = QPainterPath()
-                        path2.addRoundedRect(0.0, 0.0, float(w), float(h), float(radius), float(radius))
-                        painter.setClipPath(path2)
-                        painter.drawPixmap(0, 0, pix)
-                        painter.end()
-                        pix = rounded
-                    self.coverLabel.setPixmap(pix)
-                    # 同步把标题栏的小图标换成小尺寸圆角封面
+                    # 设置亚克力背景（内部会按控件大小裁切/绘制）
+                    if self._acrylic_ready:
+                        # 尽量居中裁切以避免拉伸
+                        pix2 = self._scale_center_crop(pix, target_w, target_h)
+                        self._acrylicBg.setPixmap(pix2)
+                    # 同步把标题栏的小图标换成小尺寸圆角封面（可选）
                     try:
                         icon_size = 28
                         small = self._scale_center_crop(pix, icon_size, icon_size)
@@ -240,6 +321,11 @@ class NowPlayingCard(CardWidget):
                             painter2.drawPixmap(0, 0, small)
                             painter2.end()
                             small = rounded2
+                            # 如果 IconWidget 支持从 QIcon 设置，则应用
+                            try:
+                                self.titleIcon.setIcon(QIcon(small))
+                            except Exception:
+                                pass
                     except Exception:
                         pass
                     self._last_cover_song_name = current_name
@@ -270,13 +356,8 @@ class NowPlayingCard(CardWidget):
             padding: 2px;
         """)
 
-        # 如果使用默认封面，根据主题调整图标
-        if app_context.player and not app_context.playing_now:
-            # 根据主题调整默认音乐图标的颜色
-            icon_path = FIF.MUSIC.path()
-            self.musicIcon = QIcon(icon_path)
-            self.defaultCover = self.musicIcon.pixmap(QSize(100, 100))
-            self.coverLabel.setPixmap(self.defaultCover)
+        # 背景亚克力不依赖主题切换，仅微调色调（可按需扩展）
+        # 这里保留默认逻辑，不做额外处理
 
         # 更新按钮样式
         for btn in [self.prevButton, self.playButton, self.nextButton]:
@@ -285,12 +366,50 @@ class NowPlayingCard(CardWidget):
         # 触发歌名标签重绘
         self.songNameLabel.update()
 
+    @staticmethod
+    def _rgba_to_qcolor(rgba: list[int] | tuple[int, int, int, int] | None, fallback=(255, 255, 255, 255)) -> QColor:
+        try:
+            if not rgba or len(rgba) != 4:
+                r, g, b, a = fallback
+            else:
+                r, g, b, a = [int(max(0, min(255, x))) for x in rgba]
+            return QColor(r, g, b, a)
+        except Exception:
+            r, g, b, a = fallback
+            return QColor(r, g, b, a)
+
     def changeEvent(self, a0):
         """处理控件状态变化事件"""
         if a0 and a0.type() == QEvent.Type.PaletteChange:
             # 调色板变化（主题变化）时更新样式
             self._updateStyle()
         super().changeEvent(a0)
+
+    def resizeEvent(self, a0):
+        # 同步调整背景铺满卡片
+        super().resizeEvent(a0)
+        try:
+            if hasattr(self, "_acrylicBg"):
+                self._acrylicBg.setGeometry(self.rect())
+        except Exception:
+            pass
+
+    def rebuildAcrylicFromConfig(self):
+        """根据配置重建亚克力背景和状态。"""
+        self._acrylic_ready = (
+            bool(AcrylicBrush) and getattr(cfg, "acrylic_enabled", None) and bool(cfg.acrylic_enabled.value)
+        )
+        if hasattr(self, "_acrylicBg") and self._acrylicBg:
+            self._acrylicBg.build_brush_from_cfg()
+        # 根据当前歌曲刷新或清空背景
+        if not self._acrylic_ready:
+            try:
+                self._acrylicBg.setPixmap(None)
+            except Exception:
+                pass
+        else:
+            # 重新应用当前封面作为背景
+            self.updatePlayingInfo()
 
     # --- helpers ---
     def _scale_center_crop(self, pix, target_w: int, target_h: int):

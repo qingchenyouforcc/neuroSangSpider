@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from pathlib import Path
 from typing import Dict
 from loguru import logger
@@ -31,6 +32,9 @@ class PropertiesLoader:
                 key = match.group(1).strip()
                 value = match.group(2).strip()
 
+                # 规范化键名，移除不可见控制/格式字符（如 BOM、零宽空格等）
+                key = self._normalize_key(key)
+
                 value = self._process_multiline_value(value)
                 value = self._unescape(value)
 
@@ -43,6 +47,16 @@ class PropertiesLoader:
             logger.error(f"加载语言文件失败 {file_path}: {e}")
 
         return translations
+
+    @staticmethod
+    def _normalize_key(key: str) -> str:
+        """去除键名中的不可见字符，避免由于 BOM/零宽字符 导致的匹配失败"""
+        # NFC 规范化
+        k = unicodedata.normalize("NFC", key)
+        # 过滤掉控制字符和格式字符（如 ZWSP/ZWJ/ZWNJ/BOM）
+        k = "".join(c for c in k if (ord(c) >= 32 and unicodedata.category(c) not in {"Cf"}))
+        # 再次去掉首尾空白
+        return k.strip()
 
     def _process_multiline_value(self, value: str) -> str:
         """处理多行值，将续行连接为单行"""

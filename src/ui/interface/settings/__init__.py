@@ -6,6 +6,7 @@ from src.i18n import t
 from src.config import cfg
 
 from .card import SettingsCard
+from .acrylic_card import AcrylicSettingsCard
 from .search_card import SearchSettingsCard
 
 
@@ -23,28 +24,29 @@ class SettingInterface(QWidget):
         self._layout.setSpacing(15)
 
         # 添加滚动区域
-        self.scroll_area = scroll_area = ScrollArea(self)
+        self.scroll_area = ScrollArea(self)
         self.scroll_area.setObjectName("scrollArea")
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # 创建容器控件
-        container = QWidget(scroll_area)
+        container = QWidget(self.scroll_area)
         container_layout = QVBoxLayout(container)
         container_layout.setContentsMargins(10, 10, 10, 10)
         container_layout.setSpacing(15)
 
         # 添加设置卡片
         container_layout.addWidget(SettingsCard())
+        container_layout.addWidget(AcrylicSettingsCard())
         container_layout.addStretch(1)
         container_layout.addWidget(SearchSettingsCard())
 
         # 设置滚动区域的控件
-        scroll_area.setWidget(container)
+        self.scroll_area.setWidget(container)
 
         # 将滚动区域添加到主布局
         self._layout.addWidget(self.settingLabel)
-        self._layout.addWidget(scroll_area)
+        self._layout.addWidget(self.scroll_area)
         self._update_style()
 
         cfg.theme_mode.valueChanged.connect(self._update_style)
@@ -52,7 +54,8 @@ class SettingInterface(QWidget):
     def _update_style(self):
         """更新控件样式"""
         # 根据主题设置背景色
-        self.scroll_area.setStyleSheet("""
+        self.scroll_area.setStyleSheet(
+            """
             QScrollArea {
                 background-color: transparent;
                 border: none;
@@ -60,4 +63,5 @@ class SettingInterface(QWidget):
             QScrollArea > QWidget > QWidget {
                 background-color: transparent;
             }
-        """)
+            """
+        )
