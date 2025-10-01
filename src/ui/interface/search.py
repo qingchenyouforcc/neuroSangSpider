@@ -161,6 +161,21 @@ class SearchInterface(QWidget):
                 duration=2000,
                 parent=self,
             )
+            
+            # 获取刚下载的歌曲信息
+            index = self.tableView.currentRow()
+            if index >= 0:
+                info = self.search_result.select_info(index)
+                if info:
+                    fileType = cfg.download_type.value
+                    title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
+                    downloaded_file_name = f"{title}.{fileType}"
+                    
+                    # 切换到本地播放器界面
+                    self.main_window.switchTo(self.main_window.localPlayerInterface)
+                    
+                    # 延迟执行选中歌曲的操作，确保界面已加载完成
+                    QTimer.singleShot(100, lambda: self.main_window.localPlayerInterface.select_and_highlight_song(downloaded_file_name))
         else:
             InfoBar.error(
                 title=t("common.error"),
