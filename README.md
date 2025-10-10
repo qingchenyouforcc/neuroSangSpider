@@ -103,6 +103,14 @@ uv run main.py
 ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/681dcdd42da7fc5484c1dd3a9875b54a_324.png)
 
 ---
+## 广告位
+如果你对neuro同人作品感兴趣的话
+
+请加入文学社谢谢喵
+
+**NeuroEcho文学社1063898428**
+
+---
 
 ## Star 趋势
 
