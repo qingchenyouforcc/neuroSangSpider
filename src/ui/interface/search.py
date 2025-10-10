@@ -29,6 +29,8 @@ from src.core.search_core import (
     sort_song_list_by_date_desc,
     sort_song_list_by_relevance,
 )
+from src.core.download_queue import DownloadQueueManager, DownloadTask
+from src.ui.components.download_queue_dialog import DownloadQueueDialog
 from src.utils.text import fix_filename, format_date_str
 
 
@@ -73,6 +75,10 @@ class SearchInterface(QWidget):
         self.setObjectName("searchInterface")
         self._download_thread: SimpleThread | None = None
 
+        # 初始化下载队列管理器
+        self.download_queue = DownloadQueueManager(max_workers=3)
+        self.queue_dialog: DownloadQueueDialog | None = None
+
         # 布局与表格
         self._layout = QVBoxLayout(self)
         self.tableView = TableWidget(self)
@@ -81,6 +87,7 @@ class SearchInterface(QWidget):
         self.tableView.setBorderVisible(True)
         self.tableView.setBorderRadius(8)
         self.tableView.setWordWrap(False)
+        self.tableView.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)  # 支持多选
         try:
             self.tableView.setTextElideMode(Qt.TextElideMode.ElideRight)  # type: ignore[attr-defined]
         except Exception:
@@ -119,6 +126,11 @@ class SearchInterface(QWidget):
         self.GetVideoBtn.clicked.connect(lambda: self.getVideo_btn())
         self.DownloadBtn = PushButton(t("search.download_song"), self)
         self.DownloadBtn.clicked.connect(self.Download_btn)
+        self.AddToQueueBtn = PushButton(t("search.add_to_queue"), self)
+        self.AddToQueueBtn.clicked.connect(self.add_to_queue_btn)
+        self.AddToQueueBtn.setToolTip(t("search.batch_add_tooltip"))
+        self.QueueManagerBtn = PushButton(t("search.download_queue"), self)
+        self.QueueManagerBtn.clicked.connect(self.show_queue_dialog)
         self.search_input = SearchLineEdit(self)
         self.search_input.setPlaceholderText(t("search.input_placeholder"))
         self.search_input.setClearButtonEnabled(True)
@@ -126,6 +138,8 @@ class SearchInterface(QWidget):
         self.search_input.returnPressed.connect(self.search_btn)
         btnLayout.addWidget(self.GetVideoBtn)
         btnLayout.addWidget(self.DownloadBtn)
+        btnLayout.addWidget(self.AddToQueueBtn)
+        btnLayout.addWidget(self.QueueManagerBtn)
         btnGroup.setLayout(btnLayout)
 
         # 组装
@@ -471,3 +485,84 @@ class SearchInterface(QWidget):
         thread.finished.connect(thread.deleteLater)
         self._download_thread = thread
         thread.start()
+
+    def add_to_queue_btn(self):
+        """添加选中项到下载队列"""
+        selected_rows = set(item.row() for item in self.tableView.selectedIndexes())
+
+        if not selected_rows:
+            InfoBar.warning(
+                title=t("common.info"),
+                content=t("search.select_song_first"),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=1500,
+                parent=self,
+            )
+            return
+
+        fileType = cfg.download_type.value
+        added_count = 0
+        skipped_count = 0
+
+        for row in sorted(selected_rows):
+            info = self.search_result.select_info(row)
+            if not info:
+                continue
+
+            title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
+            output_file = MUSIC_DIR / f"{title}.{fileType}"
+
+            # 创建下载任务
+            task = DownloadTask(
+                index=row,
+                title=info["title"],
+                bvid=info["bv"],
+                search_list=self.search_result,
+                file_type=fileType,
+                output_file=output_file,
+            )
+
+            # 添加任务，检查是否重复
+            if self.download_queue.add_task(task):
+                added_count += 1
+            else:
+                skipped_count += 1
+
+        # 显示添加结果
+        if added_count > 0:
+            message = t("search.added_to_queue") + f" ({added_count})"
+            if skipped_count > 0:
+                message += f"，{t('search.skipped_duplicates', count=skipped_count)}"
+
+            InfoBar.success(
+                title=t("common.success"),
+                content=message,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=2000,
+                parent=self,
+            )
+            logger.info(f"已添加 {added_count} 个任务到下载队列，跳过 {skipped_count} 个重复任务")
+        else:
+            InfoBar.warning(
+                title=t("common.warning"),
+                content=t("search.all_tasks_exist"),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=2000,
+                parent=self,
+            )
+            logger.warning("所有任务都已存在于队列中")
+
+    def show_queue_dialog(self):
+        """显示下载队列对话框"""
+        if self.queue_dialog is None:
+            self.queue_dialog = DownloadQueueDialog(self.download_queue, self.main_window)
+
+        self.queue_dialog.show()
+        self.queue_dialog.raise_()
+        self.queue_dialog.activateWindow()

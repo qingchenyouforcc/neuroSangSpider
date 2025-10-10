@@ -226,6 +226,18 @@ class MainWindow(FluentWindow):
 
         save_current_play_queue()
 
+        # 停止下载队列
+        try:
+            # 遍历所有子界面，找到SearchInterface并停止其下载队列
+            for i in range(self.stackedWidget.count()):
+                widget = self.stackedWidget.widget(i)
+                download_queue = getattr(widget, "download_queue", None)
+                if download_queue and hasattr(download_queue, "stop"):
+                    logger.info("正在停止下载队列...")
+                    download_queue.stop()
+        except Exception:
+            logger.exception("停止下载队列时出错")
+
         # 终止系统主题监听器
         self.themeListener.terminate()
         self.themeListener.deleteLater()
