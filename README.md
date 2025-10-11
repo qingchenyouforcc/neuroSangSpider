@@ -81,6 +81,10 @@ uv run main.py
 
 ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/b179a2b1bd812119dbb31b9c6bd6d184.png)
 
+### 感谢萝卜猫提供的加载动画授权
+
+- 魔法少女_卡洛特 https://space.bilibili.com/2038218765
+
 ### 感谢Stazer提供的加载动画授权
 
 - 稳定器stz https://space.bilibili.com/125198191

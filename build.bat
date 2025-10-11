@@ -21,7 +21,15 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo.
-echo 3. 打包完成！
+echo 3. 验证启动动画资源...
+if exist "dist\NeuroSongSpider\assets\main_loading\f0.png" (
+    echo ✅ 启动动画资源已成功打包
+) else (
+    echo ⚠️  警告: 启动动画资源未找到
+)
+
+echo.
+echo 4. 打包完成！
 echo 可执行文件位置: dist\NeuroSongSpider\NeuroSongSpider.exe
 echo.
 pause

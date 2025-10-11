@@ -88,8 +88,9 @@ if __name__ == "__main__":
         os.environ["LANGUAGE_RESTART"] = "0"
         window.is_language_restart = False
 
-    window.show()
-    logger.info("主窗口显示")
+    # 不在这里显示主窗口，等待启动画面动画完成后自动显示
+    # window.show()
+    # logger.info("主窗口显示")
 
     logger.info("开始应用程序主循环")
     sys.exit(app.exec())
