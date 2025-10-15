@@ -57,7 +57,7 @@ class PlayQueueInterface(QWidget):
         # 标题栏与按钮
         title_layout = QHBoxLayout()
         self.titleLabel = TitleLabel(t("play_queue.title"), self)
-        self.seqPlayBtn = TransparentToolButton(FIF.MENU, self)
+        self.seqPlayBtn = TransparentToolButton(FIF.PLAY, self)
         self.seqPlayBtn.setToolTip(t("play_queue.seq_play_tooltip"))
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip(t("play_queue.refresh_tooltip"))
