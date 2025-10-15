@@ -285,20 +285,35 @@ class LocalPlayerInterface(QWidget):
         """添加到播放列表
 
         Args:
-            row: 指定行号，如果为None则使用当前选中行
+            row: 指定行号，如果为None或False(按钮点击信号)则使用当前选中行
         """
         try:
-            # 确定要处理的项：如果指定了行号，则获取该行的第0列项，否则使用当前选中项
-            if row is not None:
+            logger.debug(f"add_to_queue 被调用, row={row}, type={type(row)}")
+
+            # 确定要处理的项：如果指定了有效的行号，则获取该行的第0列项，否则使用当前选中项
+            # 注意: PyQt6的clicked信号会传递False，需要排除
+            # bool是int的子类，需要先排除bool类型
+            if isinstance(row, int) and not isinstance(row, bool) and row >= 0:
+                logger.debug(f"使用指定行号: {row}")
                 item = self.tableView.item(row, self._name_col())
             else:
+                logger.debug("使用当前选中行")
                 current_item = self.tableView.currentItem()
                 if current_item is None:
                     logger.warning("没有选中的歌曲")
+                    InfoBar.warning(
+                        t("common.warning"),
+                        "请先选中一首歌曲",
+                        orient=Qt.Orientation.Horizontal,
+                        position=InfoBarPosition.TOP,
+                        duration=1500,
+                        parent=self.parent(),
+                    )
                     return
 
                 # 获取当前选中项所在行的第0列项（文件名列）
                 current_row = current_item.row()
+                logger.debug(f"当前选中行: {current_row}")
                 item = self.tableView.item(current_row, self._name_col())
 
             if item is None:
