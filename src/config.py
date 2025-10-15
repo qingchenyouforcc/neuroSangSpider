@@ -91,6 +91,9 @@ class Config(QConfig):
     enable_cover = ConfigItem("Appearance", "EnableCover", True)
     cover_corner_radius = ConfigItem("Appearance", "CoverCornerRadius", 10)
 
+    # 是否在下载完成后自动跳转到播放列表并聚焦
+    auto_switch_playlist = ConfigItem("AutoSwitchPlaylist", "EnableAutoSwitchPlaylist", False)
+
     # 亚克力背景设置（主页正在播放卡片使用）
     acrylic_enabled = ConfigItem("Appearance", "AcrylicEnabled", True)
     acrylic_blur_radius = ConfigItem("Appearance", "AcrylicBlurRadius", 3)
