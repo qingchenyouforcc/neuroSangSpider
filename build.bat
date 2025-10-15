@@ -69,6 +69,7 @@ echo ✅ 运行时目录已创建
 
 echo.
 echo 7. 打包完成！
-echo 可执行文件位置: dist\NeuroSongSpider\NeuroSongSpider.exe
+echo.
+echo ^可执行文件位置: dist\NeuroSongSpider\NeuroSongSpider.exe
 echo.
 pause
