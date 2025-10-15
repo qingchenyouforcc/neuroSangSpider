@@ -188,10 +188,26 @@ def run_music_download(
 
             sync(download_music(bv, output_file, 0))
         else:
-            # 下载指定的多个分P
+            # 下载指定的多个分P，获取分P信息以使用分P标题
+            parts_info = get_video_parts_sync(bv)
+
             for part_num in parts:
                 part_index = part_num - 1  # 页码从1开始，索引从0开始
-                output_file = MUSIC_DIR / f"{title}_P{part_num}.{file_type}"
+
+                # 查找对应分P的标题
+                part_title = None
+                for part_info in parts_info:
+                    if part_info["page"] == part_num:
+                        part_title = part_info["part"]
+                        break
+
+                # 如果找到了分P标题，使用分P标题；否则使用P{num}格式
+                if part_title:
+                    safe_part_title = fix_filename(part_title).replace(" ", "").replace("_", "", 1)
+                    output_file = MUSIC_DIR / f"{title}_{safe_part_title}.{file_type}"
+                else:
+                    output_file = MUSIC_DIR / f"{title}_P{part_num}.{file_type}"
+
                 logger.info(f"  输出文件: {output_file}")
 
                 # 如果文件存在，执行覆盖操作

@@ -501,12 +501,27 @@ class SearchInterface(QWidget):
                     logger.info("用户取消下载")
                     return
         else:
-            # 多个分P，检查是否有文件存在
+            # 多个分P，检查是否有文件存在（使用分P标题）
             existing_files = []
             for part_num in selected_parts:
-                output_file = MUSIC_DIR / f"{title}_P{part_num}.{fileType}"
+                # 查找对应分P的标题
+                part_title = None
+                for part_info in parts_info:
+                    if part_info["page"] == part_num:
+                        part_title = part_info["part"]
+                        break
+
+                # 生成与下载时相同的文件名
+                if part_title:
+                    safe_part_title = fix_filename(part_title).replace(" ", "").replace("_", "", 1)
+                    output_file = MUSIC_DIR / f"{title}_{safe_part_title}.{fileType}"
+                    display_name = part_title
+                else:
+                    output_file = MUSIC_DIR / f"{title}_P{part_num}.{fileType}"
+                    display_name = f"P{part_num}"
+
                 if output_file.exists():
-                    existing_files.append(f"P{part_num}")
+                    existing_files.append(display_name)
 
             if existing_files:
                 existing_str = ", ".join(existing_files)
