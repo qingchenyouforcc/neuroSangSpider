@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from loguru import logger
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
@@ -6,7 +7,6 @@ from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QV
 from PyQt6.QtGui import QFontMetrics
 import random
 from qfluentwidgets import (
-    FluentWindow,
     InfoBar,
     InfoBarPosition,
     MessageBox,
@@ -33,6 +33,9 @@ from src.core.download_queue import DownloadQueueManager, DownloadTask
 from src.ui.components.download_queue_dialog import DownloadQueueDialog
 from src.ui.components.part_selection_dialog import MultiPartChoiceDialog, PartSelectionDialog
 from src.utils.text import fix_filename, format_date_str
+
+if TYPE_CHECKING:
+    from src.ui.main_window import MainWindow
 
 
 class SimpleThread(QThread):
@@ -64,7 +67,7 @@ def showLoading(target):
 class SearchInterface(QWidget):
     """搜索GUI"""
 
-    def __init__(self, parent, main_window: FluentWindow):
+    def __init__(self, parent, main_window: "MainWindow"):
         super().__init__(parent=parent)
         self._search_ = None
         self.main_window = main_window
@@ -176,6 +179,10 @@ class SearchInterface(QWidget):
                 duration=2000,
                 parent=self,
             )
+
+            if cfg.auto_switch_playlist.value:
+                self.switch_to_playlist()
+
         else:
             InfoBar.error(
                 title=t("common.error"),
@@ -398,6 +405,24 @@ class SearchInterface(QWidget):
         except Exception:
             logger.exception("计算自适应标题宽度失败")
             return 0
+
+    def switch_to_playlist(self):
+        # 获取刚下载的歌曲信息
+        index = self.tableView.currentRow()
+        if index >= 0:
+            info = self.search_result.select_info(index)
+            if info:
+                fileType = cfg.download_type.value
+                title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
+                downloaded_file_name = f"{title}.{fileType}"
+
+                # 切换到本地播放器界面
+                self.main_window.switchTo(self.main_window.localPlayerInterface)
+
+                # 延迟执行选中歌曲的操作，确保界面已加载完成
+                QTimer.singleShot(
+                    100, lambda: self.main_window.localPlayerInterface.select_and_highlight_song(downloaded_file_name)
+                )
 
     def writeList(self):
         """将搜索结果写入表格"""
