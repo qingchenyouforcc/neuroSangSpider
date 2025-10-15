@@ -39,10 +39,15 @@ class MainWindow(FluentWindow):
         # 设置初始窗口大小
         desktop = QApplication.primaryScreen()
         if desktop:  # 确保 desktop 对象不是 None
-            self.resize(QSize(680, 530))
-        # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
+            initial_size = QSize(desktop.availableGeometry().width() // 3, desktop.availableGeometry().height() // 2)
+            self.resize(initial_size)
+            self._initial_size = initial_size  # 保存初始大小，供启动画面结束后恢复使用
+            logger.info(f"已设置初始窗口大小为 {self.size().width()}x{self.size().height()}")
         else:  # 如果获取不到主屏幕信息，给一个默认大小
-            self.resize(QSize(680, 530))
+            initial_size = QSize(780, 530)
+            self.resize(initial_size)
+            self._initial_size = initial_size  # 保存初始大小
+            logger.warning("未找到可用的屏幕，已使用默认大小 780x530")
 
         # 创建并显示启动页面（使用 GIF 动画，播放 1 轮后自动关闭并显示主窗口）
         frames_dir = ASSETS_DIR / "main_loading"

@@ -148,11 +148,16 @@ class AnimatedSplashScreen(QWidget):
 
         # 如果有父窗口，显示父窗口和播放器窗口
         if self._parent and isinstance(self._parent, QWidget):
+            # 在显示主窗口之前，确保窗口大小设置生效
+            # 检查父窗口是否有保存的初始大小
+            if hasattr(self._parent, "_initial_size"):
+                initial_size = getattr(self._parent, "_initial_size")
+                logger.info(f"恢复主窗口初始大小: {initial_size}")
+                self._parent.resize(initial_size)
+
             logger.info("显示主窗口")
             self._parent.show()
 
-            # 显示播放器窗口（如果存在）
-            player_bar = getattr(self._parent, "player_bar", None)
-            if player_bar:
-                logger.info("显示播放器窗口")
-                player_bar.show()
+            # 播放器窗口默认隐藏，不自动显示
+            # 用户可以通过界面操作来显示播放器窗口
+            logger.info("播放器窗口默认隐藏")
