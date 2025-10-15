@@ -5,7 +5,6 @@ from loguru import logger
 from PyQt6 import QtGui
 from PyQt6.QtCore import QSize, QProcess
 from PyQt6.QtWidgets import QApplication
-from qfluentwidgets import SplashScreen
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition, SystemThemeListener
 
@@ -16,6 +15,7 @@ from src.app_context import app_context
 from src.ui.interface.home import HomeInterface
 from src.ui.interface.local_player import LocalPlayerInterface
 from src.ui.widgets.media_player_bar import CustomMediaPlayBar
+from src.ui.widgets.animated_splash_screen import AnimatedSplashScreen
 from src.ui.interface.play_queue import PlayQueueInterface
 from src.ui.interface.search import SearchInterface
 from src.ui.interface.settings import SettingInterface
@@ -36,24 +36,31 @@ class MainWindow(FluentWindow):
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
 
-        # 创建启动页面
-        self.splashScreen = SplashScreen(self.windowIcon(), self)
-        self.splashScreen.setIconSize(QSize(64, 64))
-
         # 设置初始窗口大小
         desktop = QApplication.primaryScreen()
         if desktop:  # 确保 desktop 对象不是 None
-            self.resize(QSize(680, 530))
-        # self.resize(QSize(desktop.availableGeometry().width() // 2, desktop.availableGeometry().height() // 2))
+            initial_size = QSize(desktop.availableGeometry().width() // 3, desktop.availableGeometry().height() // 2)
+            self.resize(initial_size)
+            self._initial_size = initial_size  # 保存初始大小，供启动画面结束后恢复使用
+            logger.info(f"已设置初始窗口大小为 {self.size().width()}x{self.size().height()}")
         else:  # 如果获取不到主屏幕信息，给一个默认大小
-            self.resize(QSize(680, 530))
+            initial_size = QSize(780, 530)
+            self.resize(initial_size)
+            self._initial_size = initial_size  # 保存初始大小
+            logger.warning("未找到可用的屏幕，已使用默认大小 780x530")
+
+        # 创建并显示启动页面（使用 GIF 动画，播放 1 轮后自动关闭并显示主窗口）
+        frames_dir = ASSETS_DIR / "main_loading"
+        self.splashScreen = AnimatedSplashScreen(frames_dir, self, frame_delay=100, loop_count=1)
+        self.splashScreen.show()  # 立即显示启动画面
 
         # TODO 实现按照配置文件主题切换，bug没修好
         # 临时方案：按照系统主题修改
         cfg.set_theme(Theme.AUTO)
         logger.info("应用默认主题: AUTO")
 
-        self.show()
+        # 不在这里显示主窗口，等启动画面动画完成后再显示
+        # self.show()  # 注释掉这行
 
         # 添加子界面
         self.addSubInterface(
@@ -62,28 +69,32 @@ class MainWindow(FluentWindow):
             text=t("nav.home"),
             position=NavigationItemPosition.TOP,
         )
-        self.searchInterface = SearchInterface(self, main_window=self)
+        QApplication.processEvents()  # 让启动画面动画有机会播放
+
         self.addSubInterface(
             interface=self.searchInterface,
             icon=FIF.SEARCH,
             text=t("nav.search"),
             position=NavigationItemPosition.TOP,
         )
-        self.playQueueInterface = PlayQueueInterface(self, main_window=self)
+        QApplication.processEvents()  # 让启动画面动画有机会播放
+
         self.addSubInterface(
             interface=self.playQueueInterface,
             icon=FIF.ALIGNMENT,
             text=t("nav.play_queue"),
             position=NavigationItemPosition.TOP,
         )
-        self.localPlayerInterface = LocalPlayerInterface(self, main_window=self)
+        QApplication.processEvents()  # 让启动画面动画有机会播放
+
         self.addSubInterface(
             interface=self.localPlayerInterface,
             icon=FIF.PLAY,
             text=t("nav.local_player"),
             position=NavigationItemPosition.BOTTOM,
         )
-        self.settingInterface = SettingInterface(self)
+        QApplication.processEvents()  # 让启动画面动画有机会播放
+
         self.addSubInterface(
             interface=self.settingInterface,
             icon=FIF.SETTING,
@@ -98,7 +109,8 @@ class MainWindow(FluentWindow):
         self.player_bar.player.setVolume(cfg.volume.value)
         self.player_bar.setWindowIcon(icon)
         self.player_bar.setWindowTitle(t("player.title"))
-        self.player_bar.show()
+        # 不在这里显示播放器窗口，等启动画面动画完成后再显示
+        # self.player_bar.show()
         app_context.player = self.player_bar
 
         # 设置默认音频格式
@@ -114,8 +126,8 @@ class MainWindow(FluentWindow):
         except Exception as e:
             logger.exception(f"尝试恢复播放队列时出错: {e}")
 
-        # 隐藏启动页面
-        self.splashScreen.finish()
+        # 启动画面会在动画播放完成后自动关闭并显示主窗口
+        # 不需要手动调用 finish()
 
     def closeEvent(self, event):  # type: ignore[override]
         if not self.is_language_restart:
@@ -229,6 +241,18 @@ class MainWindow(FluentWindow):
         from src.core.player import save_current_play_queue
 
         save_current_play_queue()
+
+        # 停止下载队列
+        try:
+            # 遍历所有子界面，找到SearchInterface并停止其下载队列
+            for i in range(self.stackedWidget.count()):
+                widget = self.stackedWidget.widget(i)
+                download_queue = getattr(widget, "download_queue", None)
+                if download_queue and hasattr(download_queue, "stop"):
+                    logger.info("正在停止下载队列...")
+                    download_queue.stop()
+        except Exception:
+            logger.exception("停止下载队列时出错")
 
         # 终止系统主题监听器
         self.themeListener.terminate()

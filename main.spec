@@ -7,6 +7,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ("src/assets", "assets"),
+        ("src/assets/main_loading", "assets/main_loading"),  # 显式包含启动动画资源
     ],
     hiddenimports=[
         "socket",

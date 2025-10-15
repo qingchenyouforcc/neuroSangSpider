@@ -21,6 +21,9 @@ from src.core.queue_service import queue_service
 
 import shutil
 import time
+import os
+import subprocess
+import platform
 
 if TYPE_CHECKING:
     from ui.main_window import MainWindow
@@ -96,12 +99,15 @@ class LocalPlayerInterface(QWidget):
         self.delSongBtn.setToolTip(t("local_player.delete_tooltip"))
         self.addQueueAllBtn = TransparentToolButton(FIF.CHEVRON_DOWN_MED, self)
         self.addQueueAllBtn.setToolTip(t("local_player.add_all_tooltip"))
+        self.openFolderBtn = TransparentToolButton(FIF.FOLDER, self)
+        self.openFolderBtn.setToolTip(t("local_player.open_folder_tooltip"))
 
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addStretch(1)
         title_layout.addWidget(self.openInfoTip, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.openPlayer, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.openFolderBtn, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.addQueueAllBtn, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.delSongBtn, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.addQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
@@ -117,6 +123,7 @@ class LocalPlayerInterface(QWidget):
         self.openInfoTip.clicked.connect(open_info_tip)
         self.delSongBtn.clicked.connect(self.del_song)
         self.addQueueAllBtn.clicked.connect(self.add_all_to_queue)
+        self.openFolderBtn.clicked.connect(self.open_music_folder)
 
         self.load_local_songs()
 
@@ -657,6 +664,37 @@ class LocalPlayerInterface(QWidget):
                 self._first_load = False
         except Exception as e:
             logger.exception(f"清理无效文件时出错: {e}")
+
+    def open_music_folder(self):
+        """打开音乐文件夹"""
+        try:
+            music_dir = str(MUSIC_DIR.absolute())
+
+            # 确保文件夹存在
+            if not MUSIC_DIR.exists():
+                MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+                logger.info(f"创建音乐文件夹: {music_dir}")
+
+            # 根据操作系统打开文件夹
+            system = platform.system()
+            if system == "Windows":
+                os.startfile(music_dir)
+            elif system == "Darwin":  # macOS
+                subprocess.Popen(["open", music_dir])
+            else:  # Linux
+                subprocess.Popen(["xdg-open", music_dir])
+
+            logger.info(f"已打开音乐文件夹: {music_dir}")
+        except Exception as e:
+            logger.exception(f"打开音乐文件夹失败: {e}")
+            InfoBar.error(
+                t("common.fail"),
+                t("local_player.open_folder_error"),
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.TOP,
+                duration=1500,
+                parent=self.parent(),
+            )
 
     def showEvent(self, a0):
         """当页面显示时触发刷新"""

@@ -81,6 +81,10 @@ uv run main.py
 
 ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/b179a2b1bd812119dbb31b9c6bd6d184.png)
 
+### 感谢萝卜猫提供的加载动画授权
+
+- 魔法少女_卡洛特 https://space.bilibili.com/2038218765
+
 ### 感谢Stazer提供的加载动画授权
 
 - 稳定器stz https://space.bilibili.com/125198191
@@ -101,6 +105,14 @@ uv run main.py
 还有对本项目做出贡献的所有开发者
 
 ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/681dcdd42da7fc5484c1dd3a9875b54a_324.png)
+
+---
+## 广告位
+如果你对neuro同人作品感兴趣的话
+
+请加入文学社谢谢喵
+
+**NeuroEcho文学社1063898428**
 
 ---
 
