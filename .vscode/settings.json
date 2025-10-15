@@ -4,6 +4,8 @@
         "atext",
         "beautifulsoup",
         "bvid",
+        "chcp",
+        "ERRORLEVEL",
         "execv",
         "filevers",
         "flac",
@@ -13,12 +15,14 @@
         "mday",
         "pixmap",
         "prodvers",
+        "pyinstaller",
         "qcolor",
         "SESSDATA",
         "slist",
         "titlebar",
         "tqdm",
         "u'qingchenyouforcc",
+        "xcopy",
         "ZWNJ",
         "ZWSP"
     ]
