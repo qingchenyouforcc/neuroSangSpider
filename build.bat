@@ -12,17 +12,6 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo.
-echo 2. 同步语言文件从 data\i18n 到 src\assets\i18n...
-if not exist "src\assets\i18n\" mkdir "src\assets\i18n\"
-xcopy /Y /Q "data\i18n\*.properties" "src\assets\i18n\"
-if %ERRORLEVEL% neq 0 (
-    echo 同步语言文件失败！
-    pause
-    exit /b 1
-)
-echo ✅ 语言文件同步完成
-
-echo.
 echo 3. 清理旧的构建文件...
 if exist "dist\NeuroSongSpider\" (
     rmdir /s /q "dist\NeuroSongSpider\"
