@@ -141,9 +141,19 @@ def subprocess_options() -> _SubprocessOptions:
 
 
 def detect_ffmpeg() -> Path:
+    # 首先检查打包后的ffmpeg位置
+    if getattr(sys, "frozen", False):
+        # 打包后的环境，ffmpeg在_internal目录中
+        # noinspection PyProtectedMember
+        bundled_ffmpeg = Path(sys._MEIPASS) / "ffmpeg" / "bin" / "ffmpeg.exe"  # type: ignore
+        if bundled_ffmpeg.exists():
+            return bundled_ffmpeg
+
+    # 然后检查开发环境的ffmpeg位置
     if IS_WINDOWS and (fp := MAIN_PATH / "ffmpeg" / "bin" / "ffmpeg.exe").exists():
         return fp
 
+    # 最后尝试从系统路径查找
     if IS_WINDOWS:
         cmd = ["cmd.exe", "/c", "where ffmpeg"]
     else:
@@ -171,7 +181,17 @@ def get_assets_path() -> Path:
         return Path(__file__).parent / "assets"
 
 
-MAIN_PATH = Path.cwd()
+def get_main_path() -> Path:
+    """获取主程序路径（exe所在目录或项目根目录）"""
+    if getattr(sys, "frozen", False):
+        # 打包后的环境，返回exe所在目录
+        return Path(sys.executable).parent
+    else:
+        # 开发环境，返回当前工作目录
+        return Path.cwd()
+
+
+MAIN_PATH = get_main_path()
 DATA_DIR = MAIN_PATH / "data"
 CACHE_DIR = DATA_DIR / "cache"
 MUSIC_DIR = DATA_DIR / "music"

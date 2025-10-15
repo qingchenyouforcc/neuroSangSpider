@@ -8,6 +8,8 @@ a = Analysis(
     datas=[
         ("src/assets", "assets"),
         ("src/assets/main_loading", "assets/main_loading"),  # 显式包含启动动画资源
+        ("ffmpeg/bin", "ffmpeg/bin"),  # 包含 ffmpeg 可执行文件
+        ("data/i18n", "data/i18n"),  # 包含语言文件
     ],
     hiddenimports=[
         "socket",
