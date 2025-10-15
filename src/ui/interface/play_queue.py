@@ -7,6 +7,7 @@ from qfluentwidgets import (
     FluentWindow,
     InfoBar,
     InfoBarPosition,
+    MessageBox,
     TableWidget,
     TitleLabel,
     TransparentToolButton,
@@ -68,6 +69,8 @@ class PlayQueueInterface(QWidget):
         self.downSongButton.setToolTip(t("play_queue.down_tooltip"))
         self.sequenceButton = TransparentToolButton(FIF.SAVE, self)
         self.sequenceButton.setToolTip(t("play_queue.sequence_tooltip"))
+        self.clearAllButton = TransparentToolButton(FIF.CANCEL, self)
+        self.clearAllButton.setToolTip(t("play_queue.clear_all_tooltip"))
 
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
         title_layout.addWidget(self.refreshButton, alignment=Qt.AlignmentFlag.AlignRight)
@@ -77,6 +80,7 @@ class PlayQueueInterface(QWidget):
         title_layout.addWidget(self.upSongButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.downSongButton, alignment=Qt.AlignmentFlag.AlignRight)
         title_layout.addWidget(self.delQueueButton, alignment=Qt.AlignmentFlag.AlignRight)
+        title_layout.addWidget(self.clearAllButton, alignment=Qt.AlignmentFlag.AlignRight)
 
         self._layout.addLayout(title_layout)
         self._layout.addWidget(self.tableView)
@@ -88,6 +92,7 @@ class PlayQueueInterface(QWidget):
         self.delQueueButton.clicked.connect(self.del_queue)
         self.refreshButton.clicked.connect(self.load_play_queue)
         self.sequenceButton.clicked.connect(self.open_sequence_dialog)
+        self.clearAllButton.clicked.connect(self.clear_all_queue)
         self.tableView.cellDoubleClicked.connect(self.play_selected_song)
 
         # 初次加载
@@ -107,7 +112,8 @@ class PlayQueueInterface(QWidget):
                 duration=1000,
                 parent=self.main_window,
             )
-            self.tableView.clear()
+            self.tableView.clearContents()
+            self.tableView.setRowCount(0)
             return
 
         try:
@@ -172,6 +178,44 @@ class PlayQueueInterface(QWidget):
                 self.load_play_queue()
             except Exception:
                 logger.exception("删除歌曲失败")
+
+    def clear_all_queue(self):
+        """清空播放队列"""
+        if not queue_service.get_queue():
+            InfoBar.warning(
+                t("common.info"),
+                t("play_queue.empty"),
+                orient=Qt.Orientation.Horizontal,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1000,
+                parent=self.main_window,
+            )
+            return
+
+        # 获取当前队列长度
+        queue_count = queue_service.length()
+
+        # 创建确认对话框
+        w = MessageBox(
+            t("play_queue.clear_confirm"),
+            t("play_queue.clear_confirm_message", count=queue_count),
+            self.main_window,
+        )
+        if w.exec():
+            try:
+                queue_service.clear()
+                logger.info(f"已清空播放队列，共 {queue_count} 首歌曲")
+                self.load_play_queue()
+                InfoBar.success(
+                    t("common.info"),
+                    t("play_queue.cleared_success", count=queue_count),
+                    orient=Qt.Orientation.Horizontal,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    duration=2000,
+                    parent=self.main_window,
+                )
+            except Exception:
+                logger.exception("清空播放队列失败")
 
     @staticmethod
     def play_selected_song(row):
