@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from loguru import logger
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
@@ -6,7 +7,6 @@ from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QV
 from PyQt6.QtGui import QFontMetrics
 import random
 from qfluentwidgets import (
-    FluentWindow,
     InfoBar,
     InfoBarPosition,
     MessageBox,
@@ -33,6 +33,9 @@ from src.core.download_queue import DownloadQueueManager, DownloadTask
 from src.ui.components.download_queue_dialog import DownloadQueueDialog
 from src.ui.components.part_selection_dialog import MultiPartChoiceDialog, PartSelectionDialog
 from src.utils.text import fix_filename, format_date_str
+
+if TYPE_CHECKING:
+    from src.ui.main_window import MainWindow
 
 
 class SimpleThread(QThread):
@@ -64,7 +67,7 @@ def showLoading(target):
 class SearchInterface(QWidget):
     """搜索GUI"""
 
-    def __init__(self, parent, main_window: FluentWindow):
+    def __init__(self, parent, main_window: "MainWindow"):
         super().__init__(parent=parent)
         self._search_ = None
         self.main_window = main_window
@@ -178,7 +181,7 @@ class SearchInterface(QWidget):
             )
 
             if cfg.auto_switch_playlist.value:
-                    self.switch_to_playlist()
+                self.switch_to_playlist()
 
         else:
             InfoBar.error(
@@ -417,8 +420,9 @@ class SearchInterface(QWidget):
                 self.main_window.switchTo(self.main_window.localPlayerInterface)
 
                 # 延迟执行选中歌曲的操作，确保界面已加载完成
-                QTimer.singleShot(100, lambda: self.main_window.localPlayerInterface.select_and_highlight_song(
-                    downloaded_file_name))
+                QTimer.singleShot(
+                    100, lambda: self.main_window.localPlayerInterface.select_and_highlight_song(downloaded_file_name)
+                )
 
     def writeList(self):
         """将搜索结果写入表格"""
