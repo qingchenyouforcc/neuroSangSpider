@@ -242,6 +242,26 @@ class LocalPlayerInterface(QWidget):
         except Exception:
             logger.exception("加载本地歌曲失败")
 
+    def select_and_highlight_song(self, filename: str):
+        """在本地播放器中选中并高亮显示指定文件名的歌曲"""
+        try:
+            # 遍历所有行查找匹配的文件名
+            for row in range(self.tableView.rowCount()):
+                item = self.tableView.item(row, self._name_col())
+                if item and item.data(Qt.ItemDataRole.UserRole) == filename:
+                    # 选中该行
+                    self.tableView.selectRow(row)
+                    # 滚动到该行
+                    self.tableView.scrollToItem(item, QAbstractItemView.ScrollHint.PositionAtCenter)
+                    logger.info(f"已在本地播放器中选中歌曲: {filename}")
+                    return True
+            
+            logger.warning(f"未在本地播放器中找到歌曲: {filename}")
+            return False
+        except Exception as e:
+            logger.exception(f"选中歌曲时出错: {e}")
+            return False
+
     def play_selected_song(self, row, column=None):
         """双击播放指定行的歌曲
 
