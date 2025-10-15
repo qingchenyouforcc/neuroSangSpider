@@ -193,6 +193,11 @@ class SettingsCard(GroupHeaderCardWidget):
         self.playerBarSwitch.setChecked(cfg.enable_player_bar.value)
         self.playerBarSwitch.checkedChanged.connect(self.on_player_bar_switch_changed)
 
+        # 下载后自动聚焦到歌曲列表
+        self.autoSwitchPlaylistSwitch = SwitchButton(parent=self)
+        self.autoSwitchPlaylistSwitch.setChecked(cfg.auto_switch_playlist.value)
+        self.autoSwitchPlaylistSwitch.checkedChanged.connect(self.on_auto_switch_playlist_changed)
+
         # 封面显示开关
         self.coverSwitch = SwitchButton(parent=self)
         self.coverSwitch.setChecked(cfg.enable_cover.value)
@@ -252,6 +257,12 @@ class SettingsCard(GroupHeaderCardWidget):
             t("settings.player_bar"),
             t("settings.player_bar_desc"),
             self.playerBarSwitch,
+        )
+        self.addGroup(
+            FluentIcon.LINK,
+            t("settings.auto_switch_playlist_title"),
+            t("settings.auto_switch_playlist_desc"),
+            self.autoSwitchPlaylistSwitch,
         )
         self.addGroup(
             FluentIcon.BRUSH,
@@ -322,6 +333,17 @@ class SettingsCard(GroupHeaderCardWidget):
         InfoBar.success(
             t("common.settings_success"),
             t("common.player_bar_set", display_mode=t("common.enabled") if checked else t("common.disabled")),
+            parent=app_context.main_window,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+        )
+
+    def on_auto_switch_playlist_changed(self, checked: bool) -> None:
+        cfg.auto_switch_playlist.value = checked
+        cfg.save()
+        InfoBar.success(
+            t("common.settings_success"),
+            t("settings.auto_switch_playlist_to", status=t("common.enabled") if checked else t("common.disabled")),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,

@@ -72,7 +72,7 @@ class MainWindow(FluentWindow):
         QApplication.processEvents()  # 让启动画面动画有机会播放
 
         self.addSubInterface(
-            interface=SearchInterface(self, main_window=self),
+            interface=self.searchInterface,
             icon=FIF.SEARCH,
             text=t("nav.search"),
             position=NavigationItemPosition.TOP,
@@ -80,7 +80,7 @@ class MainWindow(FluentWindow):
         QApplication.processEvents()  # 让启动画面动画有机会播放
 
         self.addSubInterface(
-            interface=PlayQueueInterface(self, main_window=self),
+            interface=self.playQueueInterface,
             icon=FIF.ALIGNMENT,
             text=t("nav.play_queue"),
             position=NavigationItemPosition.TOP,
@@ -88,7 +88,7 @@ class MainWindow(FluentWindow):
         QApplication.processEvents()  # 让启动画面动画有机会播放
 
         self.addSubInterface(
-            interface=LocalPlayerInterface(self, main_window=self),
+            interface=self.localPlayerInterface,
             icon=FIF.PLAY,
             text=t("nav.local_player"),
             position=NavigationItemPosition.BOTTOM,
@@ -96,7 +96,7 @@ class MainWindow(FluentWindow):
         QApplication.processEvents()  # 让启动画面动画有机会播放
 
         self.addSubInterface(
-            interface=SettingInterface(self),
+            interface=self.settingInterface,
             icon=FIF.SETTING,
             text=t("nav.settings"),
             position=NavigationItemPosition.BOTTOM,
