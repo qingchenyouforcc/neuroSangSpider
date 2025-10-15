@@ -39,11 +39,11 @@ async def download(url: str, ext: str, intro: str):
         cache_file.unlink(missing_ok=True)
 
 
-async def download_music(bvid: str, output_file: Path) -> None:
+async def download_music(bvid: str, output_file: Path, page_index: int = 0) -> None:
     # 实例化 Video 类
     v = video.Video(bvid, credential=get_credential())
     # 获取视频下载链接
-    download_url_data = await v.get_download_url(0)
+    download_url_data = await v.get_download_url(page_index)
     # 解析视频下载信息
     detecter = video.VideoDownloadURLDataDetecter(data=download_url_data)
     streams = detecter.detect_best_streams()
@@ -68,6 +68,52 @@ async def download_music(bvid: str, output_file: Path) -> None:
         ).check_returncode()
 
     logger.info(f"已下载为：{output_file}")
+
+
+async def get_video_parts(bvid: str) -> list[dict]:
+    """获取视频的分P信息
+
+    Args:
+        bvid: 视频BV号
+
+    Returns:
+        分P信息列表，每个元素包含 'page' (页码) 和 'part' (标题) 字段
+        如果只有一个分P，返回空列表
+    """
+    try:
+        v = video.Video(bvid, credential=get_credential())
+        info = await v.get_info()
+
+        # 获取分P信息
+        pages = info.get("pages", [])
+
+        # 如果只有一个分P，返回空列表
+        if len(pages) <= 1:
+            return []
+
+        # 返回分P信息
+        return [
+            {
+                "page": page.get("page", idx + 1),
+                "part": page.get("part", f"分P {idx + 1}"),
+            }
+            for idx, page in enumerate(pages)
+        ]
+    except Exception:
+        logger.exception(f"获取视频分P信息失败: {bvid}")
+        return []
+
+
+def get_video_parts_sync(bvid: str) -> list[dict]:
+    """同步方式获取视频的分P信息
+
+    Args:
+        bvid: 视频BV号
+
+    Returns:
+        分P信息列表
+    """
+    return sync(get_video_parts(bvid))
 
 
 def search_song_list(search_content: str) -> SongList | None:
@@ -103,8 +149,20 @@ def search_song_list(search_content: str) -> SongList | None:
     return search_result_list
 
 
-def run_music_download(index: int, search_list: SongList, file_type: str = "mp3") -> bool:
-    """运行下载器"""
+def run_music_download(
+    index: int, search_list: SongList, file_type: str = "mp3", parts: list[int] | None = None
+) -> bool:
+    """运行下载器
+
+    Args:
+        index: 歌曲索引
+        search_list: 搜索结果列表
+        file_type: 文件类型
+        parts: 要下载的分P页码列表，None表示下载第一个分P或全部分P
+
+    Returns:
+        是否下载成功
+    """
     info = search_list.select_info(index)
     if info is None:
         logger.error("索引超出范围或信息不存在")
@@ -113,18 +171,35 @@ def run_music_download(index: int, search_list: SongList, file_type: str = "mp3"
     bv = info["bv"]
     file_name = info["title"]
     title = fix_filename(file_name).replace(" ", "").replace("_", "", 1)
-    output_file = MUSIC_DIR / f"{title}.{file_type}"
+
     logger.info(f"选择第 {index + 1} 个，开始下载歌曲")
     logger.info(f"  BVID: {bv}")
     logger.info(f"  title: {title}")
-    logger.info(f"  输出文件: {output_file}")
-
-    # 如果文件存在，执行覆盖操作
-    if output_file.exists():
-        logger.info(f"文件 {output_file} 已存在，执行覆盖操作。")
 
     try:
-        sync(download_music(bv, output_file))
+        # 如果没有指定分P，下载第一个分P（索引为0）
+        if parts is None:
+            output_file = MUSIC_DIR / f"{title}.{file_type}"
+            logger.info(f"  输出文件: {output_file}")
+
+            # 如果文件存在，执行覆盖操作
+            if output_file.exists():
+                logger.info(f"文件 {output_file} 已存在，执行覆盖操作。")
+
+            sync(download_music(bv, output_file, 0))
+        else:
+            # 下载指定的多个分P
+            for part_num in parts:
+                part_index = part_num - 1  # 页码从1开始，索引从0开始
+                output_file = MUSIC_DIR / f"{title}_P{part_num}.{file_type}"
+                logger.info(f"  输出文件: {output_file}")
+
+                # 如果文件存在，执行覆盖操作
+                if output_file.exists():
+                    logger.info(f"文件 {output_file} 已存在，执行覆盖操作。")
+
+                sync(download_music(bv, output_file, part_index))
+
         return True
     except Exception:
         logger.exception(f"下载失败: {bv}")

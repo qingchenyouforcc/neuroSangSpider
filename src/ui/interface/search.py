@@ -21,7 +21,7 @@ from qfluentwidgets import (
 
 from src.i18n import t
 from src.app_context import app_context
-from src.bili_api import create_video_list_file, run_music_download, search_song_list
+from src.bili_api import create_video_list_file, run_music_download, search_song_list, get_video_parts_sync
 from src.config import ASSETS_DIR, MUSIC_DIR, cfg
 from src.core.song_list import SongList
 from src.core.search_core import (
@@ -31,6 +31,7 @@ from src.core.search_core import (
 )
 from src.core.download_queue import DownloadQueueManager, DownloadTask
 from src.ui.components.download_queue_dialog import DownloadQueueDialog
+from src.ui.components.part_selection_dialog import MultiPartChoiceDialog, PartSelectionDialog
 from src.utils.text import fix_filename, format_date_str
 
 
@@ -453,16 +454,70 @@ class SearchInterface(QWidget):
         if not info:
             return
 
+        bvid = info["bv"]
         fileType = cfg.download_type.value
-        title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
-        output_file = MUSIC_DIR / f"{title}.{fileType}"
 
-        # 如果文件存在，先在主线程弹出提示窗口
-        if output_file.exists():
-            m = MessageBox(t("common.info"), t("search.file_exists_overwrite"), self.main_window)
-            if not m.exec():
+        # 检测视频分P
+        try:
+            parts_info = get_video_parts_sync(bvid)
+        except Exception:
+            logger.exception("检测视频分P失败")
+            parts_info = []
+
+        # 用户选择的分P列表
+        selected_parts: list[int] | None = None
+
+        # 如果是多分P视频，弹出选择对话框
+        if parts_info:
+            choice_dialog = MultiPartChoiceDialog(len(parts_info), self.main_window)
+            if not choice_dialog.exec():
                 logger.info("用户取消下载")
                 return
+
+            choice = choice_dialog.get_choice()
+            if choice == "all":
+                # 下载全部分P
+                selected_parts = [p["page"] for p in parts_info]
+            elif choice == "select":
+                # 让用户选择具体分P
+                part_dialog = PartSelectionDialog(parts_info, self.main_window)
+                if not part_dialog.exec():
+                    logger.info("用户取消下载")
+                    return
+                selected_parts = part_dialog.get_selected_parts()
+            else:
+                logger.info("用户取消下载")
+                return
+
+        # 检查文件是否存在
+        title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
+
+        if selected_parts is None:
+            # 单个文件
+            output_file = MUSIC_DIR / f"{title}.{fileType}"
+            if output_file.exists():
+                m = MessageBox(t("common.info"), t("search.file_exists_overwrite"), self.main_window)
+                if not m.exec():
+                    logger.info("用户取消下载")
+                    return
+        else:
+            # 多个分P，检查是否有文件存在
+            existing_files = []
+            for part_num in selected_parts:
+                output_file = MUSIC_DIR / f"{title}_P{part_num}.{fileType}"
+                if output_file.exists():
+                    existing_files.append(f"P{part_num}")
+
+            if existing_files:
+                existing_str = ", ".join(existing_files)
+                m = MessageBox(
+                    t("common.info"),
+                    f"{t('search.file_exists_overwrite')}\n已存在: {existing_str}",
+                    self.main_window,
+                )
+                if not m.exec():
+                    logger.info("用户取消下载")
+                    return
 
         InfoBar.info(
             title=t("common.info"),
@@ -480,7 +535,11 @@ class SearchInterface(QWidget):
         self.main_window.setEnabled(False)
 
         # 创建并启动下载线程
-        thread = SimpleThread(lambda idx=index, sr=self.search_result, ft=fileType: run_music_download(idx, sr, ft))
+        thread = SimpleThread(
+            lambda idx=index, sr=self.search_result, ft=fileType, parts=selected_parts: run_music_download(
+                idx, sr, ft, parts
+            )
+        )
         thread.task_finished.connect(self.on_download_finished)
         thread.finished.connect(thread.deleteLater)
         self._download_thread = thread
