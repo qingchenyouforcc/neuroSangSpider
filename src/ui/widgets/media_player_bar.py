@@ -2,6 +2,7 @@ from typing import cast
 
 from loguru import logger
 from PyQt6.QtCore import Qt
+from PyQt6.QtMultimedia import QMediaPlayer
 from PyQt6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import CaptionLabel, FluentIcon
 from qfluentwidgets.multimedia import MediaPlayBarButton, MediaPlayer, MediaPlayerBase
@@ -74,12 +75,21 @@ class CustomMediaPlayBar(MediaPlayBarBase):
 
         self.setMediaPlayer(cast(MediaPlayerBase, MediaPlayer(self)))
 
+        cast(QMediaPlayer, self.player).playbackStateChanged.connect(self._onPlayStateChanged)
+
         self.volumeButton.clicked.connect(lambda: self.setVolume(cfg.volume.value))
         self.volumeButton.volumeView.volumeSlider.valueChanged.connect(self.volumeChanged)
         self.skipBackButton.clicked.connect(lambda: self.skipBack(10000))
         self.previousSongButton.clicked.connect(previousSong)
         self.nextSongButton.clicked.connect(nextSong)
         self.modeChangeButton.clicked.connect(self.modeChange)
+
+    def _onPlayStateChanged(self, state: QMediaPlayer.PlaybackState):
+        """Handle play state changed signal"""
+        if state == QMediaPlayer.PlaybackState.PlayingState:
+            self.playButton.setIcon(FluentIcon.PAUSE_BOLD)
+        else:
+            self.playButton.setIcon(FluentIcon.PLAY_SOLID)
 
     @staticmethod
     def volumeChanged(value) -> None:

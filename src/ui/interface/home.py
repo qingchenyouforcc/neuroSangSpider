@@ -1,6 +1,8 @@
+from typing import cast
 from PyQt6.QtCore import Qt, QTimer, QEvent
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLabel
 from PyQt6.QtGui import QIcon, QPainter, QPainterPath, QColor, QPixmap
+from PyQt6.QtMultimedia import QMediaPlayer
 from qfluentwidgets import (
     BodyLabel,
     SubtitleLabel,
@@ -210,6 +212,8 @@ class NowPlayingCard(CardWidget):
         self.updateTimer.timeout.connect(self.updatePlayingInfo)
         self.updateTimer.start()
 
+        self._is_player_connected = False
+
         # 初始化
         self.updatePlayingInfo()
         self._updateStyle()
@@ -222,6 +226,12 @@ class NowPlayingCard(CardWidget):
             cfg.acrylic_luminosity_rgba.valueChanged.connect(lambda *_: self.rebuildAcrylicFromConfig())
         except Exception:
             pass
+
+    def _onPlayStateChanged(self, state):
+        if state == QMediaPlayer.PlaybackState.PlayingState:
+            self.playButton.setIcon(FIF.PAUSE_BOLD)
+        else:
+            self.playButton.setIcon(FIF.PLAY_SOLID)
 
     def _togglePlay(self):
         """切换播放/暂停状态"""
@@ -244,6 +254,10 @@ class NowPlayingCard(CardWidget):
             self.titleIcon.setIcon(FIF.MUSIC)
             self._last_cover_song_name = None
             return
+
+        if not self._is_player_connected and app_context.player.player:
+            cast(QMediaPlayer, app_context.player.player).playbackStateChanged.connect(self._onPlayStateChanged)
+            self._is_player_connected = True
 
         # 更新歌曲名称，美化显示
         song_name = app_context.playing_now.rsplit(".", 1)[0]
