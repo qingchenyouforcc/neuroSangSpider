@@ -1,8 +1,7 @@
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from loguru import logger
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView
 from PyQt6.QtGui import QFontMetrics
 import random
@@ -33,20 +32,10 @@ from src.core.download_queue import DownloadQueueManager, DownloadTask
 from src.ui.components.download_queue_dialog import DownloadQueueDialog
 from src.ui.components.part_selection_dialog import MultiPartChoiceDialog, PartSelectionDialog
 from src.utils.text import fix_filename, format_date_str
+from src.utils.thread import SimpleThread
 
 if TYPE_CHECKING:
     from src.ui.main_window import MainWindow
-
-
-class SimpleThread(QThread):
-    task_finished: pyqtSignal = pyqtSignal(object)
-
-    def __init__(self, call: Callable[[], object]) -> None:
-        super().__init__(None)
-        self.call = call
-
-    def run(self):
-        self.task_finished.emit(self.call())
 
 
 def showLoading(target):
@@ -480,14 +469,34 @@ class SearchInterface(QWidget):
             return
 
         bvid = info["bv"]
-        fileType = cfg.download_type.value
 
-        # 检测视频分P
-        try:
-            parts_info = get_video_parts_sync(bvid)
-        except Exception:
-            logger.exception("检测视频分P失败")
-            parts_info = []
+        # 显示加载动画并禁用按钮，开始获取分P信息
+        self.loading = showLoading(self.DownloadBtn)
+        self.DownloadBtn.setEnabled(False)
+        self.main_window.setEnabled(False)
+
+        # 启动线程获取分P信息
+        self._parts_thread = SimpleThread(lambda: get_video_parts_sync(bvid))
+        self._parts_thread.task_finished.connect(lambda parts: self.on_parts_fetched(parts, index, info))
+        self._parts_thread.start()
+
+    def on_parts_fetched(self, parts_info: list[dict], index: int, info: dict):
+        """分P信息获取完成后的回调"""
+        # 恢复界面状态（如果后续不需要继续阻塞的话，但这里后续可能还有对话框，所以视情况而定）
+        # 这里先关闭加载动画，因为后续可能要弹窗
+        if self.loading:
+            self.loading.close()
+            self.loading = None
+
+        # 注意：这里先不恢复 main_window.setEnabled(True)，因为后面可能还要弹模态对话框
+        # 如果不弹窗直接下载，则会在下载开始时再次禁用，或者下载前恢复
+        # 为了用户体验，这里先恢复，让用户可以操作对话框
+        self.main_window.setEnabled(True)
+        self.DownloadBtn.setEnabled(True)
+        self._parts_thread = None
+
+        fileType = cfg.download_type.value
+        title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
 
         # 用户选择的分P列表
         selected_parts: list[int] | None = None
@@ -515,8 +524,6 @@ class SearchInterface(QWidget):
                 return
 
         # 检查文件是否存在
-        title = fix_filename(info["title"]).replace(" ", "").replace("_", "", 1)
-
         if selected_parts is None:
             # 单个文件
             output_file = MUSIC_DIR / f"{title}.{fileType}"

@@ -5,10 +5,8 @@ from pathlib import Path
 
 from bilibili_api import HEADERS, get_client, sync, video
 from loguru import logger
-from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
 
-from src.app_context import app_context
-from src.config import CACHE_DIR, FFMPEG_PATH, MAIN_PATH, MUSIC_DIR, VIDEO_DIR, DATA_DIR, cfg, subprocess_options
+from src.config import CACHE_DIR, FFMPEG_PATH, MUSIC_DIR, VIDEO_DIR, DATA_DIR, cfg, subprocess_options
 from src.core.song_list import SongList
 from src.core.data_io import load_from_all_data
 from src.utils.text import fix_filename
@@ -237,24 +235,22 @@ def _get_video_title_by_bvid(bvid: str) -> str:
         return bvid
 
 
-def run_music_download_by_bvid(bvid: str, file_type: str = "mp3") -> bool:
+def run_music_download_by_bvid(bvid: str, file_type: str = "mp3", check_exists: bool = True) -> bool:
     """直接根据 BV 号下载音频"""
     try:
         title = _get_video_title_by_bvid(bvid)
         safe_title = fix_filename(title).replace(" ", "").replace("_", "", 1)
         output_file = MUSIC_DIR / f"{safe_title}.{file_type}"
 
-        if output_file.exists():
-            w = MessageBox(
-                "文件已存在",
-                f"文件 '{output_file.relative_to(MAIN_PATH)}' 已存在。是否覆盖？",
-                app_context.main_window,
-            )
-            w.setClosableOnMaskClicked(True)
-            w.setDraggable(True)
-            if not w.exec():
-                logger.info("用户取消下载。")
-                return False
+        if check_exists and output_file.exists():
+            # 在后台线程中无法弹出对话框，默认跳过或覆盖？
+            # 这里为了安全起见，如果是后台批量下载，建议跳过或覆盖，而不是阻塞等待用户输入
+            # 但由于此函数也被 import_custom_songs_and_download 调用，
+            # 而 import_custom_songs_and_download 现在被设计为在后台运行，
+            # 所以这里不能有 UI 交互。
+            # 暂时策略：如果文件存在，记录日志并跳过下载（返回 True 表示已处理）
+            logger.info(f"文件已存在，跳过下载: {output_file}")
+            return True
 
         sync(download_music(bvid, output_file))
         return True
@@ -263,8 +259,17 @@ def run_music_download_by_bvid(bvid: str, file_type: str = "mp3") -> bool:
         return False
 
 
-def import_custom_songs_and_download(directory: Path | None = None, file_type: str = "mp3") -> None:
-    """读取 custom_songs 文件夹中的文本文件，逐行 BV 号下载音频"""
+def import_custom_songs_and_download(directory: Path | None = None, file_type: str = "mp3") -> dict:
+    """读取 custom_songs 文件夹中的文本文件，逐行 BV 号下载音频
+
+    Returns:
+        dict: 包含状态和结果信息的字典
+        {
+            "status": "success" | "error" | "created_dir" | "no_bv",
+            "message": 描述信息,
+            "data": {"success": int, "failed": int} (仅在 status="success" 时存在)
+        }
+    """
     from pathlib import Path as _Path
     import re
 
@@ -273,15 +278,12 @@ def import_custom_songs_and_download(directory: Path | None = None, file_type: s
         base_dir = _Path(base_dir)
         if not base_dir.exists():
             base_dir.mkdir(parents=True, exist_ok=True)
-            InfoBar.info(
-                "已创建目录",
-                f"已创建 {base_dir}，请放入包含 BV 的 txt 文件后重试",
-                position=InfoBarPosition.BOTTOM_RIGHT,
-                parent=app_context.main_window,
-                duration=2500,
-            )
             logger.info(f"已创建 custom_songs 目录: {base_dir}")
-            return
+            return {
+                "status": "created_dir",
+                "message": f"已创建 {base_dir}，请放入包含 BV 的 txt 文件后重试",
+                "path": str(base_dir),
+            }
 
         bv_pattern = re.compile(r"^BV[0-9A-Za-z]+$", re.IGNORECASE)
         bv_set: set[str] = set()
@@ -308,36 +310,20 @@ def import_custom_songs_and_download(directory: Path | None = None, file_type: s
                 logger.exception(f"读取文件失败: {fp}")
 
         if not bv_set:
-            InfoBar.info(
-                "没有可下载的 BV",
-                "未在任何 txt 中找到有效 BV 号",
-                position=InfoBarPosition.BOTTOM_RIGHT,
-                parent=app_context.main_window,
-                duration=2000,
-            )
-            return
+            return {"status": "no_bv", "message": "未在任何 txt 中找到有效 BV 号"}
 
         success, failed = 0, 0
         for bv in sorted(bv_set):
-            ok = run_music_download_by_bvid(bv, file_type=file_type)
+            # 批量下载时不检查文件是否存在（或者默认跳过），避免阻塞
+            # 这里调用 run_music_download_by_bvid 时 check_exists=True 会跳过已存在文件
+            ok = run_music_download_by_bvid(bv, file_type=file_type, check_exists=True)
             if ok:
                 success += 1
             else:
                 failed += 1
 
-        InfoBar.success(
-            "下载完成",
-            f"成功 {success} 个，失败 {failed} 个",
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            parent=app_context.main_window,
-            duration=3000,
-        )
-    except Exception:
+        return {"status": "success", "message": "下载完成", "data": {"success": success, "failed": failed}}
+
+    except Exception as e:
         logger.exception("处理 custom_songs 失败")
-        InfoBar.error(
-            "处理失败",
-            "读取或下载过程中发生错误",
-            position=InfoBarPosition.BOTTOM_RIGHT,
-            parent=app_context.main_window,
-            duration=2000,
-        )
+        return {"status": "error", "message": f"读取或下载过程中发生错误: {str(e)}"}

@@ -20,6 +20,7 @@ from src.i18n import t
 from src.app_context import app_context
 from src.config import PlayMode, Theme, cfg
 from src.utils.file import on_fix_music
+from src.utils.thread import SimpleThread
 from src.bili_api.music import import_custom_songs_and_download
 from src.ui.interface.play_queue import PlayQueueInterface
 
@@ -225,7 +226,7 @@ class SettingsCard(GroupHeaderCardWidget):
 
         # 从自定义歌曲文件夹下载
         self.customSongsBtn = PushButton(t("settings.download"), self)
-        self.customSongsBtn.clicked.connect(lambda: import_custom_songs_and_download())
+        self.customSongsBtn.clicked.connect(self.on_custom_songs_download)
 
         # 添加到布局
         self.addGroup(
@@ -389,3 +390,68 @@ class SettingsCard(GroupHeaderCardWidget):
                             w.load_play_queue()
         except Exception:
             logger.exception("刷新播放列表封面圆角失败")
+
+    def on_custom_songs_download(self):
+        """处理自定义歌曲下载"""
+        self.customSongsBtn.setEnabled(False)
+
+        # 显示提示
+        InfoBar.info(
+            t("common.info"),
+            t("search.start_download_wait"),
+            orient=Qt.Orientation.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=2000,
+            parent=app_context.main_window,
+        )
+
+        # 启动线程
+        self._custom_download_thread = SimpleThread(import_custom_songs_and_download)
+        self._custom_download_thread.task_finished.connect(self.on_custom_songs_download_finished)
+        self._custom_download_thread.start()
+
+    def on_custom_songs_download_finished(self, result: dict):
+        """自定义歌曲下载完成回调"""
+        self.customSongsBtn.setEnabled(True)
+        self._custom_download_thread = None
+
+        status = result.get("status")
+        message = result.get("message", "")
+
+        if status == "success":
+            data = result.get("data", {})
+            success_count = data.get("success", 0)
+            failed_count = data.get("failed", 0)
+
+            InfoBar.success(
+                t("common.success"),
+                f"{message} (成功: {success_count}, 失败: {failed_count})",
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                parent=app_context.main_window,
+                duration=3000,
+            )
+        elif status == "created_dir":
+            InfoBar.info(
+                t("common.info"),
+                message,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                parent=app_context.main_window,
+                duration=3000,
+            )
+        elif status == "no_bv":
+            InfoBar.warning(
+                t("common.warning"),
+                message,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                parent=app_context.main_window,
+                duration=3000,
+            )
+        else:
+            InfoBar.error(
+                t("common.error"),
+                message,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                parent=app_context.main_window,
+                duration=3000,
+            )
