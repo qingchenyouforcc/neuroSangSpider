@@ -12,7 +12,7 @@ from qfluentwidgets import FluentIcon as FIF
 import requests
 from bilibili_api import video, sync
 
-from src.config import CACHE_DIR, VIDEO_DIR, ASSETS_DIR
+from src.config import CACHE_DIR, VIDEO_DIR, ASSETS_DIR, USER_AGENT
 from src.core.data_io import load_from_all_data
 from src.bili_api.common import get_credential
 
@@ -232,9 +232,7 @@ def _fetch_bilibili_cover_bytes(bvid: str) -> Optional[bytes]:
         resp = requests.get(
             cover_url,
             timeout=8,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-            },
+            headers={"User-Agent": USER_AGENT},
         )
         if resp.status_code == 200 and resp.content:
             return resp.content

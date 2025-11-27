@@ -9,7 +9,7 @@ from bilibili_api.user import User
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
-from src.config import VIDEO_DIR, cfg
+from src.config import VIDEO_DIR, cfg, USER_AGENT
 from src.core.song_list import SongList
 from src.core.data_io import load_extend
 from src.utils.text import contain_text
@@ -22,9 +22,7 @@ remove_urls_index = []
 def resolve_url_to_info(url, words_set=None):
     """解析视频url并转换为详细信息(title,author,date)"""
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-        }
+        headers = {"User-Agent": USER_AGENT}
         response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, "lxml")
         if not (h1 := soup.find("h1", class_="video-title special-text-indent")):
