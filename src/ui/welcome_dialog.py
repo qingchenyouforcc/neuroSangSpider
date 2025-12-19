@@ -92,7 +92,7 @@ class WelcomeDialog(QDialog):
 
         if not set_lang(language_code):
             logger.warning(f"无法在程序初次启动时应用语言设置：{language_code}\n"
-                           f"因为app_context.i18n_manager还未完成加载 (这似乎不应该出现)")
+                           f"因为 app_context.i18n_manager 还未完成加载 (这似乎不应该出现)")
 
         super().accept()
 
