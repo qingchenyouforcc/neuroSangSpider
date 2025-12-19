@@ -105,7 +105,7 @@ class I18nManager(QObject):
                 return key
         return key
 
-    def _set_language(self, language: str):
+    def set_language(self, language: str):
         if language not in self._translations:
             self.logger.error(f"不支持的语言: {language}")
             return False

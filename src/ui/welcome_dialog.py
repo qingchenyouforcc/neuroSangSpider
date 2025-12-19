@@ -4,6 +4,7 @@ from qfluentwidgets import BodyLabel, ComboBox, PushButton, CardWidget, isDarkTh
 import os
 
 from src.config import cfg
+from i18n.i18n import set_lang
 
 # 定义首次运行标记文件路径
 FIRST_RUN_MARKER = os.path.join(os.path.expanduser("~"), ".nspd", "first_run")
@@ -88,6 +89,8 @@ class WelcomeDialog(QDialog):
     def accept(self):
         """确认选择并保存设置"""
         self.save_language_preference()
+        set_lang(self.get_selected_language())
+
         super().accept()
 
     @staticmethod

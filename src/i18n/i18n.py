@@ -1,3 +1,5 @@
+from typing import Any
+
 from src.app_context import app_context
 
 
@@ -12,3 +14,8 @@ def t(key: str, default: str | None = None, **kwargs: object) -> str:
         except Exception:
             return result
     return result
+
+def set_lang(name: str) -> Any | None:
+    if app_context.i18n_manager:
+        return app_context.i18n_manager.set_language(name)
+    return None
