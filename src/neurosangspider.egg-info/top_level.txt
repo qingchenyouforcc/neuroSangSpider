@@ -1,6 +1,0 @@
-assets
-bili_api
-core
-i18n
-ui
-utils

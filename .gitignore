@@ -33,3 +33,5 @@ crashlytics-build.properties
 fabric.properties
 
 .idea/
+
+*.egg-info/
