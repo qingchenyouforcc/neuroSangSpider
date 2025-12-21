@@ -3,7 +3,8 @@ from loguru import logger
 from typing import TYPE_CHECKING, Any
 from PyQt6.QtCore import Qt, QUrl, QSize
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, \
+    QSizePolicy
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
@@ -125,7 +126,56 @@ class LocalPlayerInterface(QWidget):
         self.addQueueAllBtn.clicked.connect(self.add_all_to_queue)
         self.openFolderBtn.clicked.connect(self.open_music_folder)
 
+        # 监听表头点击事件，禁用封面列排序
+        header = self.tableView.horizontalHeader()
+        header.sectionClicked.connect(self.on_header_clicked)
+
+        self._setup_table_resize_policy()
+
         self.load_local_songs()
+
+    def on_header_clicked(self, logical_index):
+        """处理表头点击事件，禁用封面列的排序"""
+        show_cover = bool(cfg.enable_cover.value)
+        if show_cover and logical_index == 0:
+            # 点击的是封面列，不允许排序，恢复之前的排序状态
+            header = self.tableView.horizontalHeader()
+            current_sort = header.sortIndicatorSection()
+            current_order = header.sortIndicatorOrder()
+
+            # 如果当前点击的是封面列，恢复为默认排序（按文件名）
+            if current_sort == 0:
+                # 找到第一个可排序的列（文件名列）
+                header.setSortIndicator(1, current_order)
+                self.tableView.sortItems(1, current_order)
+
+    def _setup_table_resize_policy(self):
+        """设置表格的列宽策略"""
+        header = self.tableView.horizontalHeader()
+        show_cover = bool(cfg.enable_cover.value)
+
+        if show_cover:
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+            header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+
+            self.tableView.setColumnWidth(0, self.cover_icon_size + 50)
+            self.tableView.setColumnWidth(2, 100)
+            self.tableView.setColumnWidth(3, 120)
+        else:
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+            header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+
+            self.tableView.setColumnWidth(1, 100)
+            self.tableView.setColumnWidth(2, 120)
+
+        self.tableView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        header.setMinimumSectionSize(60)
+
+        # 使表格随窗口大小变化
+        self.tableView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def _name_col(self) -> int:
         """根据是否显示封面返回文件名所在列索引"""
@@ -177,6 +227,9 @@ class LocalPlayerInterface(QWidget):
                     ]
                 )
 
+            # 设置列宽策略
+            self._setup_table_resize_policy()
+
             for i, (filename, duration) in enumerate(songs):
                 # 用于排序与数据存储的表格项（始终设置在文件名列）
                 name_col = 1 if show_cover else 0
@@ -185,10 +238,12 @@ class LocalPlayerInterface(QWidget):
                 self.tableView.setItem(i, name_col, file_item)
 
                 # 视觉展示采用可复用的歌曲单元格控件（解析标签显示副标题）
+                song_cell = build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False)
+                song_cell.layout().setContentsMargins(30, 0, 0, 5)  # 让文件名向右上偏移
                 self.tableView.setCellWidget(
                     i,
                     name_col,
-                    build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False),
+                    song_cell,
                 )
 
                 # 封面列
@@ -220,15 +275,6 @@ class LocalPlayerInterface(QWidget):
                 count_item = NumericTableWidgetItem(play_count)
                 self.tableView.setItem(i, (3 if show_cover else 2), count_item)
 
-            # 列尺寸
-            if show_cover:
-                self.tableView.setColumnWidth(0, self.cover_icon_size + 24)
-                self.tableView.resizeColumnToContents(1)
-                self.tableView.resizeColumnToContents(2)
-                self.tableView.resizeColumnToContents(3)
-            else:
-                self.tableView.resizeColumnsToContents()
-
             # 重新启用排序并应用之前的排序设置
             self.tableView.setSortingEnabled(True)
 
@@ -255,7 +301,7 @@ class LocalPlayerInterface(QWidget):
                     self.tableView.scrollToItem(item, QAbstractItemView.ScrollHint.PositionAtCenter)
                     logger.info(f"已在本地播放器中选中歌曲: {filename}")
                     return True
-            
+
             logger.warning(f"未在本地播放器中找到歌曲: {filename}")
             return False
         except Exception as e:

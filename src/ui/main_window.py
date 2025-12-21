@@ -39,7 +39,8 @@ class MainWindow(FluentWindow):
         # 设置初始窗口大小
         desktop = QApplication.primaryScreen()
         if desktop:  # 确保 desktop 对象不是 None
-            initial_size = QSize(desktop.availableGeometry().width() // 3, desktop.availableGeometry().height() // 2)
+            initial_size = QSize(int(desktop.availableGeometry().width() * 0.615),
+                                 int(desktop.availableGeometry().height() * 0.735))
             self.resize(initial_size)
             self._initial_size = initial_size  # 保存初始大小，供启动画面结束后恢复使用
             logger.info(f"已设置初始窗口大小为 {self.size().width()}x{self.size().height()}")
