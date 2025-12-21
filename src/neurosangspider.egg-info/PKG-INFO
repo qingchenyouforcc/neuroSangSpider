@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: neurosangspider
+Version: 1.2.0
+Requires-Python: >=3.13
+License-File: LICENSE
+Requires-Dist: aiohttp>=3.12.13
+Requires-Dist: beautifulsoup4>=4.13.3
+Requires-Dist: bilibili-api-python~=17.2.0
+Requires-Dist: darkdetect~=0.8.0
+Requires-Dist: loguru~=0.7.3
+Requires-Dist: mutagen>=1.47.0
+Requires-Dist: pyqt6>=6.8.1
+Requires-Dist: pyqt6-fluent-widgets[full]>=1.8.1
+Requires-Dist: requests>=2.32.3
+Requires-Dist: tqdm>=4.67.1
+Dynamic: license-file
