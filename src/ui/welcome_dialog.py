@@ -1,9 +1,11 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QVBoxLayout
 from qfluentwidgets import BodyLabel, ComboBox, PushButton, CardWidget, isDarkTheme
+from loguru import logger
 import os
 
 from src.config import cfg
+from i18n.i18n import set_lang
 
 # 定义首次运行标记文件路径
 FIRST_RUN_MARKER = os.path.join(os.path.expanduser("~"), ".nspd", "first_run")
@@ -71,10 +73,8 @@ class WelcomeDialog(QDialog):
         selected_text = self.language_combo.currentText()
         return languages.get(selected_text)
 
-    def save_language_preference(self):
+    def save_language_preference(self, language_code):
         """保存语言偏好设置"""
-        language_code = self.get_selected_language()
-
         cfg.language.value = language_code
         cfg.save()
 
@@ -87,7 +87,13 @@ class WelcomeDialog(QDialog):
 
     def accept(self):
         """确认选择并保存设置"""
-        self.save_language_preference()
+        language_code = self.get_selected_language()
+        self.save_language_preference(language_code)
+
+        if not set_lang(language_code):
+            logger.warning(f"无法在程序初次启动时应用语言设置：{language_code}\n"
+                           f"因为 app_context.i18n_manager 还未完成加载 (这似乎不应该出现)")
+
         super().accept()
 
     @staticmethod
