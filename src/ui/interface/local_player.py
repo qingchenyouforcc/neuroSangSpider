@@ -369,7 +369,9 @@ class LocalPlayerInterface(QWidget):
         try:
             logger.debug(f"add_to_queue 被调用, row={row}, type={type(row)}")
 
-            # 确定要处理的项：如果指定了有效的行号，则获取该行的文件名列项，否则使用当前选中项
+            # 确定要处理的项：如果指定了有效的行号，则获取该行的第0列项，否则使用当前选中项
+            # 注意: PyQt6的clicked信号会传递False，需要排除
+            # bool是int的子类，需要先排除bool类型
             if isinstance(row, int) and not isinstance(row, bool) and row >= 0:
                 logger.debug(f"使用指定行号: {row}")
                 item = self.tableView.item(row, self._name_col())
