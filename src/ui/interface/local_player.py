@@ -3,8 +3,7 @@ from loguru import logger
 from typing import TYPE_CHECKING, Any
 from PyQt6.QtCore import Qt, QUrl, QSize
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, \
-    QSizePolicy
+from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QSizePolicy
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
