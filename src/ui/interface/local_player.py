@@ -135,19 +135,24 @@ class LocalPlayerInterface(QWidget):
         self.load_local_songs()
 
     def on_header_clicked(self, logical_index):
-        """处理表头点击事件，禁用封面列的排序"""
+        """处理表头点击事件，禁用封面列、文件名列的排序"""
         show_cover = bool(cfg.enable_cover.value)
-        if show_cover and logical_index == 0:
-            # 点击的是封面列，不允许排序，恢复之前的排序状态
+        name_col = 1 if show_cover else 0
+
+        # 禁用封面列和文件名列的排序
+        if (show_cover and logical_index == 0) or logical_index == name_col:
+            # 点击的是封面列或文件名列，不允许排序，恢复之前的排序状态
             header = self.tableView.horizontalHeader()
             current_sort = header.sortIndicatorSection()
             current_order = header.sortIndicatorOrder()
 
-            # 如果当前点击的是封面列，恢复为默认排序（按文件名）
-            if current_sort == 0:
-                # 找到第一个可排序的列（文件名列）
-                header.setSortIndicator(1, current_order)
-                self.tableView.sortItems(1, current_order)
+            # 找到第一个可排序的列（时长列）
+            sort_col = 2 if show_cover else 1
+
+            # 如果当前点击的是封面列或文件名列，恢复为时长列排序
+            if current_sort == logical_index:
+                header.setSortIndicator(sort_col, current_order)
+                self.tableView.sortItems(sort_col, current_order)
 
     def _setup_table_resize_policy(self):
         """设置表格的列宽策略"""
@@ -181,6 +186,16 @@ class LocalPlayerInterface(QWidget):
         """根据是否显示封面返回文件名所在列索引"""
         show_cover = bool(cfg.enable_cover.value)
         return 1 if show_cover else 0
+
+    def _duration_col(self) -> int:
+        """根据是否显示封面返回时长所在列索引"""
+        show_cover = bool(cfg.enable_cover.value)
+        return 2 if show_cover else 1
+
+    def _count_col(self) -> int:
+        """根据是否显示封面返回播放次数所在列索引"""
+        show_cover = bool(cfg.enable_cover.value)
+        return 3 if show_cover else 2
 
     def load_local_songs(self):
         try:
@@ -232,10 +247,7 @@ class LocalPlayerInterface(QWidget):
 
             for i, (filename, duration) in enumerate(songs):
                 # 用于排序与数据存储的表格项（始终设置在文件名列）
-                name_col = 1 if show_cover else 0
-                file_item = QTableWidgetItem("")  # 避免与自定义小部件重复显示
-                file_item.setData(Qt.ItemDataRole.UserRole, filename)
-                self.tableView.setItem(i, name_col, file_item)
+                name_col = self._name_col()
 
                 # 视觉展示采用可复用的歌曲单元格控件（解析标签显示副标题）
                 song_cell = build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False)
@@ -265,7 +277,7 @@ class LocalPlayerInterface(QWidget):
                 duration_mod_second = duration % 60 * 10 if 0 <= duration % 60 < 10 else duration % 60
                 duration_item.setText(f"{int(duration / 60):02}:{duration_mod_second:.0f}")
                 # 时长列位置
-                self.tableView.setItem(i, (2 if show_cover else 1), duration_item)
+                self.tableView.setItem(i, self._duration_col(), duration_item)
 
                 # 从配置中获取播放次数
                 play_count = cfg.play_count.value.get(str(filename), 0)
@@ -273,7 +285,7 @@ class LocalPlayerInterface(QWidget):
 
                 # 创建一个特殊的表格项，确保按照数字大小排序
                 count_item = NumericTableWidgetItem(play_count)
-                self.tableView.setItem(i, (3 if show_cover else 2), count_item)
+                self.tableView.setItem(i, self._count_col(), count_item)
 
             # 重新启用排序并应用之前的排序设置
             self.tableView.setSortingEnabled(True)
@@ -291,9 +303,10 @@ class LocalPlayerInterface(QWidget):
     def select_and_highlight_song(self, filename: str):
         """在本地播放器中选中并高亮显示指定文件名的歌曲"""
         try:
+            name_col = self._name_col()
             # 遍历所有行查找匹配的文件名
             for row in range(self.tableView.rowCount()):
-                item = self.tableView.item(row, self._name_col())
+                item = self.tableView.item(row, name_col)
                 if item and item.data(Qt.ItemDataRole.UserRole) == filename:
                     # 选中该行
                     self.tableView.selectRow(row)
@@ -356,9 +369,7 @@ class LocalPlayerInterface(QWidget):
         try:
             logger.debug(f"add_to_queue 被调用, row={row}, type={type(row)}")
 
-            # 确定要处理的项：如果指定了有效的行号，则获取该行的第0列项，否则使用当前选中项
-            # 注意: PyQt6的clicked信号会传递False，需要排除
-            # bool是int的子类，需要先排除bool类型
+            # 确定要处理的项：如果指定了有效的行号，则获取该行的文件名列项，否则使用当前选中项
             if isinstance(row, int) and not isinstance(row, bool) and row >= 0:
                 logger.debug(f"使用指定行号: {row}")
                 item = self.tableView.item(row, self._name_col())
@@ -494,9 +505,10 @@ class LocalPlayerInterface(QWidget):
                 parent=self.parent(),
             )
 
+            name_col = self._name_col()
             for i in range(total_files):
                 # 在每次循环中都获取当前行的第0列（文件名列）项
-                item = self.tableView.item(i, self._name_col())
+                item = self.tableView.item(i, name_col)
                 if item is None:
                     logger.warning(f"第 {i} 行没有歌曲信息，跳过")
                     continue
@@ -690,10 +702,11 @@ class LocalPlayerInterface(QWidget):
         """清理界面上的无效文件并更新相关配置"""
         try:
             invalid_files = []
+            name_col = self._name_col()
 
             # 扫描表格中的所有文件
             for i in range(self.tableView.rowCount()):
-                item = self.tableView.item(i, self._name_col())
+                item = self.tableView.item(i, name_col)
                 if item is None:
                     continue
                 file_name = item.data(Qt.ItemDataRole.UserRole) or item.text()
