@@ -1,6 +1,6 @@
 from loguru import logger
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QSizePolicy
 from PyQt6.QtGui import QIcon
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import (
@@ -100,7 +100,23 @@ class PlayQueueInterface(QWidget):
 
     def _build_song_cell(self, display_name: str) -> QWidget:
         # 向后兼容旧方法名，直接复用通用构建器
-        return build_song_cell(display_name, parent=self.tableView)
+        return build_song_cell(display_name, parent=self.tableView, left_margin=30)
+
+    def _setup_table_resize_policy(self):
+        """设置表格列宽自适应策略，参考local_player.py实现"""
+        show_cover = bool(cfg.enable_cover.value)
+        
+        if show_cover:
+            # 显示封面时：第0列（封面）固定宽度，第1列（歌曲名）自适应拉伸
+            self.tableView.setColumnWidth(0, self.cover_icon_size + 30)
+            self.tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            self.tableView.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        else:
+            # 不显示封面时：第0列（歌曲名）自适应拉伸
+            self.tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        
+        # 设置表格尺寸策略为自适应窗口大小
+        self.tableView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def load_play_queue(self):
         if not queue_service.get_queue():
@@ -147,11 +163,8 @@ class PlayQueueInterface(QWidget):
                 # 行高匹配图标
                 self.tableView.setRowHeight(i, icon_size + 12)
 
-            if show_cover:
-                self.tableView.setColumnWidth(0, icon_size + 24)
-                self.tableView.resizeColumnToContents(1)
-            else:
-                self.tableView.resizeColumnToContents(0)
+            # 设置表格列宽自适应策略
+            self._setup_table_resize_policy()
         except Exception:
             logger.exception("加载歌曲列表失败")
 

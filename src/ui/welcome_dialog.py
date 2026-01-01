@@ -5,7 +5,7 @@ from loguru import logger
 import os
 
 from src.config import cfg
-from i18n.i18n import set_lang
+from src.i18n.i18n import set_lang
 
 # 定义首次运行标记文件路径
 FIRST_RUN_MARKER = os.path.join(os.path.expanduser("~"), ".nspd", "first_run")

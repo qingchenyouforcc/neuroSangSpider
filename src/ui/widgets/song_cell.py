@@ -1,6 +1,6 @@
 from typing import Optional
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem
 from qfluentwidgets import BodyLabel, CaptionLabel, isDarkTheme
 import re
 
@@ -11,12 +11,14 @@ def build_song_cell(
     *,
     parse_brackets: bool = True,
     compact: bool = False,
+    left_margin: int = 0,
 ) -> QWidget:
     """构建歌曲单元格控件
 
     参数:
     - parse_brackets: 是否解析并展示【...】为副标题；False 时不解析，仅显示原文本
     - compact: 紧凑模式（0 内边距、0 间距，仅主标题），适合表格普通文本风格
+    - left_margin: 左边距偏移量，用于控制文本向右偏移的像素数
     """
     if parse_brackets:
         parts = re.findall(r"【(.*?)】", display_name)
@@ -28,10 +30,10 @@ def build_song_cell(
     w = QWidget(parent)
     lay = QVBoxLayout(w)
     if compact:
-        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setContentsMargins(left_margin, 0, 0, 0)
         lay.setSpacing(0)
     else:
-        lay.setContentsMargins(0, 2, 0, 2)
+        lay.setContentsMargins(left_margin, 2, 0, 2)
         lay.setSpacing(2)
 
     main_lbl = BodyLabel(main_text, w)
@@ -48,3 +50,23 @@ def build_song_cell(
         lay.addWidget(sub_lbl)
 
     return w
+
+class SongTableWidgetItem(QTableWidgetItem):
+    """Table widget item for song entries that sorts by the underlying filename.
+
+    This subclass stores the song's filename and overrides ``__lt__`` so that
+    sorting operations on the table are based on the filename rather than the
+    default text value. The filename is also stored under ``UserRole`` for
+    downstream access.
+    """
+    def __init__(self, filename):
+        super().__init__()
+        self._filename = filename
+        self.setData(Qt.ItemDataRole.UserRole, filename)
+        self.setText("")
+
+    def __lt__(self, other):
+        # 比较文件名进行排序
+        if isinstance(other, SongTableWidgetItem):
+            return self._filename < other._filename
+        return super().__lt__(other)
