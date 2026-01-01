@@ -52,6 +52,13 @@ def build_song_cell(
     return w
 
 class SongTableWidgetItem(QTableWidgetItem):
+    """Table widget item for song entries that sorts by the underlying filename.
+
+    This subclass stores the song's filename and overrides ``__lt__`` so that
+    sorting operations on the table are based on the filename rather than the
+    default text value. The filename is also stored under ``UserRole`` for
+    downstream access.
+    """
     def __init__(self, filename):
         super().__init__()
         self._filename = filename
