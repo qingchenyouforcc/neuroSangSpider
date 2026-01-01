@@ -11,12 +11,14 @@ def build_song_cell(
     *,
     parse_brackets: bool = True,
     compact: bool = False,
+    left_margin: int = 0,
 ) -> QWidget:
     """构建歌曲单元格控件
 
     参数:
     - parse_brackets: 是否解析并展示【...】为副标题；False 时不解析，仅显示原文本
     - compact: 紧凑模式（0 内边距、0 间距，仅主标题），适合表格普通文本风格
+    - left_margin: 左边距偏移量，用于控制文本向右偏移的像素数
     """
     if parse_brackets:
         parts = re.findall(r"【(.*?)】", display_name)
@@ -28,10 +30,10 @@ def build_song_cell(
     w = QWidget(parent)
     lay = QVBoxLayout(w)
     if compact:
-        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setContentsMargins(left_margin, 0, 0, 0)
         lay.setSpacing(0)
     else:
-        lay.setContentsMargins(0, 2, 0, 2)
+        lay.setContentsMargins(left_margin, 2, 0, 2)
         lay.setSpacing(2)
 
     main_lbl = BodyLabel(main_text, w)
