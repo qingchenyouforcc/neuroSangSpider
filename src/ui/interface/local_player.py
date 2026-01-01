@@ -136,22 +136,19 @@ class LocalPlayerInterface(QWidget):
     def on_header_clicked(self, logical_index):
         """处理表头点击事件，仅禁用封面列的排序"""
         show_cover = bool(cfg.enable_cover.value)
-    
+
         # 禁用封面列的排序，允许文件名列排序
         if show_cover and logical_index == 0:
-            # 点击的是封面列，不允许排序，恢复之前的排序状态
+            # 点击的是封面列，不允许排序，强制恢复为可排序列（文件名列）的排序
             header = self.tableView.horizontalHeader()
-            current_sort = header.sortIndicatorSection()
             current_order = header.sortIndicatorOrder()
-    
+
             # 找到第一个可排序的列（文件名列）
             sort_col = 1 if show_cover else 0
-    
-            # 如果当前点击的是封面列，恢复为文件名列排序
-            if current_sort == logical_index:
-                header.setSortIndicator(sort_col, current_order)
-                self.tableView.sortItems(sort_col, current_order)
 
+            # 始终将排序重定向到文件名列，而不是封面列
+            header.setSortIndicator(sort_col, current_order)
+            self.tableView.sortItems(sort_col, current_order)
     def _setup_table_resize_policy(self):
         """设置表格的列宽策略"""
         header = self.tableView.horizontalHeader()
