@@ -250,7 +250,7 @@ class LocalPlayerInterface(QWidget):
                 
                 # 视觉展示采用可复用的歌曲单元格控件（解析标签显示副标题）
                 song_cell = build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False)
-                song_cell.layout().setContentsMargins(30, 0, 0, 5)  # 让文件名向右下偏移
+                song_cell.layout().setContentsMargins(30, 0, 0, 5)  # 让文件名向右上偏移
                 self.tableView.setCellWidget(
                     i,
                     name_col,
