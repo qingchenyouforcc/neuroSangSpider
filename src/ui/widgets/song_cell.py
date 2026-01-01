@@ -51,12 +51,9 @@ def build_song_cell(
 
 class SongTableWidgetItem(QTableWidgetItem):
     def __init__(self, filename):
-        # 初始化父类，但不显示文本
         super().__init__()
         self._filename = filename
-        # 设置UserRole数据用于排序和其他功能
         self.setData(Qt.ItemDataRole.UserRole, filename)
-        # 隐藏文本显示
         self.setText("")
 
     def __lt__(self, other):

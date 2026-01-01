@@ -2,9 +2,15 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView
-from PyQt6.QtGui import QFontMetrics
-import random
+from PyQt6.QtWidgets import(
+    QAbstractItemView,
+    QHBoxLayout,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+    QHeaderView,
+    QSizePolicy
+)
 from qfluentwidgets import (
     InfoBar,
     InfoBarPosition,
@@ -85,16 +91,18 @@ class SearchInterface(QWidget):
             self.tableView.setTextElideMode(Qt.TextElideMode.ElideRight)  # type: ignore[attr-defined]
         except Exception:
             pass
-        self.tableView.setRowCount(60)
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         if header := self.tableView.verticalHeader():
             header.hide()
-        if hheader := self.tableView.horizontalHeader():
-            hheader.setMinimumSectionSize(60)
-            hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
-            for col in (1, 2, 3):
-                hheader.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+        
+        # 初始化表格列数和表头
+        self.tableView.setColumnCount(4)
+        self.tableView.setHorizontalHeaderLabels(
+            [t("common.header_title"), t("common.video_blogger"), t("common.date"), t("common.bvid")]
+        )
+
+        self._setup_table_resize_policy()
 
         # 双击下载：双击任意单元格即触发下载当前行
         try:
@@ -107,10 +115,6 @@ class SearchInterface(QWidget):
                 )  # type: ignore[attr-defined]
             except Exception:
                 logger.warning("未能绑定双击信号，双击下载功能不可用")
-
-        # 标题列宽度控制参数
-        self._title_max_abs_px = 800
-        self._title_max_ratio = 0.6
 
         # 控件
         btnGroup = QWidget()
@@ -239,11 +243,6 @@ class SearchInterface(QWidget):
             self.writeList()
         if model := self.tableView.model():
             self.tableView.setCurrentIndex(model.index(0, 0))
-        # 调整除标题外的列宽
-        for col in (1, 2, 3):
-            self.tableView.resizeColumnToContents(col)
-        # 根据窗口大小给标题列设置一个自适应上限
-        self._update_title_column_width()
         self.searching = False
         self.search_input.searchButton.setEnabled(True)
 
@@ -269,6 +268,10 @@ class SearchInterface(QWidget):
         self.tableView.setHorizontalHeaderLabels(
             [t("common.header_title"), t("common.video_blogger"), t("common.date"), t("common.bvid")]
         )
+        
+        # 重新设置表格自适应策略
+        self._setup_table_resize_policy()
+        
         self.search_result.clear()
 
         # 显示加载动画
@@ -310,6 +313,9 @@ class SearchInterface(QWidget):
             self.tableView.setHorizontalHeaderLabels(
                 [t("common.header_title"), t("common.video_blogger"), t("common.date"), t("common.bvid")]
             )
+            
+            # 重新设置表格自适应策略
+            self._setup_table_resize_policy()
 
             slist = search_song_list("")
             if slist is not None:
@@ -318,82 +324,31 @@ class SearchInterface(QWidget):
                 self.writeList()
                 if model := self.tableView.model():
                     self.tableView.setCurrentIndex(model.index(0, 0))
-                for col in (1, 2, 3):
-                    self.tableView.resizeColumnToContents(col)
-                self._update_title_column_width()
             else:
                 logger.warning("自动获取后未找到任何视频数据")
         except Exception:
             logger.exception("自动填充初始列表失败")
 
-    def resizeEvent(self, event):  # type: ignore[override]
-        super().resizeEvent(event)
-        # 窗口尺寸变化时更新标题列宽度上限
-        self._update_title_column_width()
+    def _setup_table_resize_policy(self):
+        """设置表格的列宽策略"""
+        header = self.tableView.horizontalHeader()
+        if header:
+            # 标题列（第0列）设置为拉伸模式，以填充剩余空间
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            # 其他列设置为固定宽度
+            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+            header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+            header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
 
-    def _update_title_column_width(self) -> None:
-        """根据表格可视宽度与其它列宽动态设置标题列宽度的上限。"""
-        try:
-            vp = self.tableView.viewport()
-            vpw = vp.width() if vp is not None else self.tableView.width()
-            other_w = sum(self.tableView.columnWidth(c) for c in (1, 2, 3)) + 8  # padding 估计
-            remaining = max(120, vpw - other_w)
+            self.tableView.setColumnWidth(1, 120)  # 作者列
+            self.tableView.setColumnWidth(2, 120)  # 日期列
+            self.tableView.setColumnWidth(3, 200)  # BV号列
 
-            # 基于样本的自适应宽度（像素）
-            suggested = self._compute_adaptive_title_width()
+            header.setMinimumSectionSize(60)
+            self.tableView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            max_cap = min(int(vpw * self._title_max_ratio), self._title_max_abs_px)
+            self.tableView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
-            if suggested and suggested > 0:
-                title_w = suggested
-            else:
-                title_w = remaining
-
-            # 夹紧：不能超过剩余空间与上限，也不要太小
-            title_w = max(200, min(title_w, remaining, max_cap))
-            self.tableView.setColumnWidth(0, title_w)
-        except Exception:
-            logger.exception("更新标题列宽度时出错")
-
-    def _compute_adaptive_title_width(self) -> int:
-        """按作者分组随机抽样（每个作者最多2条），基于当前字体计算标题平均像素宽度。"""
-        try:
-            data = self.search_result.get_data()
-            if not data:
-                return 0
-
-            # 按作者分组
-            groups: dict[str, list[str]] = {}
-            for item in data:
-                author = str(item.get("author", ""))
-                title = str(item.get("title", ""))
-                if not title:
-                    continue
-                groups.setdefault(author, []).append(title)
-
-            fm = QFontMetrics(self.tableView.font())
-            widths: list[int] = []
-
-            for titles in groups.values():
-                if not titles:
-                    continue
-                k = min(2, len(titles))
-                # 随机抽样 k 条
-                sample = random.sample(titles, k) if len(titles) > k else titles[:k]
-                for s in sample:
-                    w = fm.horizontalAdvance(s)
-                    widths.append(w)
-
-            if not widths:
-                return 0
-
-            avg = sum(widths) / len(widths)
-            # 留出表格内边距和排序指示空间
-            padding = 40
-            return int(avg + padding)
-        except Exception:
-            logger.exception("计算自适应标题宽度失败")
-            return 0
 
     def switch_to_playlist(self):
         # 获取刚下载的歌曲信息
@@ -414,7 +369,7 @@ class SearchInterface(QWidget):
                 )
 
     def writeList(self):
-        """将搜索结果写入表格"""
+        """将搜索结果写入表格（参考local_player实现）"""
         search_result = self.search_result
         logger.info(f"总计获取 {len(search_result.get_data())} 个有效视频数据:")
         logger.info(search_result.get_data())
@@ -425,6 +380,8 @@ class SearchInterface(QWidget):
             self.tableView.setItem(i, 1, QTableWidgetItem(songInfo["author"]))
             self.tableView.setItem(i, 2, QTableWidgetItem(format_date_str(songInfo["date"])))
             self.tableView.setItem(i, 3, QTableWidgetItem(songInfo["bv"]))
+
+        self._setup_table_resize_policy()
 
     def _on_table_double_click(self, row: int, _column: int) -> None:
         """表格双击时触发下载当前行。"""
