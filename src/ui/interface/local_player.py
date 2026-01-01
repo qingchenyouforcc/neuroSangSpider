@@ -134,21 +134,20 @@ class LocalPlayerInterface(QWidget):
         self.load_local_songs()
 
     def on_header_clicked(self, logical_index):
-        """处理表头点击事件，禁用封面列、文件名列的排序"""
+        """处理表头点击事件，仅禁用封面列的排序"""
         show_cover = bool(cfg.enable_cover.value)
-        name_col = 1 if show_cover else 0
-
-        # 禁用封面列和文件名列的排序
-        if (show_cover and logical_index == 0) or logical_index == name_col:
-            # 点击的是封面列或文件名列，不允许排序，恢复之前的排序状态
+    
+        # 禁用封面列的排序，允许文件名列排序
+        if show_cover and logical_index == 0:
+            # 点击的是封面列，不允许排序，恢复之前的排序状态
             header = self.tableView.horizontalHeader()
             current_sort = header.sortIndicatorSection()
             current_order = header.sortIndicatorOrder()
-
-            # 找到第一个可排序的列（时长列）
-            sort_col = 2 if show_cover else 1
-
-            # 如果当前点击的是封面列或文件名列，恢复为时长列排序
+    
+            # 找到第一个可排序的列（文件名列）
+            sort_col = 1 if show_cover else 0
+    
+            # 如果当前点击的是封面列，恢复为文件名列排序
             if current_sort == logical_index:
                 header.setSortIndicator(sort_col, current_order)
                 self.tableView.sortItems(sort_col, current_order)
@@ -200,12 +199,12 @@ class LocalPlayerInterface(QWidget):
         try:
             # 清理无效文件
             self._clean_invalid_files()
-
+    
             # 记录当前排序状态
             header = self.tableView.horizontalHeader()
             sort_column = -1
             sort_order = Qt.SortOrder.AscendingOrder
-
+    
             try:
                 # 尝试获取当前排序状态
                 if header:
@@ -213,10 +212,10 @@ class LocalPlayerInterface(QWidget):
                     sort_order = header.sortIndicatorOrder()
             except Exception:
                 logger.debug("无法获取当前排序状态")
-
+    
             # 临时关闭排序功能，防止添加数据时自动排序
             self.tableView.setSortingEnabled(False)
-
+    
             self.tableView.clear()
             songs = read_all_audio_info(MUSIC_DIR)
             self.tableView.setRowCount(len(songs))
@@ -240,14 +239,14 @@ class LocalPlayerInterface(QWidget):
                         t("local_player.header_play_count"),
                     ]
                 )
-
+    
             # 设置列宽策略
             self._setup_table_resize_policy()
-
+    
             for i, (filename, duration) in enumerate(songs):
                 # 用于排序与数据存储的表格项（始终设置在文件名列）
                 name_col = self._name_col()
-
+    
                 # 视觉展示采用可复用的歌曲单元格控件（解析标签显示副标题）
                 song_cell = build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False)
                 song_cell.layout().setContentsMargins(30, 0, 0, 5)  # 让文件名向右上偏移
@@ -256,6 +255,11 @@ class LocalPlayerInterface(QWidget):
                     name_col,
                     song_cell,
                 )
+                
+                # 为文件名列添加隐藏的表格项用于排序
+                name_item = QTableWidgetItem(filename)
+                name_item.setData(Qt.ItemDataRole.UserRole, filename)  # 存储原始文件名用于其他功能
+                self.tableView.setItem(i, name_col, name_item)
 
                 # 封面列
                 if show_cover:
@@ -285,17 +289,17 @@ class LocalPlayerInterface(QWidget):
                 # 创建一个特殊的表格项，确保按照数字大小排序
                 count_item = NumericTableWidgetItem(play_count)
                 self.tableView.setItem(i, self._count_col(), count_item)
-
+    
             # 重新启用排序并应用之前的排序设置
             self.tableView.setSortingEnabled(True)
-
+    
             try:
                 # 尝试恢复排序状态
                 if sort_column >= 0 and header:
                     header.setSortIndicator(sort_column, sort_order)
             except Exception:
                 logger.debug("无法恢复之前的排序状态")
-
+    
         except Exception:
             logger.exception("加载本地歌曲失败")
 
