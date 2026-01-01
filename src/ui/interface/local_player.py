@@ -14,7 +14,7 @@ from src.utils.file import read_all_audio_info
 from src.core.player import getMusicLocalStr, open_player
 from src.utils.text import escape_tag
 from src.ui.widgets.tipbar import open_info_tip
-from src.ui.widgets.song_cell import build_song_cell
+from src.ui.widgets.song_cell import build_song_cell, SongTableWidgetItem
 from src.utils.cover import get_cover_pixmap
 from src.ui.widgets.pixmap_utils import rounded_pixmap
 from src.core.queue_service import queue_service
@@ -247,6 +247,10 @@ class LocalPlayerInterface(QWidget):
                 # 用于排序与数据存储的表格项（始终设置在文件名列）
                 name_col = self._name_col()
     
+                # 为文件名列添加支持排序的表格项
+                name_item = SongTableWidgetItem(filename)
+                self.tableView.setItem(i, name_col, name_item)
+                
                 # 视觉展示采用可复用的歌曲单元格控件（解析标签显示副标题）
                 song_cell = build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False)
                 song_cell.layout().setContentsMargins(30, 0, 0, 5)  # 让文件名向右上偏移
@@ -255,11 +259,6 @@ class LocalPlayerInterface(QWidget):
                     name_col,
                     song_cell,
                 )
-                
-                # 为文件名列添加隐藏的表格项用于排序
-                name_item = QTableWidgetItem(filename)
-                name_item.setData(Qt.ItemDataRole.UserRole, filename)  # 存储原始文件名用于其他功能
-                self.tableView.setItem(i, name_col, name_item)
 
                 # 封面列
                 if show_cover:

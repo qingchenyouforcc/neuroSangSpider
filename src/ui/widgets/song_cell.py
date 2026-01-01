@@ -1,6 +1,6 @@
 from typing import Optional
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem
 from qfluentwidgets import BodyLabel, CaptionLabel, isDarkTheme
 import re
 
@@ -48,3 +48,19 @@ def build_song_cell(
         lay.addWidget(sub_lbl)
 
     return w
+
+class SongTableWidgetItem(QTableWidgetItem):
+    def __init__(self, filename):
+        # 初始化父类，但不显示文本
+        super().__init__()
+        self._filename = filename
+        # 设置UserRole数据用于排序和其他功能
+        self.setData(Qt.ItemDataRole.UserRole, filename)
+        # 隐藏文本显示
+        self.setText("")
+
+    def __lt__(self, other):
+        # 比较文件名进行排序
+        if isinstance(other, SongTableWidgetItem):
+            return self._filename < other._filename
+        return super().__lt__(other)
