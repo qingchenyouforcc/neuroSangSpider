@@ -3,7 +3,6 @@ description: Someone tell developer there is a problem with my program
 title: "[BUG]"
 labels:
   - bug
-  - fatal bug
 assignees:
   - qingchenyouforcc
 body:
