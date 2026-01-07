@@ -62,18 +62,30 @@ async def search_on_bilibili(search_content: str) -> None:
     songs = SongList()
 
     try:
-        for data in await asyncio.gather(
-            *[search_page(search_content, page) for page in range(1, cfg.search_page.value + 1)]
-        ):
+        results = await asyncio.gather(
+            *[search_page(search_content, page) for page in range(1, cfg.search_page.value + 1)],
+            return_exceptions=True,
+        )
+
+        first_exc: Exception | None = None
+        for data in results:
+            if isinstance(data, Exception):
+                if first_exc is None:
+                    first_exc = data
+                continue
             for item in data:
                 songs.append_info(item)
+
+        # 如果全部页面都失败，则向上抛出，给 UI 展示网络错误
+        if len(songs.get_data()) == 0 and first_exc is not None:
+            raise first_exc
 
         songs.append_list(SongList(VIDEO_DIR / "search_data.json"))
         songs.unique_by_bv()
         songs.save_list(VIDEO_DIR / "search_data.json")
     except Exception as e:
         logger.opt(exception=True).error(f"搜索 {search_content} 失败: {e}")
-        return
+        raise
 
 
 async def search_bvid_on_bilibili(search_content: str) -> None:
@@ -110,4 +122,4 @@ async def search_bvid_on_bilibili(search_content: str) -> None:
 
     except Exception as e:
         logger.opt(exception=True).error(f"Failed to fetch BV {search_content}: {e}")
-        return
+        raise

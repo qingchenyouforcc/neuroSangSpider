@@ -10,6 +10,14 @@ from src.core.song_list import SongList
 from src.utils.text import format_date_str
 
 
+_LAST_SEARCH_ERROR: str | None = None
+
+
+def get_last_search_error() -> str | None:
+    """获取最近一次搜索的错误信息（如有）。"""
+    return _LAST_SEARCH_ERROR
+
+
 def parse_date(dt_str: str) -> datetime:
     """尽力解析日期字符串为 datetime，用于排序。失败返回最小时间。"""
     try:
@@ -99,6 +107,9 @@ def perform_search(search_content: str, mode: str = "title") -> SongList | None:
     - 返回 SongList 或 None（未找到或出错）。
     - 不做任何 UI 交互，仅记录日志。
     """
+    global _LAST_SEARCH_ERROR
+    _LAST_SEARCH_ERROR = None
+
     try:
         # BV 模式是精确唯一匹配：不做“增量追加”，避免重复网络请求与 I/O
         if mode == "bvid":
@@ -109,8 +120,9 @@ def perform_search(search_content: str, mode: str = "title") -> SongList | None:
             logger.info("没有在本地列表找到该 BV，正在尝试 bilibili 精确拉取")
             try:
                 sync(search_bvid_on_bilibili(search_content))
-            except Exception:
+            except Exception as e:
                 logger.exception("bilibili BV 精确拉取失败")
+                _LAST_SEARCH_ERROR = str(e)
                 return None
 
             return search_song_list(search_content, mode)
@@ -122,8 +134,9 @@ def perform_search(search_content: str, mode: str = "title") -> SongList | None:
             try:
                 sync(search_on_bilibili(search_content))
                 main_search_list = search_song_list(search_content, mode)
-            except Exception:
+            except Exception as e:
                 logger.exception("bilibili 搜索失败")
+                _LAST_SEARCH_ERROR = str(e)
             else:
                 if main_search_list is None:
                     logger.warning("bilibili 搜索结果为空")
@@ -138,11 +151,13 @@ def perform_search(search_content: str, mode: str = "title") -> SongList | None:
                 delta = len(more_search_list.get_data()) - len(main_search_list.get_data())
                 logger.info(f"bilibili 获取增量 {delta} 个有效视频数据:")
                 main_search_list.append_list(more_search_list)
-        except Exception:
+        except Exception as e:
             logger.exception("bilibili 搜索失败（增量阶段）")
+            _LAST_SEARCH_ERROR = str(e)
 
         return main_search_list
 
-    except Exception:
+    except Exception as e:
         logger.exception("执行搜索时发生未知错误")
+        _LAST_SEARCH_ERROR = str(e)
         return None

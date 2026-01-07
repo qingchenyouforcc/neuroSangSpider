@@ -1,3 +1,4 @@
+import re
 from typing import TYPE_CHECKING
 
 from loguru import logger
@@ -32,6 +33,7 @@ from src.config import ASSETS_DIR, MUSIC_DIR, cfg
 from src.core.song_list import SongList
 from src.core.search_core import (
     perform_search,
+    get_last_search_error,
     sort_song_list_by_date_desc,
     sort_song_list_by_relevance,
 )
@@ -236,16 +238,35 @@ class SearchInterface(QWidget):
     def do_search(search_content: str, mode: str = "title"):
         result = perform_search(search_content, mode)
         if result is None:
-            logger.warning(t("search.search_result_empty"))
-            InfoBar.warning(
-                title=t("common.warning"),
-                content=t("search.no_results"),
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.BOTTOM_RIGHT,
-                parent=app_context.main_window,
-                duration=2000,
-            )
+            err = get_last_search_error()
+            if err:
+                # 避免 UI 里显示过长堆栈信息
+                msg = err.strip().replace("\n", " ")
+                # 412/-412 风控：用更友好的提示
+                if re.search(r"(?:错误代码[:：]\s*-?412\b|['\"]code['\"]\s*[:=]\s*-?412\b)", msg):
+                    msg = "风控（412）"
+                if len(msg) > 160:
+                    msg = msg[:160] + "..."
+                InfoBar.error(
+                    title=t("common.error"),
+                    content=msg,
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    parent=app_context.main_window,
+                    duration=4000,
+                )
+            else:
+                logger.warning(t("search.search_result_empty"))
+                InfoBar.warning(
+                    title=t("common.warning"),
+                    content=t("search.no_results"),
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    parent=app_context.main_window,
+                    duration=2000,
+                )
         return result
 
     def on_search_finished(self, main_search_list: SongList | None) -> None:
