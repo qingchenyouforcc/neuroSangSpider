@@ -83,22 +83,22 @@ uv run main.py
 
 ### 感谢萝卜猫提供的加载动画授权
 
-- 魔法少女_卡洛特 https://space.bilibili.com/2038218765
+- [魔法少女_卡洛特](https://space.bilibili.com/2038218765)
 
 ### 感谢Stazer提供的加载动画授权
 
-- 稳定器stz https://space.bilibili.com/125198191
+- [稳定器stz](https://space.bilibili.com/125198191)
 
 ### 感谢以下up主对Neuro/Evil歌回的贡献，没有你们就不会有这个项目的出现
 
-- _环戊烷多氢菲_ https://space.bilibili.com/351692111
-- Neuro21烤肉组 https://space.bilibili.com/1880487363
-- 绅士羊OuO https://space.bilibili.com/22535350
-- NSC987 https://space.bilibili.com/3546612622166788
-- 西街Westreet https://space.bilibili.com/5971855
-- BulletFX https://space.bilibili.com/483178955
-- ASDFHGV https://space.bilibili.com/690857494
-- 意念艾特感叹号 https://space.bilibili.com/390418501
+- [\_环戊烷多氢菲\_](https://space.bilibili.com/351692111)
+- [Neuro21烤肉组](https://space.bilibili.com/1880487363)
+- [绅士羊OuO](https://space.bilibili.com/22535350)
+- [NSC987](https://space.bilibili.com/3546612622166788)
+- [西街Westreet](https://space.bilibili.com/5971855)
+- [BulletFX](https://space.bilibili.com/483178955)
+- [ASDFHGV](https://space.bilibili.com/690857494)
+- [意念艾特感叹号](https://space.bilibili.com/390418501)
 
 以及感谢所有切Neuro/Evil歌回和做二创的UP主们
 
