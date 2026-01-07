@@ -5,7 +5,7 @@ from loguru import logger
 import os
 
 from src.config import cfg
-from i18n.i18n import set_lang
+from src.i18n.i18n import set_lang
 
 # 定义首次运行标记文件路径
 FIRST_RUN_MARKER = os.path.join(os.path.expanduser("~"), ".nspd", "first_run")
@@ -71,7 +71,7 @@ class WelcomeDialog(QDialog):
         """获取选择的语言"""
         languages = {"English": "en_US", "简体中文-Simplified Chinese": "zh_CN"}
         selected_text = self.language_combo.currentText()
-        return languages.get(selected_text)
+        return languages.get(selected_text, "zh_CN")
 
     def save_language_preference(self, language_code):
         """保存语言偏好设置"""
@@ -90,9 +90,14 @@ class WelcomeDialog(QDialog):
         language_code = self.get_selected_language()
         self.save_language_preference(language_code)
 
-        if not set_lang(language_code):
-            logger.warning(f"无法在程序初次启动时应用语言设置：{language_code}\n"
-                           f"因为 app_context.i18n_manager 还未完成加载 (这似乎不应该出现)")
+        result = set_lang(language_code)
+        if result is None:
+            logger.warning(
+                f"无法在程序初次启动时应用语言设置：{language_code}\n"
+                f"因为 app_context.i18n_manager 还未完成加载 (这似乎不应该出现)"
+            )
+        elif result is False:
+            logger.warning(f"无法在程序初次启动时应用语言设置：{language_code} (可能是不支持的语言)")
 
         super().accept()
 

@@ -1,5 +1,5 @@
 from loguru import logger
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import QWidget
 from qfluentwidgets import (
     ComboBox,
@@ -76,10 +76,18 @@ def on_theme_switched(current_text: str) -> None:
     """切换主题"""
     theme_display_reverse = get_theme_display_reverse()
     theme = theme_display_reverse[current_text]
-    try:
-        cfg.set_theme(theme)
-    except Exception:
-        logger.exception("不是哥们你这怎么报错的？")
+
+    # 主题切换会触发 qfluentwidgets 的全局样式表更新。
+    # 在 ComboBox 的点击回调里同步切换，某些打包/运行时序下会导致 weakref 字典
+    # 在迭代过程中被修改（RuntimeError: dictionary changed size during iteration）。
+    # 延迟到当前事件处理结束后执行，可规避该类时序问题。
+    def _apply_theme() -> None:
+        try:
+            cfg.set_theme(theme)
+        except Exception:
+            logger.exception("不是哥们你这怎么报错的？")
+
+    QTimer.singleShot(0, _apply_theme)
 
 
 class BiliApiDialog(MessageBoxBase):
