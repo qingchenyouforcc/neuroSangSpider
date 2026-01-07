@@ -1,0 +1,97 @@
+name: Bug report
+description: Someone tell developer there is a problem with my program
+title: "[BUG]"
+labels:
+  - bug
+  - fatal bug
+assignees:
+  - qingchenyouforcc
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请提供以下详细信息，以便我们快速定位和修复问题：
+
+        ⚠️ **请注意**：若关键信息不完整，我们可能需要进一步询问！
+
+  - type: textarea
+    id: reproduce_steps
+    attributes:
+      label: 复现步骤
+      description: 请按步骤描述如何复现该问题
+      placeholder: |
+        1. 打开...
+        2. 点击...
+        3. 输入...
+        4. 看到错误...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_result
+    attributes:
+      label: 预期结果
+      description: 具体说明你期望发生什么。例如：页面应跳转到“完成页”。
+      placeholder: 例如：页面应跳转到“完成页”。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_result
+    attributes:
+      label: 实际结果
+      description: 具体描述实际发生了什么。例如：页面显示“xxx错误”。
+      placeholder: 例如：页面显示“xxx错误”。
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统及版本
+      placeholder: 例如：Windows 11 23H2
+    validations:
+      required: true
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python 版本
+      placeholder: 例如：3.12.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots_or_video
+    attributes:
+      label: 屏幕截图/视频（可选）
+      description: Base64 或链接均可
+      placeholder: 粘贴 Base64 或链接
+    validations:
+      required: false
+
+  - type: textarea
+    id: related_code
+    attributes:
+      label: 相关代码片段（可选）
+      description: 粘贴代码或提供副本（如有）
+      render: python
+    validations:
+      required: false
+
+  - type: textarea
+    id: error_logs
+    attributes:
+      label: 错误日志（可选）
+      description: 请尽量粘贴完整日志
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: other_info
+    attributes:
+      label: 其他相关信息（可选）
+      placeholder: 任何你认为有帮助的信息
+    validations:
+      required: false
