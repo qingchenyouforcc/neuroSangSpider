@@ -5,7 +5,7 @@ from datetime import datetime
 from bilibili_api import sync
 from loguru import logger
 
-from src.bili_api import search_on_bilibili, search_song_list
+from src.bili_api import search_on_bilibili, search_song_list, search_bvid_on_bilibili
 from src.core.song_list import SongList
 from src.utils.text import format_date_str
 
@@ -93,40 +93,53 @@ def sort_song_list_by_relevance(slist: SongList, query: str) -> None:
         sort_song_list_by_date_desc(slist)
 
 
-def perform_search(search_content: str) -> SongList | None:
+def perform_search(search_content: str, mode: str = "title") -> SongList | None:
     """执行搜索：先查本地，必要时或增量用 bilibili 搜索补充。
 
     - 返回 SongList 或 None（未找到或出错）。
     - 不做任何 UI 交互，仅记录日志。
     """
     try:
-        # 获取本地数据
-        main_search_list = search_song_list(search_content)
+        # BV 模式是精确唯一匹配：不做“增量追加”，避免重复网络请求与 I/O
+        if mode == "bvid":
+            main_search_list = search_song_list(search_content, mode)
+            if main_search_list is not None:
+                return main_search_list
+
+            logger.info("没有在本地列表找到该 BV，正在尝试 bilibili 精确拉取")
+            try:
+                sync(search_bvid_on_bilibili(search_content))
+            except Exception:
+                logger.exception("bilibili BV 精确拉取失败")
+                return None
+
+            return search_song_list(search_content, mode)
+
+        # 标题模式：保留原有“本地 + bilibili 增量”行为
+        main_search_list = search_song_list(search_content, mode)
         if main_search_list is None:
-            # 本地查找失败时，尝试使用 bilibili 搜索
             logger.info("没有在本地列表找到该歌曲，正在尝试 bilibili 搜索")
             try:
                 sync(search_on_bilibili(search_content))
-                main_search_list = search_song_list(search_content)
+                main_search_list = search_song_list(search_content, mode)
             except Exception:
                 logger.exception("bilibili 搜索失败")
             else:
                 if main_search_list is None:
                     logger.warning("bilibili 搜索结果为空")
+            return main_search_list
 
-        else:
-            logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
-            logger.info(main_search_list.get_data())
+        logger.info(f"本地获取 {len(main_search_list.get_data())} 个有效视频数据:")
+        logger.info(main_search_list.get_data())
 
-            # 本地查找成功，追加使用 bilibili 搜索以获取增量
-            try:
-                sync(search_on_bilibili(search_content))
-                if more_search_list := search_song_list(search_content):
-                    delta = len(more_search_list.get_data()) - len(main_search_list.get_data())
-                    logger.info(f"bilibili 获取增量 {delta} 个有效视频数据:")
-                    main_search_list.append_list(more_search_list)
-            except Exception:
-                logger.exception("bilibili 搜索失败（增量阶段）")
+        try:
+            sync(search_on_bilibili(search_content))
+            if more_search_list := search_song_list(search_content, mode):
+                delta = len(more_search_list.get_data()) - len(main_search_list.get_data())
+                logger.info(f"bilibili 获取增量 {delta} 个有效视频数据:")
+                main_search_list.append_list(more_search_list)
+        except Exception:
+            logger.exception("bilibili 搜索失败（增量阶段）")
 
         return main_search_list
 

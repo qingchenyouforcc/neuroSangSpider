@@ -2,16 +2,17 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import(
+from PyQt6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
     QHeaderView,
-    QSizePolicy
+    QSizePolicy,
 )
 from qfluentwidgets import (
+    ComboBox,
     InfoBar,
     InfoBarPosition,
     MessageBox,
@@ -95,7 +96,7 @@ class SearchInterface(QWidget):
         self.tableView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         if header := self.tableView.verticalHeader():
             header.hide()
-        
+
         # 初始化表格列数和表头
         self.tableView.setColumnCount(4)
         self.tableView.setHorizontalHeaderLabels(
@@ -133,17 +134,30 @@ class SearchInterface(QWidget):
         self.search_input.setClearButtonEnabled(True)
         self.search_input.searchButton.clicked.connect(self.search_btn)
         self.search_input.returnPressed.connect(self.search_btn)
+
+        # 搜索模式选择
+        self.searchModeComboBox = ComboBox(self)
+        self.searchModeComboBox.addItem(t("search.mode_video_title"), "title")
+        self.searchModeComboBox.addItem(t("search.mode_bvid_search"), "bvid")
+        self.searchModeComboBox.setCurrentIndex(0)
+        self.searchModeComboBox.setFixedWidth(150)
+
         btnLayout.addWidget(self.GetVideoBtn)
         btnLayout.addWidget(self.DownloadBtn)
         btnLayout.addWidget(self.AddToQueueBtn)
         btnLayout.addWidget(self.QueueManagerBtn)
         btnGroup.setLayout(btnLayout)
 
+        # 搜索栏布局
+        searchLayout = QHBoxLayout()
+        searchLayout.addWidget(self.searchModeComboBox)
+        searchLayout.addWidget(self.search_input)
+
         # 组装
         self._layout.addWidget(TitleLabel(t("search.title"), self))
         self._layout.addWidget(self.tableView)
         self._layout.addWidget(btnGroup)
-        self._layout.addWidget(self.search_input, Qt.AlignmentFlag.AlignBottom)
+        self._layout.addLayout(searchLayout)
 
         # 状态
         self.search_result = SongList()
@@ -219,8 +233,8 @@ class SearchInterface(QWidget):
             logger.exception("获取歌曲列表失败")
 
     @staticmethod
-    def do_search(search_content: str):
-        result = perform_search(search_content)
+    def do_search(search_content: str, mode: str = "title"):
+        result = perform_search(search_content, mode)
         if result is None:
             logger.warning(t("search.search_result_empty"))
             InfoBar.warning(
@@ -268,10 +282,10 @@ class SearchInterface(QWidget):
         self.tableView.setHorizontalHeaderLabels(
             [t("common.header_title"), t("common.video_blogger"), t("common.date"), t("common.bvid")]
         )
-        
+
         # 重新设置表格自适应策略
         self._setup_table_resize_policy()
-        
+
         self.search_result.clear()
 
         # 显示加载动画
@@ -285,9 +299,16 @@ class SearchInterface(QWidget):
         self.search_input.searchButton.setEnabled(False)
 
         logger.info("---搜索开始---")
-        search_content = self.search_input.text().lower()
+        raw_text = self.search_input.text().strip()
+
+        # qfluentwidgets 的 ComboBox 在某些版本下 currentData() 可能拿到 None；
+        # 这里用索引做可靠映射：0=标题搜索，1=BV 搜索
+        mode = "bvid" if self.searchModeComboBox.currentIndex() == 1 else "title"
+
+        # BV 号大小写敏感：BV 模式必须保留原始大小写；标题搜索才做 lower()
+        search_content = raw_text if mode == "bvid" else raw_text.lower()
         self._last_query = search_content
-        self._search_ = self.do_search(search_content)
+        self._search_ = self.do_search(search_content, mode)
         self.on_search_finished(self._search_)
 
     # 当爬虫任务结束时
@@ -313,7 +334,7 @@ class SearchInterface(QWidget):
             self.tableView.setHorizontalHeaderLabels(
                 [t("common.header_title"), t("common.video_blogger"), t("common.date"), t("common.bvid")]
             )
-            
+
             # 重新设置表格自适应策略
             self._setup_table_resize_policy()
 
@@ -348,7 +369,6 @@ class SearchInterface(QWidget):
             self.tableView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
             self.tableView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-
 
     def switch_to_playlist(self):
         # 获取刚下载的歌曲信息

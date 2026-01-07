@@ -1,12 +1,35 @@
 import asyncio
+import re
 from datetime import datetime
 
 from bilibili_api.search import SearchObjectType, search_by_type
+from bilibili_api.video import Video
 from bs4 import BeautifulSoup
 from loguru import logger
 
 from src.config import VIDEO_DIR, cfg
 from src.core.song_list import SongList
+from .common import get_credential
+
+
+_BVID_RE = re.compile(r"(BV[0-9A-Za-z]{10})", re.IGNORECASE)
+
+
+def _extract_bvid(text: str) -> str | None:
+    """从输入中提取 BV 号。
+
+    支持：
+    - BV1xxxxxxxxxx
+    - https://www.bilibili.com/video/BVxxxxxx
+    - 其他包含 BV 号的文本
+    """
+    if not text:
+        return None
+    m = _BVID_RE.search(text.strip())
+    if not m:
+        return None
+    # 统一成 "BV" 前缀大写
+    return "BV" + m.group(1)[2:]
 
 
 async def search_page(search_content: str, page: int) -> list[dict]:
@@ -50,4 +73,41 @@ async def search_on_bilibili(search_content: str) -> None:
         songs.save_list(VIDEO_DIR / "search_data.json")
     except Exception as e:
         logger.opt(exception=True).error(f"搜索 {search_content} 失败: {e}")
+        return
+
+
+async def search_bvid_on_bilibili(search_content: str) -> None:
+    """通过 BV 号精确拉取视频信息并写入本地 search_data.json。"""
+    songs = SongList()
+    try:
+        bvid = _extract_bvid(search_content)
+        if not bvid:
+            logger.warning(f"BV号格式不正确: {search_content}")
+            return
+
+        v = Video(bvid=bvid, credential=get_credential())
+        info = await v.get_info()
+
+        pubdate = info.get("pubdate")
+        date_str = ""
+        if isinstance(pubdate, (int, float)) and pubdate > 0:
+            date_str = datetime.fromtimestamp(int(pubdate)).strftime("%Y-%m-%d %H:%M:%S")
+
+        owner = info.get("owner") or {}
+        item = {
+            "title": str(info.get("title", "")),
+            "author": str(owner.get("name", "")),
+            "date": date_str,
+            "url": f"https://www.bilibili.com/video/{bvid}/",
+            "bv": bvid,
+        }
+
+        songs.append_info(item)
+        songs.append_list(SongList(VIDEO_DIR / "search_data.json"))
+        songs.unique_by_bv()
+        songs.save_list(VIDEO_DIR / "search_data.json")
+        logger.info(f"Successfully fetched info for {bvid}")
+
+    except Exception as e:
+        logger.opt(exception=True).error(f"Failed to fetch BV {search_content}: {e}")
         return

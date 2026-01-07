@@ -94,6 +94,22 @@ class SongList:
         except Exception:
             logger.opt(exception=True).warning("标题搜索匹配错误")
 
+    def filter_by_bv(self, bvid: str):
+        """根据bv号筛选"""
+        try:
+            raw = (bvid or "").strip()
+            if not raw:
+                return
+
+            # 支持输入 BV 号或包含 BV 号的链接/文本
+            m = re.search(r"(BV[0-9A-Za-z]{10})", raw, re.IGNORECASE)
+            target = (m.group(1) if m else raw).lower()
+            data = self.dictInfo["data"]
+            songs = [s for s in data if str(s.get("bv", "")).lower() == target]
+            self.dictInfo = {"data": songs}
+        except Exception:
+            logger.opt(exception=True).warning("BV Filtering Error")
+
     def get_data(self) -> list[dict]:
         """获取歌曲信息dict的列表,列表项为"""
         return self.dictInfo["data"]

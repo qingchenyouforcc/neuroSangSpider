@@ -114,12 +114,13 @@ def get_video_parts_sync(bvid: str) -> list[dict]:
     return sync(get_video_parts(bvid))
 
 
-def search_song_list(search_content: str) -> SongList | None:
+def search_song_list(search_content: str, mode: str = "title") -> SongList | None:
     """
     重写的搜索方法
 
     参数:
         search_result(str):搜索的关键字
+        mode(str):搜索模式 ('title' or 'bvid')
 
     返回:
         search_result_list:
@@ -134,12 +135,17 @@ def search_song_list(search_content: str) -> SongList | None:
     black_author_list = cfg.black_author_list.value
 
     search_result_list = total_data
-    search_result_list.search_by_title(search_content)
 
-    search_result_list.unique_by_bv()
-    search_result_list.remove_blacklist(black_author_list, 1)
-    if cfg.enable_filter.value:
-        search_result_list.filter_data(filter_list, 0)
+    if mode == "bvid":
+        # BV 精确查找：不应用黑名单/关键词过滤，避免把目标视频过滤掉
+        search_result_list.filter_by_bv(search_content)
+        search_result_list.unique_by_bv()
+    else:
+        search_result_list.search_by_title(search_content)
+        search_result_list.unique_by_bv()
+        search_result_list.remove_blacklist(black_author_list, 1)
+        if cfg.enable_filter.value:
+            search_result_list.filter_data(filter_list, 0)
 
     if len(search_result_list.get_data()) == 0:
         return None
