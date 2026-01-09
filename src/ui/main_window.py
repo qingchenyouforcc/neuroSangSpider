@@ -4,9 +4,19 @@ import subprocess
 from loguru import logger
 from PyQt6 import QtGui
 from PyQt6.QtCore import QSize, QProcess
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import MSFluentWindow, NavigationItemPosition, SystemThemeListener, MessageBox
+from qfluentwidgets import (
+    MSFluentWindow,
+    NavigationItemPosition,
+    SystemThemeListener,
+    MessageBox,
+    MessageBoxBase,
+    SubtitleLabel,
+    BodyLabel,
+    CheckBox,
+    PushButton,
+)
 
 from src.i18n import t
 from src.config import ASSETS_DIR, cfg, Theme
@@ -19,6 +29,53 @@ from src.ui.widgets.animated_splash_screen import AnimatedSplashScreen
 from src.ui.interface.play_queue import PlayQueueInterface
 from src.ui.interface.search import SearchInterface
 from src.ui.interface.settings import SettingInterface
+
+
+class CloseActionDialog(MessageBoxBase):
+    """关闭动作选择对话框"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # 标题
+        self.titleLabel = SubtitleLabel(t("dialog.close_choice.title"), self)
+        self.viewLayout.addWidget(self.titleLabel)
+
+        # 内容详情
+        self.contentLabel = BodyLabel(t("dialog.close_choice.content"), self)
+        self.viewLayout.addWidget(self.contentLabel)
+
+        # 总是最小化复选框
+        self.checkBox = CheckBox(t("dialog.close_choice.always_minimize"))
+        self.viewLayout.addWidget(self.checkBox)
+
+        # 最小化按钮
+        self.minimizeBtn = PushButton(t("dialog.close_choice.minimize"))
+        self.minimizeBtn.setObjectName("minimizeBtn")
+        self.minimizeBtn.clicked.connect(self._onMinimize)
+
+        # 将最小化按钮插入到 Yes(Exit) 和 Cancel 之间
+        # MessageBoxBase 的 buttonLayout 包含 yesButton, cancelButton (可能还有 spacer)
+        # 通常 yesButton 是 Exit, cancelButton 是 Cancel
+        self.buttonLayout.insertWidget(1, self.minimizeBtn)
+
+        self.yesButton.setText(t("dialog.close_choice.exit"))
+        self.cancelButton.setText(t("common.cancel"))
+
+        self.action = None
+
+        # 设置默认按钮样式等
+        self.yesButton.setObjectName("exitBtn")
+
+    def _onMinimize(self):
+        self.action = "minimize"
+        self.accept()
+
+    def accept(self):
+        # 如果不是点击最小化进来的，且 self.action 还没设置，说明是点击了 Yes(Exit)
+        if self.action is None:
+            self.action = "exit"
+        super().accept()
 
 
 class MainWindow(MSFluentWindow):
@@ -35,6 +92,24 @@ class MainWindow(MSFluentWindow):
 
         self.homeInterface = HomeInterface(self)
         self.setWindowIcon(icon)
+
+        # 系统托盘
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(icon)
+        self.tray_menu = QMenu()
+
+        self.show_action = QtGui.QAction(t("common.show"), self)
+        self.show_action.triggered.connect(self.showNormal)
+
+        self.quit_action = QtGui.QAction(t("common.exit"), self)
+        self.quit_action.triggered.connect(self.quit_app)
+
+        self.tray_menu.addAction(self.show_action)
+        self.tray_menu.addAction(self.quit_action)
+
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.activated.connect(self.on_tray_icon_activated)
+        self.tray_icon.show()
 
         # 设置初始窗口大小
         desktop = QApplication.primaryScreen()
@@ -141,26 +216,66 @@ class MainWindow(MSFluentWindow):
         # 启动画面会在动画播放完成后自动关闭并显示主窗口
         # 不需要手动调用 finish()
 
+    def on_tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            if self.isVisible():
+                if self.isMinimized():
+                    self.showNormal()
+                    self.activateWindow()
+                else:
+                    self.hide()
+            else:
+                self.showNormal()
+                self.activateWindow()
+
+    def quit_app(self):
+        self._is_force_quit = True
+        self.close()
+
     def closeEvent(self, event):  # type: ignore[override]
+        # 如果是强制退出（如托盘菜单退出），直接关闭
+        if getattr(self, "_is_force_quit", False):
+            self.before_shutdown()
+            event.accept()
+            return
+
+        # 如果启用了最小化到托盘，且不是语言切换重启
+        if cfg.minimize_to_tray.value and not self.is_language_restart:
+            event.ignore()
+            self.hide()
+            return
+
         if not self.is_language_restart:
-            # 显示退出确认对话框
+            # 显示关闭动作选择对话框
             try:
-                logger.info("正在弹出退出确认对话框...")
-                w = MessageBox(t("common.close_confirm"), t("common.close_confirm_desc"), self)
-                w.setDraggable(False)
-                w.yesButton.setText(t("common.ok"))
-                w.cancelButton.setText(t("common.cancel"))
+                logger.info("正在弹出关闭动作选择对话框...")
+                w = CloseActionDialog(self)
 
                 if w.exec():
-                    logger.info("用户确认退出，程序即将关闭。")
-                    self.before_shutdown()
-                    event.accept()
-                    QApplication.quit()
+                    if w.action == "minimize":
+                        logger.info("用户选择最小化到托盘")
+                        if w.checkBox.isChecked():
+                            cfg.minimize_to_tray.value = True
+                            cfg.save()
+                        event.ignore()
+                        self.hide()
+                        return
+                    elif w.action == "exit":
+                        logger.info("用户选择直接退出")
+                        self.before_shutdown()
+                        event.accept()
+                        QApplication.quit()
+                    else:
+                        # 理论上不应该到这里，除非 exec 返回 True 但 action 是 None
+                        logger.warning("未知的关闭动作，默认为取消")
+                        event.ignore()
                 else:
-                    logger.info("用户取消了退出操作。")
+                    logger.info("用户取消了关闭操作。")
                     event.ignore()
             except Exception as e:
-                logger.exception(f"在退出确认过程中发生错误: {e}")
+                logger.exception(f"在关闭选择过程中发生错误: {e}")
+                # 发生错误时安全退出
+                self.before_shutdown()
                 event.accept()
         else:
             # 显示重启确认对话框

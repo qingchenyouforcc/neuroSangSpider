@@ -80,6 +80,10 @@ class Config(QConfig):
     filter_list = ConfigItem("Search", "FilterWords", _DEFAULT_FILTER_WORDS.copy())
     # 是否启用搜索结果过滤（默认启用）
     enable_filter = ConfigItem("Search", "EnableFilter", True)
+
+    # 是否最小化到托盘
+    minimize_to_tray = ConfigItem("Appearance", "MinimizeToTray", False)
+
     theme_mode = ConfigItem(
         "Appearance",
         "ThemeMode",
