@@ -6,7 +6,7 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import QSize, QProcess
 from PyQt6.QtWidgets import QApplication
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import FluentWindow, MessageBox, NavigationItemPosition, SystemThemeListener
+from qfluentwidgets import MSFluentWindow, NavigationItemPosition, SystemThemeListener, MessageBox
 
 from src.i18n import t
 from src.config import ASSETS_DIR, cfg, Theme
@@ -21,7 +21,7 @@ from src.ui.interface.search import SearchInterface
 from src.ui.interface.settings import SettingInterface
 
 
-class MainWindow(FluentWindow):
+class MainWindow(MSFluentWindow):
     def __init__(self):
         super().__init__()
 
@@ -39,8 +39,9 @@ class MainWindow(FluentWindow):
         # 设置初始窗口大小
         desktop = QApplication.primaryScreen()
         if desktop:  # 确保 desktop 对象不是 None
-            initial_size = QSize(int(desktop.availableGeometry().width() * 0.615),
-                                 int(desktop.availableGeometry().height() * 0.735))
+            initial_size = QSize(
+                int(desktop.availableGeometry().width() * 0.615), int(desktop.availableGeometry().height() * 0.735)
+            )
             self.resize(initial_size)
             self._initial_size = initial_size  # 保存初始大小，供启动画面结束后恢复使用
             logger.info(f"已设置初始窗口大小为 {self.size().width()}x{self.size().height()}")
@@ -117,6 +118,12 @@ class MainWindow(FluentWindow):
         # 不在这里显示播放器窗口，等启动画面动画完成后再显示
         # self.player_bar.show()
         app_context.player = self.player_bar
+
+        # 初始化默认界面
+        # 使用 QTimer 延迟设置，确保在布局完成后执行
+        from PyQt6.QtCore import QTimer
+
+        QTimer.singleShot(50, lambda: self.switchTo(self.homeInterface))
 
         # 设置默认音频格式
         cfg.download_type.value = "mp3"
