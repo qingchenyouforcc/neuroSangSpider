@@ -114,12 +114,19 @@ class MainWindow(MSFluentWindow):
         # 设置初始窗口大小
         desktop = QApplication.primaryScreen()
         if desktop:  # 确保 desktop 对象不是 None
-            initial_size = QSize(
-                int(desktop.availableGeometry().width() * 0.615), int(desktop.availableGeometry().height() * 0.735)
-            )
+            available_geometry = desktop.availableGeometry()
+            width = int(available_geometry.width() * 0.615)
+            height = int(available_geometry.height() * 0.735)
+            initial_size = QSize(width, height)
             self.resize(initial_size)
+
+            # 移动到屏幕中心
+            x = available_geometry.x() + (available_geometry.width() - width) // 2
+            y = available_geometry.y() + (available_geometry.height() - height) // 2
+            self.move(x, y)
+
             self._initial_size = initial_size  # 保存初始大小，供启动画面结束后恢复使用
-            logger.info(f"已设置初始窗口大小为 {self.size().width()}x{self.size().height()}")
+            logger.info(f"已设置初始窗口大小为 {self.size().width()}x{self.size().height()} 并已居中显示")
         else:  # 如果获取不到主屏幕信息，给一个默认大小
             initial_size = QSize(780, 530)
             self.resize(initial_size)

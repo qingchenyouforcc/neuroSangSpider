@@ -34,7 +34,7 @@ VSVersionInfo(
         StringStruct(u'FileDescription', u'NeuroSongSpider - 歌回播放软件'),
         StringStruct(u'FileVersion', u'1.2.1'),
         StringStruct(u'InternalName', u'NeuroSongSpider'),
-        StringStruct(u'LegalCopyright', u'Copyright © 2025 qingchenyouforcc. Licensed under AGPL-3.0'),
+        StringStruct(u'LegalCopyright', u'Copyright © 2026 qingchenyouforcc. Licensed under AGPL-3.0'),
         StringStruct(u'OriginalFilename', u'NeuroSongSpider.exe'),
         StringStruct(u'ProductName', u'NeuroSongSpider'),
         StringStruct(u'ProductVersion', u'1.2.1')])
