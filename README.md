@@ -1,6 +1,6 @@
 # ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/this_32.png)NeuroSangSpider
 
-![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/20250706183331.png)
+![image-20260109162010403](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/image-20260109162010403.png)
 
 ## 项目简介
 
@@ -20,7 +20,7 @@
 ### ✅ 已实现功能
 - 获取歌回列表，支持按设置的 UP 主和关键词筛选目标视频
 - 支持搜索歌曲，下载指定歌回、本地播放歌曲
-- 基于 `PyQt6` 的GUI
+- 基础的歌曲推荐功能
 - 调用bilibili搜索补全歌曲列表
 - 升级 GUI 界面，提供可视化交互（设置面板等）
 - 支持修改更多设置项
@@ -42,7 +42,7 @@
 
 ## 构建步骤
 
-~~因为最开始写成neuroSongSpider了，所以请勿使用neuroSangSpider作为项目文件夹名称~~
+因为最开始写成neuroSongSpider了，所以请勿使用neuroSangSpider作为项目文件夹名称
 
 > [!important] 
 > 
@@ -81,7 +81,7 @@ uv run main.py
 
 ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/b179a2b1bd812119dbb31b9c6bd6d184.png)
 
-### 感谢萝卜猫提供的加载动画授权
+### 感谢萝卜猫提供的启动动画授权
 
 - [魔法少女_卡洛特](https://space.bilibili.com/2038218765)
 
@@ -108,7 +108,15 @@ uv run main.py
 
 ---
 ## 广告位
-如果你对neuro同人作品感兴趣的话
+**如果你对neuro社区项目感兴趣的话**
+
+**请加入NeuForge Community了解更多内容**
+
+**NeuForge Community 423902950**
+
+请加入NeuroSama吧群谢谢喵
+
+**NeuroSama吧群734688012**
 
 请加入文学社谢谢喵
 
