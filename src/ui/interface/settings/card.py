@@ -203,6 +203,11 @@ class SettingsCard(GroupHeaderCardWidget):
         self.playerBarSwitch.setChecked(cfg.enable_player_bar.value)
         self.playerBarSwitch.checkedChanged.connect(self.on_player_bar_switch_changed)
 
+        # 最小化到托盘设置
+        self.minimizeToTraySwitch = SwitchButton(parent=self)
+        self.minimizeToTraySwitch.setChecked(cfg.minimize_to_tray.value)
+        self.minimizeToTraySwitch.checkedChanged.connect(self.on_minimize_to_tray_changed)
+
         # 下载后自动聚焦到歌曲列表
         self.autoSwitchPlaylistSwitch = SwitchButton(parent=self)
         self.autoSwitchPlaylistSwitch.setChecked(cfg.auto_switch_playlist.value)
@@ -237,6 +242,11 @@ class SettingsCard(GroupHeaderCardWidget):
         self.customSongsBtn = PushButton(t("settings.download"), self)
         self.customSongsBtn.clicked.connect(self.on_custom_songs_download)
 
+        # 监听配置变化，更新开关状态
+        cfg.minimize_to_tray.valueChanged.connect(
+            lambda v: self.minimizeToTraySwitch.setChecked(v) if self.minimizeToTraySwitch.isChecked() != v else None
+        )
+
         # 添加到布局
         self.addGroup(
             FluentIcon.DOWNLOAD,
@@ -267,6 +277,12 @@ class SettingsCard(GroupHeaderCardWidget):
             t("settings.player_bar"),
             t("settings.player_bar_desc"),
             self.playerBarSwitch,
+        )
+        self.addGroup(
+            FluentIcon.MINIMIZE,
+            t("settings.minimize_to_tray"),
+            t("settings.minimize_to_tray_desc"),
+            self.minimizeToTraySwitch,
         )
         self.addGroup(
             FluentIcon.LINK,
@@ -369,6 +385,19 @@ class SettingsCard(GroupHeaderCardWidget):
         InfoBar.success(
             t("common.settings_success"),
             t("common.player_bar_set", display_mode=t("common.enabled") if checked else t("common.disabled")),
+            parent=app_context.main_window,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+        )
+
+    def on_minimize_to_tray_changed(self, checked: bool) -> None:
+        if cfg.minimize_to_tray.value == checked:
+            return
+        cfg.minimize_to_tray.value = checked
+        cfg.save()
+        InfoBar.success(
+            t("common.settings_success"),
+            t("common.success"),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
