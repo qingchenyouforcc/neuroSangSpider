@@ -9,7 +9,7 @@ from loguru import logger
 
 from src.config import VIDEO_DIR, cfg
 from src.core.song_list import SongList
-from .common import get_credential
+from .common import get_credential, apply_proxy_if_enabled
 
 
 _BVID_RE = re.compile(r"(BV[0-9A-Za-z]{10})", re.IGNORECASE)
@@ -33,6 +33,7 @@ def _extract_bvid(text: str) -> str | None:
 
 
 async def search_page(search_content: str, page: int) -> list[dict]:
+    apply_proxy_if_enabled()
     try:
         page_data = await search_by_type(
             keyword=f"neuro {search_content}",
@@ -59,6 +60,7 @@ async def search_page(search_content: str, page: int) -> list[dict]:
 
 
 async def search_on_bilibili(search_content: str) -> None:
+    apply_proxy_if_enabled()
     songs = SongList()
 
     try:
@@ -73,8 +75,9 @@ async def search_on_bilibili(search_content: str) -> None:
                 if first_exc is None:
                     first_exc = data
                 continue
-            for item in data:
-                songs.append_info(item)
+            if isinstance(data, list):  # Ensure data is iterable
+                for item in data:
+                    songs.append_info(item)
 
         # 如果全部页面都失败，则向上抛出，给 UI 展示网络错误
         if len(songs.get_data()) == 0 and first_exc is not None:
@@ -90,6 +93,7 @@ async def search_on_bilibili(search_content: str) -> None:
 
 async def search_bvid_on_bilibili(search_content: str) -> None:
     """通过 BV 号精确拉取视频信息并写入本地 search_data.json。"""
+    apply_proxy_if_enabled()
     songs = SongList()
     try:
         bvid = _extract_bvid(search_content)

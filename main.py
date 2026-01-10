@@ -5,8 +5,9 @@ from datetime import datetime
 from loguru import logger
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QDialog
+from bilibili_api import request_settings
 
-from src.config import ASSETS_DIR, I18N_DIR
+from src.config import ASSETS_DIR, I18N_DIR, cfg
 from src.i18n.manager import I18nManager
 from src.app_context import app_context
 from src.ui import MainWindow
@@ -49,6 +50,11 @@ if __name__ == "__main__":
             QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     setup_logger()
+
+    # 应用代理设置
+    if cfg.enable_proxy.value:
+        request_settings.set_proxy(cfg.proxy_url.value)
+        logger.info(f"已启用代理: {cfg.proxy_url.value}")
 
     # 语言资源目录迁移到 data/i18n，若为空则从 assets 引导复制
     language_file_dir = I18N_DIR

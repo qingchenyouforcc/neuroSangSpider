@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from loguru import logger
-from qfluentwidgets import ConfigItem, OptionsConfigItem, OptionsValidator, QConfig, setTheme
+from qfluentwidgets import ConfigItem, OptionsConfigItem, OptionsValidator, BoolValidator, QConfig, setTheme
 from qfluentwidgets import Theme as QtTheme
 
 if TYPE_CHECKING:
@@ -109,6 +109,10 @@ class Config(QConfig):
     bili_sessdata = ConfigItem("Bilibili", "SESSDATA", "")
     bili_jct = ConfigItem("Bilibili", "BILI_JCT", "")
     bili_buvid3 = ConfigItem("Bilibili", "BUVID3", "")
+
+    # 代理设置
+    enable_proxy = ConfigItem("Network", "EnableProxy", False, BoolValidator())
+    proxy_url = ConfigItem("Network", "ProxyUrl", "http://127.0.0.1:7890")
 
     def __init__(self, path: Path):
         # 指定配置文件路径
