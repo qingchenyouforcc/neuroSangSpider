@@ -12,7 +12,7 @@ from qfluentwidgets import FluentIcon as FIF
 import requests
 from bilibili_api import video, sync
 
-from src.config import CACHE_DIR, VIDEO_DIR, ASSETS_DIR, USER_AGENT
+from src.config import CACHE_DIR, VIDEO_DIR, ASSETS_DIR, USER_AGENT, cfg
 from src.core.data_io import load_from_all_data
 from src.bili_api.common import get_credential
 
@@ -229,10 +229,20 @@ def _fetch_bilibili_cover_bytes(bvid: str) -> Optional[bytes]:
                 cover_url = info["View"].get("pic")
         if not cover_url:
             return None
+
+        # 应用代理设置
+        proxies = {}
+        if cfg.enable_proxy.value and cfg.proxy_url.value:
+            proxies = {
+                "http": cfg.proxy_url.value,
+                "https": cfg.proxy_url.value,
+            }
+
         resp = requests.get(
             cover_url,
             timeout=8,
             headers={"User-Agent": USER_AGENT},
+            proxies=proxies,
         )
         if resp.status_code == 200 and resp.content:
             return resp.content
