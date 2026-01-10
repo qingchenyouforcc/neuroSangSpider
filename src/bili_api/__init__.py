@@ -1,3 +1,4 @@
+from .common import apply_proxy_if_enabled as apply_proxy_if_enabled
 from .music import run_music_download as run_music_download
 from .music import search_song_list as search_song_list
 from .music import get_video_parts_sync as get_video_parts_sync

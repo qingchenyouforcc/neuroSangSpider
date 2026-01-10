@@ -11,7 +11,7 @@ from src.core.song_list import SongList
 from src.core.data_io import load_from_all_data
 from src.utils.text import fix_filename
 
-from .common import get_credential
+from .common import get_credential, apply_proxy_if_enabled
 
 
 @contextlib.asynccontextmanager
@@ -78,6 +78,7 @@ async def get_video_parts(bvid: str) -> list[dict]:
         分P信息列表，每个元素包含 'page' (页码) 和 'part' (标题) 字段
         如果只有一个分P，返回空列表
     """
+    apply_proxy_if_enabled()
     try:
         v = video.Video(bvid, credential=get_credential())
         info = await v.get_info()
@@ -111,6 +112,7 @@ def get_video_parts_sync(bvid: str) -> list[dict]:
     Returns:
         分P信息列表
     """
+    apply_proxy_if_enabled()
     return sync(get_video_parts(bvid))
 
 
@@ -167,6 +169,7 @@ def run_music_download(
     Returns:
         是否下载成功
     """
+    apply_proxy_if_enabled()
     info = search_list.select_info(index)
     if info is None:
         logger.error("索引超出范围或信息不存在")

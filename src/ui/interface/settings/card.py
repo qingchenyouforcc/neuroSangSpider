@@ -23,6 +23,7 @@ from src.utils.file import on_fix_music
 from src.utils.thread import SimpleThread
 from src.bili_api.music import import_custom_songs_and_download
 from src.ui.interface.play_queue import PlayQueueInterface
+from bilibili_api import request_settings
 
 
 def changeDownloadType(selected_type: str) -> None:
@@ -313,6 +314,32 @@ class SettingsCard(GroupHeaderCardWidget):
             t("settings.bili_api_settings_desc"),
             self.biliApiBtn,
         )
+
+        # 代理设置
+        self.proxySwitch = SwitchButton(parent=self)
+        self.proxySwitch.setChecked(cfg.enable_proxy.value)
+        self.proxySwitch.checkedChanged.connect(self.on_proxy_switch_changed)
+
+        self.addGroup(
+            FluentIcon.GLOBE,
+            t("settings.proxy_enable"),
+            t("settings.proxy_enable_desc"),
+            self.proxySwitch,
+        )
+
+        self.proxyEdit = LineEdit(self)
+        self.proxyEdit.setPlaceholderText("http://127.0.0.1:7890")
+        self.proxyEdit.setText(cfg.proxy_url.value)
+        self.proxyEdit.textChanged.connect(self.on_proxy_url_changed)
+
+        self.proxyUrlItem = self.addGroup(
+            FluentIcon.EDIT,
+            t("settings.proxy_url"),
+            t("settings.proxy_url_desc"),
+            self.proxyEdit,
+        )
+        self.proxyUrlItem.setVisible(cfg.enable_proxy.value)
+
         self.addGroup(
             FluentIcon.MUSIC,
             t("settings.fix_audio"),
@@ -492,3 +519,40 @@ class SettingsCard(GroupHeaderCardWidget):
                 parent=app_context.main_window,
                 duration=3000,
             )
+
+    def on_proxy_switch_changed(self, checked: bool) -> None:
+        cfg.enable_proxy.value = checked
+        cfg.save()
+        self.proxyUrlItem.setVisible(checked)
+
+        if checked:
+            proxy_url = (cfg.proxy_url.value or "").strip()
+            if proxy_url:
+                request_settings.set_proxy(proxy_url)
+            else:
+                InfoBar.warning(
+                    t("common.warning"),
+                    "Proxy URL cannot be empty.",
+                    parent=app_context.main_window,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    duration=3000,
+                )
+                # Ensure proxy is not enabled with an invalid configuration
+                request_settings.set_proxy("")
+                return
+        else:
+            request_settings.set_proxy("")
+
+        InfoBar.success(
+            t("common.settings_success"),
+            t("settings.proxy_status_changed", status=t("common.enabled") if checked else t("common.disabled")),
+            parent=app_context.main_window,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=1500,
+        )
+
+    def on_proxy_url_changed(self, text: str) -> None:
+        cfg.proxy_url.value = text
+        cfg.save()
+        if cfg.enable_proxy.value:
+            request_settings.set_proxy(text)

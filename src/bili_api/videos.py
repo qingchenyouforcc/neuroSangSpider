@@ -14,16 +14,23 @@ from src.core.song_list import SongList
 from src.core.data_io import load_extend
 from src.utils.text import contain_text
 
-from .common import get_credential
+from .common import get_credential, apply_proxy_if_enabled
 
 remove_urls_index = []
 
 
 def resolve_url_to_info(url, words_set=None):
     """解析视频url并转换为详细信息(title,author,date)"""
+    apply_proxy_if_enabled()
     try:
+        proxies = {}
+        if cfg.enable_proxy.value:
+            proxies = {
+                "http": cfg.proxy_url.value,
+                "https": cfg.proxy_url.value,
+            }
         headers = {"User-Agent": USER_AGENT}
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, proxies=proxies)
         soup = BeautifulSoup(response.text, "lxml")
         if not (h1 := soup.find("h1", class_="video-title special-text-indent")):
             return
@@ -59,8 +66,10 @@ def resolve_url_to_info(url, words_set=None):
 
 async def get_user_videos(user_id: int, words_set: list[str] | None = None, page: int = 1):
     """获取指定用户的视频信息"""
+    apply_proxy_if_enabled()
     user = User(user_id, credential=get_credential())
     info = await user.get_user_info()
+
     data = await user.get_videos(pn=page)
 
     videos = SongList()
@@ -121,6 +130,7 @@ def create_video_list_file() -> None:
 
 
 def get_up_name(user_id: int) -> str:
+    apply_proxy_if_enabled()
     try:
         res = sync(User(user_id, credential=get_credential()).get_user_info())
         return res["name"]
@@ -131,6 +141,7 @@ def get_up_name(user_id: int) -> str:
 
 def get_up_names(user_ids: list[int]) -> dict[int, str]:
     """获取多个UP主的名称"""
+    apply_proxy_if_enabled()
     up_names = {}
 
     async def task(user_id: int):
