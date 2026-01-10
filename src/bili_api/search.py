@@ -74,9 +74,8 @@ async def search_on_bilibili(search_content: str) -> None:
                 if first_exc is None:
                     first_exc = data
                 continue
-            if isinstance(data, list):  # Ensure data is iterable
-                for item in data:
-                    songs.append_info(item)
+            for item in data:
+                songs.append_info(item)
 
         # 如果全部页面都失败，则向上抛出，给 UI 展示网络错误
         if len(songs.get_data()) == 0 and first_exc is not None:
