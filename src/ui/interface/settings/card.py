@@ -1,6 +1,7 @@
+import re
 from loguru import logger
 from PyQt6.QtCore import QTimer, Qt
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QHBoxLayout, QWidget
 from qfluentwidgets import (
     ComboBox,
     FluentIcon,
@@ -37,6 +38,35 @@ def changeDownloadType(selected_type: str) -> None:
         duration=1500,
         parent=app_context.main_window,
     )
+
+
+def validate_proxy_url(proxy_url: str) -> tuple[bool, str]:
+    """
+    验证代理URL格式
+    返回 (是否有效, 错误消息)
+    """
+    proxy_url = proxy_url.strip()
+
+    if not proxy_url:
+        return False, t("settings.proxy_url_empty")
+
+    # 正则表达式验证代理URL格式: http(s)://host:port or socks5://host:port
+    proxy_pattern = r"^(https?|socks5)://[a-zA-Z0-9.-]+:\d+/?$"
+
+    if not re.match(proxy_pattern, proxy_url):
+        return False, t("settings.proxy_url_invalid")
+
+    return True, ""
+
+
+def normalize_proxy_url(proxy_url: str) -> str:
+    """
+    规范化代理URL：移除末尾斜杠
+    """
+    proxy_url = proxy_url.strip()
+    if proxy_url.endswith("/"):
+        proxy_url = proxy_url.rstrip("/")
+    return proxy_url
 
 
 def changeLanguage(language: str) -> None:
@@ -319,6 +349,7 @@ class SettingsCard(GroupHeaderCardWidget):
         self.proxySwitch = SwitchButton(parent=self)
         self.proxySwitch.setChecked(cfg.enable_proxy.value)
         self.proxySwitch.checkedChanged.connect(self.on_proxy_switch_changed)
+        self._proxy_switch_updating = False  # 防止递归更新标志
 
         self.addGroup(
             FluentIcon.GLOBE,
@@ -332,11 +363,23 @@ class SettingsCard(GroupHeaderCardWidget):
         self.proxyEdit.setText(cfg.proxy_url.value)
         self.proxyEdit.textChanged.connect(self.on_proxy_url_changed)
 
+        self.proxyApplyBtn = PushButton(t("settings.proxy_apply"), self)
+        self.proxyApplyBtn.setVisible(False)
+        self.proxyApplyBtn.clicked.connect(self.on_proxy_apply_clicked)
+
+        proxyInputWrapper = QWidget(self)
+        proxyInputLayout = QHBoxLayout(proxyInputWrapper)
+        proxyInputLayout.setContentsMargins(0, 0, 0, 0)
+        proxyInputLayout.setSpacing(8)
+        proxyInputLayout.addWidget(self.proxyEdit)
+        proxyInputLayout.addWidget(self.proxyApplyBtn)
+        proxyInputLayout.setStretch(0, 1)
+
         self.proxyUrlItem = self.addGroup(
             FluentIcon.EDIT,
             t("settings.proxy_url"),
             t("settings.proxy_url_desc"),
-            self.proxyEdit,
+            proxyInputWrapper,
         )
         self.proxyUrlItem.setVisible(cfg.enable_proxy.value)
 
@@ -521,38 +564,109 @@ class SettingsCard(GroupHeaderCardWidget):
             )
 
     def on_proxy_switch_changed(self, checked: bool) -> None:
-        cfg.enable_proxy.value = checked
-        cfg.save()
-        self.proxyUrlItem.setVisible(checked)
+        # 防止递归更新
+        if self._proxy_switch_updating:
+            return
 
-        if checked:
-            proxy_url = (cfg.proxy_url.value or "").strip()
-            if proxy_url:
-                request_settings.set_proxy(proxy_url)
+        self._proxy_switch_updating = True
+        try:
+            cfg.enable_proxy.value = checked
+            cfg.save()
+            self.proxyUrlItem.setVisible(checked)
+
+            if checked:
+                proxy_url = (cfg.proxy_url.value or "").strip()
+                if proxy_url:
+                    # 验证代理URL格式
+                    is_valid, error_msg = validate_proxy_url(proxy_url)
+                    if not is_valid:
+                        InfoBar.warning(
+                            t("common.warning"),
+                            error_msg,
+                            parent=app_context.main_window,
+                            position=InfoBarPosition.BOTTOM_RIGHT,
+                            duration=3000,
+                        )
+                        # 禁用代理并关闭开关
+                        cfg.enable_proxy.value = False
+                        cfg.save()
+                        self.proxySwitch.setChecked(False)
+                        request_settings.set_proxy("")
+                        return
+
+                    # 规范化代理URL (移除末尾斜杠)
+                    normalized_url = normalize_proxy_url(proxy_url)
+                    if normalized_url != proxy_url:
+                        cfg.proxy_url.value = normalized_url
+                        cfg.save()
+                        self.proxyEdit.setText(normalized_url)
+
+                    request_settings.set_proxy(normalized_url)
+                else:
+                    InfoBar.warning(
+                        t("common.warning"),
+                        t("settings.proxy_url_empty"),
+                        parent=app_context.main_window,
+                        position=InfoBarPosition.BOTTOM_RIGHT,
+                        duration=3000,
+                    )
+                    # 禁用代理并关闭开关
+                    cfg.enable_proxy.value = False
+                    cfg.save()
+                    self.proxySwitch.setChecked(False)
+                    request_settings.set_proxy("")
+                    return
             else:
-                InfoBar.warning(
-                    t("common.warning"),
-                    "Proxy URL cannot be empty.",
-                    parent=app_context.main_window,
-                    position=InfoBarPosition.BOTTOM_RIGHT,
-                    duration=3000,
-                )
-                # Ensure proxy is not enabled with an invalid configuration
                 request_settings.set_proxy("")
-                return
-        else:
-            request_settings.set_proxy("")
+
+            InfoBar.success(
+                t("common.settings_success"),
+                t("settings.proxy_status_changed", status=t("common.enabled") if checked else t("common.disabled")),
+                parent=app_context.main_window,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=1500,
+            )
+        finally:
+            self._proxy_switch_updating = False
+
+    def on_proxy_url_changed(self, text: str) -> None:
+        normalized_text = normalize_proxy_url(text)
+
+        if normalized_text != text:
+            self.proxyEdit.blockSignals(True)
+            self.proxyEdit.setText(normalized_text)
+            self.proxyEdit.blockSignals(False)
+
+        current_saved = (cfg.proxy_url.value or "").strip()
+        self.proxyApplyBtn.setVisible(normalized_text != current_saved)
+
+    def on_proxy_apply_clicked(self) -> None:
+        proxy_url = normalize_proxy_url(self.proxyEdit.text())
+
+        is_valid, error_msg = validate_proxy_url(proxy_url)
+        if not is_valid:
+            InfoBar.warning(
+                t("common.warning"),
+                error_msg,
+                parent=app_context.main_window,
+                position=InfoBarPosition.BOTTOM_RIGHT,
+                duration=3000,
+            )
+            return
+
+        cfg.proxy_url.value = proxy_url
+        cfg.save()
+
+        self.proxyEdit.setText(proxy_url)
+        self.proxyApplyBtn.setVisible(False)
+
+        if cfg.enable_proxy.value:
+            request_settings.set_proxy(proxy_url)
 
         InfoBar.success(
             t("common.settings_success"),
-            t("settings.proxy_status_changed", status=t("common.enabled") if checked else t("common.disabled")),
+            t("settings.proxy_url_applied"),
             parent=app_context.main_window,
             position=InfoBarPosition.BOTTOM_RIGHT,
             duration=1500,
         )
-
-    def on_proxy_url_changed(self, text: str) -> None:
-        cfg.proxy_url.value = text
-        cfg.save()
-        if cfg.enable_proxy.value:
-            request_settings.set_proxy(text)
