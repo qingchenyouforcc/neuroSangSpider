@@ -60,7 +60,6 @@ async def search_page(search_content: str, page: int) -> list[dict]:
 
 
 async def search_on_bilibili(search_content: str) -> None:
-    apply_proxy_if_enabled()
     songs = SongList()
 
     try:
