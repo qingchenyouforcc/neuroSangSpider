@@ -526,7 +526,20 @@ class SettingsCard(GroupHeaderCardWidget):
         self.proxyUrlItem.setVisible(checked)
 
         if checked:
-            request_settings.set_proxy(cfg.proxy_url.value)
+            proxy_url = (cfg.proxy_url.value or "").strip()
+            if proxy_url:
+                request_settings.set_proxy(proxy_url)
+            else:
+                InfoBar.warning(
+                    t("common.warning"),
+                    "Proxy URL cannot be empty.",
+                    parent=app_context.main_window,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    duration=3000,
+                )
+                # Ensure proxy is not enabled with an invalid configuration
+                request_settings.set_proxy("")
+                return
         else:
             request_settings.set_proxy("")
 
