@@ -1,6 +1,14 @@
 from loguru import logger
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QSizePolicy
+from PyQt6.QtWidgets import (
+    QAbstractItemView,
+    QHBoxLayout,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+    QHeaderView,
+    QSizePolicy,
+)
 from PyQt6.QtGui import QIcon
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import (
@@ -57,7 +65,8 @@ class PlayQueueInterface(QWidget):
         # 标题栏与按钮
         title_layout = QHBoxLayout()
         self.titleLabel = TitleLabel(t("play_queue.title"), self)
-        self.seqPlayBtn = TransparentToolButton(FIF.PLAY, self)
+        self.seqPlayBtn = TransparentToolButton("src/assets/images/icons/Seq_play.svg", self)
+        self.seqPlayBtn.setIconSize(QSize(30, 30))
         self.seqPlayBtn.setToolTip(t("play_queue.seq_play_tooltip"))
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
         self.refreshButton.setToolTip(t("play_queue.refresh_tooltip"))
@@ -67,9 +76,11 @@ class PlayQueueInterface(QWidget):
         self.upSongButton.setToolTip(t("play_queue.up_tooltip"))
         self.downSongButton = TransparentToolButton(FIF.DOWN, self)
         self.downSongButton.setToolTip(t("play_queue.down_tooltip"))
-        self.sequenceButton = TransparentToolButton(FIF.SAVE, self)
+        self.sequenceButton = TransparentToolButton("src/assets/images/icons/Edit_list.svg", self)
+        self.sequenceButton.setIconSize(QSize(30, 30))
         self.sequenceButton.setToolTip(t("play_queue.sequence_tooltip"))
-        self.clearAllButton = TransparentToolButton(FIF.CANCEL, self)
+        self.clearAllButton = TransparentToolButton("src/assets/images/icons/Clear_list.svg", self)
+        self.clearAllButton.setIconSize(QSize(25, 25))
         self.clearAllButton.setToolTip(t("play_queue.clear_all_tooltip"))
 
         title_layout.addWidget(self.titleLabel, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -105,7 +116,7 @@ class PlayQueueInterface(QWidget):
     def _setup_table_resize_policy(self):
         """设置表格列宽自适应策略，参考local_player.py实现"""
         show_cover = bool(cfg.enable_cover.value)
-        
+
         if show_cover:
             # 显示封面时：第0列（封面）固定宽度，第1列（歌曲名）自适应拉伸
             self.tableView.setColumnWidth(0, self.cover_icon_size + 30)
@@ -114,7 +125,7 @@ class PlayQueueInterface(QWidget):
         else:
             # 不显示封面时：第0列（歌曲名）自适应拉伸
             self.tableView.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        
+
         # 设置表格尺寸策略为自适应窗口大小
         self.tableView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
