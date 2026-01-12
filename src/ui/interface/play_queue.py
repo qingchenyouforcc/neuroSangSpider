@@ -28,6 +28,9 @@ from src.core.queue_service import queue_service
 # from src.app_context import app_context  # 不再直接使用全局上下文，改由 service 管理
 from src.ui.widgets.play_sequence_dialog import PlaySequenceDialog
 from src.utils.cover import get_cover_pixmap
+from src.utils.file import get_resource_path
+from qfluentwidgets import qconfig, isDarkTheme
+from src.utils.icon_utils import get_colored_icon
 from src.config import cfg
 from src.ui.widgets.song_cell import build_song_cell
 from src.ui.widgets.pixmap_utils import rounded_pixmap
@@ -65,7 +68,7 @@ class PlayQueueInterface(QWidget):
         # 标题栏与按钮
         title_layout = QHBoxLayout()
         self.titleLabel = TitleLabel(t("play_queue.title"), self)
-        self.seqPlayBtn = TransparentToolButton("src/assets/images/icons/Seq_play.svg", self)
+        self.seqPlayBtn = TransparentToolButton(get_resource_path("src/assets/images/icons/Seq_play.svg"), self)
         self.seqPlayBtn.setIconSize(QSize(30, 30))
         self.seqPlayBtn.setToolTip(t("play_queue.seq_play_tooltip"))
         self.refreshButton = TransparentToolButton(FIF.SYNC, self)
@@ -76,10 +79,10 @@ class PlayQueueInterface(QWidget):
         self.upSongButton.setToolTip(t("play_queue.up_tooltip"))
         self.downSongButton = TransparentToolButton(FIF.DOWN, self)
         self.downSongButton.setToolTip(t("play_queue.down_tooltip"))
-        self.sequenceButton = TransparentToolButton("src/assets/images/icons/Edit_list.svg", self)
+        self.sequenceButton = TransparentToolButton(get_resource_path("src/assets/images/icons/Edit_list.svg"), self)
         self.sequenceButton.setIconSize(QSize(30, 30))
         self.sequenceButton.setToolTip(t("play_queue.sequence_tooltip"))
-        self.clearAllButton = TransparentToolButton("src/assets/images/icons/Clear_list.svg", self)
+        self.clearAllButton = TransparentToolButton(get_resource_path("src/assets/images/icons/Clear_list.svg"), self)
         self.clearAllButton.setIconSize(QSize(25, 25))
         self.clearAllButton.setToolTip(t("play_queue.clear_all_tooltip"))
 
@@ -108,6 +111,18 @@ class PlayQueueInterface(QWidget):
 
         # 初次加载
         self.load_play_queue()
+
+        # 监听主题变化
+        qconfig.themeChanged.connect(self._update_icons)
+        self._update_icons()
+
+    def _update_icons(self):
+        """根据主题更新图标颜色"""
+        color = "white" if isDarkTheme() else "black"
+
+        self.seqPlayBtn.setIcon(get_colored_icon("src/assets/images/icons/Seq_play.svg", color))
+        self.sequenceButton.setIcon(get_colored_icon("src/assets/images/icons/Edit_list.svg", color))
+        self.clearAllButton.setIcon(get_colored_icon("src/assets/images/icons/Clear_list.svg", color))
 
     def _build_song_cell(self, display_name: str) -> QWidget:
         # 向后兼容旧方法名，直接复用通用构建器

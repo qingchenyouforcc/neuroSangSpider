@@ -1,5 +1,7 @@
 import json
 import subprocess
+import sys
+import os
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +15,35 @@ from src.i18n import t
 from src.config import FFMPEG_PATH, MUSIC_DIR, subprocess_options
 from src.app_context import app_context
 from src.bili_api.converters import url2bv
+
+
+def get_resource_path(relative_path: str) -> str:
+    """
+    获取资源文件的绝对路径
+    兼容开发环境和 PyInstaller 打包环境
+    """
+    if hasattr(sys, "_MEIPASS"):
+        # PyInstaller 打包后的环境
+        # main.spec 中通常配置 datas=[("src/assets", "assets")]
+        # 这意味着 src/assets 下的文件会被放到了临时目录的 assets 文件夹下
+        # 因此需要把路径中的 src/ 前缀去掉
+
+        # 统一路径分隔符方便处理
+        norm_path = relative_path.replace("\\", "/")
+
+        if norm_path.startswith("src/assets"):
+            # 找到 assets 的位置，截取之后的路径 (包含assets)
+            # 例如 src/assets/icon.png -> assets/icon.png
+            index = norm_path.find("assets")
+            # 注意：要保留原路径的分隔符风格，所以用切片
+            # 但这里我们知道 relative_path 传进来通常是硬编码的 "src/assets/..."
+            # 如果是 windows 风格的传入 path，find 可能有点问题，但 norm_path 解决了
+            # 为了稳妥，重新构建路径
+            relative_path = norm_path[index:]
+
+        return os.path.join(sys._MEIPASS, relative_path)
+
+    return os.path.join(os.path.abspath("."), relative_path)
 
 
 def create_dir(dir_name: str) -> None:

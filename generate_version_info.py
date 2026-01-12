@@ -2,9 +2,12 @@
 """
 自动生成PyInstaller版本信息文件
 从src/config.py中读取VERSION并生成version_info.txt
+同时维护构建次数并生成src/build_info.py
 """
 
 import re
+import json
+import datetime
 from pathlib import Path
 
 
@@ -25,15 +28,55 @@ def get_version_from_config():
     return version_match.group(1)
 
 
-def parse_version(version_str):
+def get_build_count(version):
+    """获取并更新构建次数"""
+    stats_file = Path("build_stats.json")
+    stats = {}
+
+    if stats_file.exists():
+        try:
+            with open(stats_file, "r", encoding="utf-8") as f:
+                stats = json.load(f)
+        except Exception:
+            pass
+
+    current_count = stats.get(version, 0)
+    new_count = current_count + 1
+    stats[version] = new_count
+
+    with open(stats_file, "w", encoding="utf-8") as f:
+        json.dump(stats, f, indent=4)
+
+    return new_count
+
+
+def write_build_info_module(version, build_count):
+    """生成src/build_info.py供程序调用"""
+    content = f'''"""
+自动生成的构建信息文件
+请勿手动修改
+"""
+BUILD_VERSION = "{version}"
+BUILD_NUMBER = {build_count}
+BUILD_TIME = "{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"
+'''
+    with open("src/build_info.py", "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"构建信息模块已生成: src/build_info.py (Build {build_count})")
+
+
+def parse_version(version_str, build_count=0):
     """解析版本字符串为四位数字元组"""
     parts = version_str.split(".")
-    # 确保有4位数字，不足的补0
-    while len(parts) < 4:
+    # 确保有3位数字 (Major.Minor.Patch)
+    while len(parts) < 3:
         parts.append("0")
 
-    # 只取前4位
-    parts = parts[:4]
+    # 取前3位
+    parts = parts[:3]
+
+    # 第4位使用构建次数
+    parts.append(str(build_count))
 
     try:
         return tuple(int(part) for part in parts)
@@ -41,9 +84,10 @@ def parse_version(version_str):
         raise ValueError(f"无效的版本号格式: {version_str}")
 
 
-def generate_version_info(version_str):
+def generate_version_info(version_str, build_count):
     """生成版本信息文件内容"""
-    version_tuple = parse_version(version_str)
+    version_tuple = parse_version(version_str, build_count)
+    full_version_str = f"{version_str}.{build_count}"
 
     template = f"""# UTF-8
 #
@@ -79,12 +123,12 @@ VSVersionInfo(
         u'080404B0',
         [StringStruct(u'CompanyName', u'qingchenyouforcc'),
         StringStruct(u'FileDescription', u'NeuroSongSpider - 歌回播放软件'),
-        StringStruct(u'FileVersion', u'{version_str}'),
+        StringStruct(u'FileVersion', u'{full_version_str}'),
         StringStruct(u'InternalName', u'NeuroSongSpider'),
         StringStruct(u'LegalCopyright', u'Copyright © 2026 qingchenyouforcc. Licensed under AGPL-3.0'),
         StringStruct(u'OriginalFilename', u'NeuroSongSpider.exe'),
         StringStruct(u'ProductName', u'NeuroSongSpider'),
-        StringStruct(u'ProductVersion', u'{version_str}')])
+        StringStruct(u'ProductVersion', u'{full_version_str}')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [2052, 1200])])
   ]
@@ -99,8 +143,14 @@ def main():
         version = get_version_from_config()
         print(f"检测到版本号: {version}")
 
+        # 获取并更新构建次数
+        build_count = get_build_count(version)
+
+        # 生成Python模块
+        write_build_info_module(version, build_count)
+
         # 生成版本信息文件
-        version_info_content = generate_version_info(version)
+        version_info_content = generate_version_info(version, build_count)
 
         # 写入文件
         version_info_path = Path("version_info.txt")
