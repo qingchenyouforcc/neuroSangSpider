@@ -77,6 +77,10 @@ uv run main.py
 
 ## 感谢名单
 
+### 感谢宅笙绘制软件部分UI图标
+
+- [宅笙Zhai_Sheng](https://space.bilibili.com/49541366)
+
 ### 感谢Klef授权软件图标
 
 ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/b179a2b1bd812119dbb31b9c6bd6d184.png)
