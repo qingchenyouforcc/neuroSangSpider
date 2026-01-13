@@ -29,8 +29,7 @@ from src.core.queue_service import queue_service
 from src.ui.widgets.play_sequence_dialog import PlaySequenceDialog
 from src.utils.cover import get_cover_pixmap
 from src.utils.file import get_resource_path
-from qfluentwidgets import qconfig, isDarkTheme
-from src.utils.icon_utils import get_colored_icon
+from src.utils.icon_utils import bind_colored_svg_icon
 from src.config import cfg
 from src.ui.widgets.song_cell import build_song_cell
 from src.ui.widgets.pixmap_utils import rounded_pixmap
@@ -112,17 +111,10 @@ class PlayQueueInterface(QWidget):
         # 初次加载
         self.load_play_queue()
 
-        # 监听主题变化
-        qconfig.themeChanged.connect(self._update_icons)
-        self._update_icons()
-
-    def _update_icons(self):
-        """根据主题更新图标颜色"""
-        color = "white" if isDarkTheme() else "black"
-
-        self.seqPlayBtn.setIcon(get_colored_icon("src/assets/images/icons/Seq_play.svg", color))
-        self.sequenceButton.setIcon(get_colored_icon("src/assets/images/icons/Edit_list.svg", color))
-        self.clearAllButton.setIcon(get_colored_icon("src/assets/images/icons/Clear_list.svg", color))
+        # 本地图标随主题变化（统一使用工具绑定，降低耦合）
+        bind_colored_svg_icon(self.seqPlayBtn, "src/assets/images/icons/Seq_play.svg", icon_size=QSize(30, 30))
+        bind_colored_svg_icon(self.sequenceButton, "src/assets/images/icons/Edit_list.svg", icon_size=QSize(30, 30))
+        bind_colored_svg_icon(self.clearAllButton, "src/assets/images/icons/Clear_list.svg", icon_size=QSize(25, 25))
 
     def _build_song_cell(self, display_name: str) -> QWidget:
         # 向后兼容旧方法名，直接复用通用构建器

@@ -1,15 +1,17 @@
 from typing import cast
 
 from loguru import logger
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtMultimedia import QMediaPlayer
 from PyQt6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import CaptionLabel, FluentIcon
 from qfluentwidgets.multimedia import MediaPlayBarButton, MediaPlayer, MediaPlayerBase
 from qfluentwidgets.multimedia.media_play_bar import MediaPlayBarBase
+from qfluentwidgets import isDarkTheme
 
 from src.i18n import t
 from src.app_context import app_context
+from src.utils.icon_utils import get_colored_icon, ThemeChangeBinder
 from src.config import PlayMode, cfg
 from src.core.player import nextSong, playSongByIndex, previousSong
 from src.ui.widgets.tipbar import update_info_tip
@@ -84,6 +86,9 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         self.nextSongButton.clicked.connect(nextSong)
         self.modeChangeButton.clicked.connect(self.modeChange)
 
+        # 监听主题变化，刷新本地图标颜色（统一用 binder 降低耦合）
+        self._theme_binder = ThemeChangeBinder(self, self._update_mode_icon)
+
     def _onPlayStateChanged(self, state: QMediaPlayer.PlaybackState):
         """Handle play state changed signal"""
         if state == QMediaPlayer.PlaybackState.PlayingState:
@@ -145,19 +150,29 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         else:
             cfg.play_mode.value = PlayMode(cfg.play_mode.value + 1)
 
+        self._update_mode_icon()
+
+    def _update_mode_icon(self):
+        """根据当前主题/播放模式刷新本地图标"""
+        color = "white" if isDarkTheme() else "black"
+
         match cfg.play_mode.value:
             case PlayMode.LIST_LOOP:
                 self.modeChangeButton.setIcon(FluentIcon.SYNC)
                 self.modeChangeButton.setToolTip(t("play_mode.list_loop"))
+                self.modeChangeButton.setIconSize(QSize(16, 16))
             case PlayMode.SEQUENTIAL:
-                self.modeChangeButton.setIcon(FluentIcon.MENU)
+                self.modeChangeButton.setIcon(get_colored_icon("src/assets/images/icons/Seq_play.svg", color))
                 self.modeChangeButton.setToolTip(t("play_mode.sequential"))
+                self.modeChangeButton.setIconSize(QSize(25, 25))
             case PlayMode.SINGLE_LOOP:
-                self.modeChangeButton.setIcon(FluentIcon.ROTATE)
+                self.modeChangeButton.setIcon(get_colored_icon("src/assets/images/icons/Single_loop.svg", color))
                 self.modeChangeButton.setToolTip(t("play_mode.single_loop"))
+                self.modeChangeButton.setIconSize(QSize(25, 25))
             case PlayMode.RANDOM:
-                self.modeChangeButton.setIcon(FluentIcon.QUESTION)
+                self.modeChangeButton.setIcon(get_colored_icon("src/assets/images/icons/Random_play.svg", color))
                 self.modeChangeButton.setToolTip(t("play_mode.random"))
+                self.modeChangeButton.setIconSize(QSize(25, 25))
 
     def togglePlayState(self):
         """toggle the play state of media player"""
