@@ -84,6 +84,9 @@ class Config(QConfig):
     # 是否最小化到托盘
     minimize_to_tray = ConfigItem("Appearance", "MinimizeToTray", False)
 
+    # 点击关闭按钮时是否弹出提示（为 False 时：按当前默认行为直接执行）
+    ask_on_close = ConfigItem("Appearance", "AskOnClose", True, BoolValidator())
+
     theme_mode = ConfigItem(
         "Appearance",
         "ThemeMode",
@@ -195,8 +198,14 @@ def get_main_path() -> Path:
         # 打包后的环境，返回exe所在目录
         return Path(sys.executable).parent
     else:
-        # 开发环境，返回当前工作目录
-        return Path.cwd()
+        # 开发环境：优先使用当前工作目录（当它就是项目根目录时）
+        cwd = Path.cwd()
+        if (cwd / "ffmpeg").exists() and (cwd / "data").exists():
+            return cwd
+
+        # 否则从源码位置推导项目根目录（避免从错误 cwd 启动导致资源/语言/ffmpeg 路径错乱）
+        # config.py 位于 <project_root>/src/config.py
+        return Path(__file__).resolve().parent.parent
 
 
 MAIN_PATH = get_main_path()

@@ -25,7 +25,10 @@ class PropertiesLoader:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            pattern = r"^\s*([^=:\s][^=:]*?)\s*[=:]\s*(.*?)(?=(?<!\\)\n\s*[^=:\s]|\Z)"
+            # NOTE:
+            # - 不能在分隔符(=/:)后使用 \s*，因为 \s 会匹配 \r/\n，导致空值行把下一行 key 吞进 value。
+            # - 仅允许分隔符后跟空格/Tab，不允许跨行。
+            pattern = r"^[ \t]*([^=:\s][^=:]*?)\s*[=:][ \t]*(.*?)(?=(?<!\\)\r?\n[ \t]*[^=:\s]|\Z)"
             matches = re.finditer(pattern, content, re.MULTILINE | re.DOTALL)
 
             for match in matches:

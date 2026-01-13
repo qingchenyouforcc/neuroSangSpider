@@ -4,7 +4,7 @@ import subprocess
 from loguru import logger
 from PyQt6 import QtGui
 from PyQt6.QtCore import QSize, QProcess
-from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
+from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QButtonGroup
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import (
     MSFluentWindow,
@@ -13,9 +13,8 @@ from qfluentwidgets import (
     MessageBox,
     MessageBoxBase,
     SubtitleLabel,
-    BodyLabel,
     CheckBox,
-    PushButton,
+    RadioButton,
 )
 
 from src.i18n import t
@@ -41,40 +40,35 @@ class CloseActionDialog(MessageBoxBase):
         self.titleLabel = SubtitleLabel(t("dialog.close_choice.title"), self)
         self.viewLayout.addWidget(self.titleLabel)
 
-        # 内容详情
-        self.contentLabel = BodyLabel(t("dialog.close_choice.content"), self)
-        self.viewLayout.addWidget(self.contentLabel)
+        # 选项：最小化/退出（单选）
+        self._buttonGroup = QButtonGroup(self)
+        self.minimizeRadio = RadioButton(t("dialog.close_choice.minimize"), self)
+        self.exitRadio = RadioButton(t("dialog.close_choice.exit"), self)
+        self._buttonGroup.addButton(self.minimizeRadio)
+        self._buttonGroup.addButton(self.exitRadio)
 
-        # 总是最小化复选框
-        self.checkBox = CheckBox(t("dialog.close_choice.always_minimize"))
+        # 默认选中：如果之前配置为“最小化到托盘”，则默认选最小化；否则默认选退出
+        if cfg.minimize_to_tray.value:
+            self.minimizeRadio.setChecked(True)
+        else:
+            self.exitRadio.setChecked(True)
+
+        self.viewLayout.addWidget(self.minimizeRadio)
+        self.viewLayout.addWidget(self.exitRadio)
+
+        # 不再提示复选框
+        self.checkBox = CheckBox(t("dialog.close_choice.always_minimize"), self)
         self.viewLayout.addWidget(self.checkBox)
 
-        # 最小化按钮
-        self.minimizeBtn = PushButton(t("dialog.close_choice.minimize"))
-        self.minimizeBtn.setObjectName("minimizeBtn")
-        self.minimizeBtn.clicked.connect(self._onMinimize)
-
-        # 将最小化按钮插入到 Yes(Exit) 和 Cancel 之间
-        # MessageBoxBase 的 buttonLayout 包含 yesButton, cancelButton (可能还有 spacer)
-        # 通常 yesButton 是 Exit, cancelButton 是 Cancel
-        self.buttonLayout.insertWidget(1, self.minimizeBtn)
-
-        self.yesButton.setText(t("dialog.close_choice.exit"))
+        # 按钮文案
+        self.yesButton.setText(t("common.ok"))
         self.cancelButton.setText(t("common.cancel"))
 
         self.action = None
 
-        # 设置默认按钮样式等
-        self.yesButton.setObjectName("exitBtn")
-
-    def _onMinimize(self):
-        self.action = "minimize"
-        self.accept()
-
     def accept(self):
-        # 如果不是点击最小化进来的，且 self.action 还没设置，说明是点击了 Yes(Exit)
         if self.action is None:
-            self.action = "exit"
+            self.action = "minimize" if self.minimizeRadio.isChecked() else "exit"
         super().accept()
 
 
@@ -240,18 +234,27 @@ class MainWindow(MSFluentWindow):
         self.close()
 
     def closeEvent(self, event):  # type: ignore[override]
+        # 如果是强制退出（如托盘菜单退出），直接关闭（优先级最高）
+        if getattr(self, "_is_force_quit", False):
+            self.before_shutdown()
+            event.accept()
+            QApplication.quit()
+            return
+
         # 如果启用了最小化到托盘，且不是语言切换重启
         if cfg.minimize_to_tray.value and not self.is_language_restart:
             event.ignore()
             self.hide()
             return
 
-        # 如果是强制退出（如托盘菜单退出），直接关闭
-        if getattr(self, "_is_force_quit", False):
+        # 如果关闭时不再提示，且不是语言切换重启，则直接退出
+        if (not cfg.ask_on_close.value) and (not self.is_language_restart):
             self.before_shutdown()
             event.accept()
             QApplication.quit()
-        elif not self.is_language_restart:
+            return
+
+        if not self.is_language_restart:
             # 显示关闭动作选择对话框
             try:
                 logger.info("正在弹出关闭动作选择对话框...")
@@ -262,12 +265,17 @@ class MainWindow(MSFluentWindow):
                         logger.info("用户选择最小化到托盘")
                         if w.checkBox.isChecked():
                             cfg.minimize_to_tray.value = True
+                            cfg.ask_on_close.value = False
                             cfg.save()
                         event.ignore()
                         self.hide()
                         return
                     elif w.action == "exit":
                         logger.info("用户选择直接退出")
+                        if w.checkBox.isChecked():
+                            cfg.minimize_to_tray.value = False
+                            cfg.ask_on_close.value = False
+                            cfg.save()
                         self.before_shutdown()
                         event.accept()
                         QApplication.quit()
