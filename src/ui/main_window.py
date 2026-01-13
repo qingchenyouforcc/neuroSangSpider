@@ -28,6 +28,7 @@ from src.ui.widgets.animated_splash_screen import AnimatedSplashScreen
 from src.ui.interface.play_queue import PlayQueueInterface
 from src.ui.interface.search import SearchInterface
 from src.ui.interface.settings import SettingInterface
+from src.utils.audio_debug import log_audio_environment_once, log_player_snapshot
 
 
 class CloseActionDialog(MessageBoxBase):
@@ -194,6 +195,13 @@ class MainWindow(MSFluentWindow):
         # 不在这里显示播放器窗口，等启动画面动画完成后再显示
         # self.player_bar.show()
         app_context.player = self.player_bar
+
+        # 音频环境与播放器初始状态（用于排查部分电脑无声/无设备/静音/后端问题）
+        try:
+            log_audio_environment_once()
+            log_player_snapshot(self.player_bar.player, label="player", reason="main_window_init")
+        except Exception:
+            logger.opt(exception=True).debug("[audio] failed to log initial audio diagnostics")
 
         # 初始化默认界面
         # 使用 QTimer 延迟设置，确保在布局完成后执行

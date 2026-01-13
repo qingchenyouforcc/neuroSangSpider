@@ -10,6 +10,8 @@ from src.app_context import app_context
 from src.config import MUSIC_DIR, PlayMode, cfg
 from src.i18n import t
 
+from src.utils.audio_debug import log_player_snapshot
+
 from src.ui.widgets.tipbar import open_info_tip
 
 
@@ -98,12 +100,37 @@ def playSongByIndex():
         )
         return
 
+    # file_path = getMusicLocalStr(app_context.play_queue[app_context.play_queue_index].name)
+
+    # url = QUrl.fromLocalFile(file_path and str(file_path))
+    # assert app_context.player is not None, t("player.player_not_initialized")
+    # app_context.player.player.setSource(url)
+    # app_context.player.player.play()
+
+    # app_context.playing_now = app_context.play_queue[app_context.play_queue_index].name
+
+    # logger.info(f"当前播放歌曲队列位置：{app_context.play_queue_index}")
+    # open_info_tip()
+
     file_path = getMusicLocalStr(app_context.play_queue[app_context.play_queue_index].name)
+    if not file_path:
+        logger.error("[audio] playSongByIndex: music file_path is None (not found or invalid)")
+        return
 
     url = QUrl.fromLocalFile(file_path and str(file_path))
     assert app_context.player is not None, t("player.player_not_initialized")
-    app_context.player.player.setSource(url)
-    app_context.player.player.play()
+
+    player = app_context.player.player
+    logger.debug(f"[audio] playSongByIndex: setSource -> {file_path} url={url.toString()}")
+    log_player_snapshot(player, label="player", reason="before_setSource")
+    try:
+        player.setSource(url)
+        log_player_snapshot(player, label="player", reason="after_setSource")
+        player.play()
+        log_player_snapshot(player, label="player", reason="after_play")
+    except Exception:
+        logger.exception(f"[audio] playSongByIndex: failed to play {file_path}")
+        return
 
     app_context.playing_now = app_context.play_queue[app_context.play_queue_index].name
 

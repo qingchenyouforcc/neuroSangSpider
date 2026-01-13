@@ -77,6 +77,14 @@ class CustomMediaPlayBar(MediaPlayBarBase):
 
         self.setMediaPlayer(cast(MediaPlayerBase, MediaPlayer(self)))
 
+        # 此段代码会引发C++级崩溃，无法catch，气笑了
+        # # 音频诊断：自动记录输出设备/音量/错误等信息，便于排查“没声音”
+        # try:
+        #     attach_qt_audio_debug(cast(QMediaPlayer, self.player), label="player_bar")
+        # except:
+        #     logger.opt(exception=True).debug("[audio] attach_qt_audio_debug failed")
+        #     pass
+
         cast(QMediaPlayer, self.player).playbackStateChanged.connect(self._onPlayStateChanged)
 
         self.volumeButton.clicked.connect(lambda: self.setVolume(cfg.volume.value))
@@ -100,6 +108,7 @@ class CustomMediaPlayBar(MediaPlayBarBase):
     def volumeChanged(value) -> None:
         cfg.volume.value = value
         cfg.save()
+        logger.debug(f"[audio] user volume slider changed={value}")
 
     def skipBack(self, ms: int) -> None:
         """Back up for specified milliseconds"""
