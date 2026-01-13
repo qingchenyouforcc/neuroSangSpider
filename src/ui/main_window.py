@@ -240,19 +240,18 @@ class MainWindow(MSFluentWindow):
         self.close()
 
     def closeEvent(self, event):  # type: ignore[override]
-        # 如果是强制退出（如托盘菜单退出），直接关闭
-        if getattr(self, "_is_force_quit", False):
-            self.before_shutdown()
-            event.accept()
-            return
-
         # 如果启用了最小化到托盘，且不是语言切换重启
         if cfg.minimize_to_tray.value and not self.is_language_restart:
             event.ignore()
             self.hide()
             return
 
-        if not self.is_language_restart:
+        # 如果是强制退出（如托盘菜单退出），直接关闭
+        if getattr(self, "_is_force_quit", False):
+            self.before_shutdown()
+            event.accept()
+            QApplication.quit()
+        elif not self.is_language_restart:
             # 显示关闭动作选择对话框
             try:
                 logger.info("正在弹出关闭动作选择对话框...")
