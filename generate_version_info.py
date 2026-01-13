@@ -6,8 +6,10 @@
 """
 
 import re
+import os
 import json
 import datetime
+import subprocess
 from pathlib import Path
 
 
@@ -28,44 +30,78 @@ def get_version_from_config():
     return version_match.group(1)
 
 
-def get_build_count(version):
-    """获取并更新构建次数"""
-    stats_file = Path("build_stats.json")
-    stats = {}
+def _run_git(args: list[str]) -> str | None:
+    """运行 git 命令并返回 stdout；失败则返回 None。"""
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return (result.stdout or "").strip()
+    except Exception:
+        return None
 
+
+def get_build_number(version: str) -> tuple[int, str | None, str]:
+    """获取构建号。
+
+    规则：
+    1) 优先使用 git commit count（同一提交在不同机器上得到一致的 build 号，且不会产生仓库文件变更）；
+    2) 若不在 git 仓库/没有 git，则使用本机 LocalAppData 的计数文件自增。
+    """
+    override = os.getenv("NEUROSONGSPIDER_BUILD_NUMBER")
+    if override and override.isdigit():
+        return int(override) % 65536, _run_git(["rev-parse", "--short", "HEAD"]), "env"
+
+    commit_count = _run_git(["rev-list", "--count", "HEAD"])
+    if commit_count and commit_count.isdigit():
+        git_hash = _run_git(["rev-parse", "--short", "HEAD"])
+        return int(commit_count) % 65536, git_hash, "git"
+
+    # fallback: per-user counter outside the repo to avoid PR conflicts
+    base_dir = os.getenv("LOCALAPPDATA") or os.path.expanduser("~")
+    stats_file = Path(base_dir) / "NeuroSongSpider" / "build_stats.json"
+    stats_file.parent.mkdir(parents=True, exist_ok=True)
+
+    stats: dict[str, int] = {}
     if stats_file.exists():
         try:
             with open(stats_file, "r", encoding="utf-8") as f:
-                stats = json.load(f)
+                stats = json.load(f) or {}
         except Exception:
-            pass
+            stats = {}
 
-    current_count = stats.get(version, 0)
-    new_count = current_count + 1
+    current_count = int(stats.get(version, 0) or 0)
+    new_count = (current_count + 1) % 65536
     stats[version] = new_count
 
     with open(stats_file, "w", encoding="utf-8") as f:
-        json.dump(stats, f, indent=4)
+        json.dump(stats, f, indent=4, ensure_ascii=False)
 
-    return new_count
+    return new_count, None, "local"
 
 
-def write_build_info_module(version, build_count):
+def write_build_info_module(version: str, build_number: int, git_hash: str | None, source: str):
     """生成src/build_info.py供程序调用"""
     content = f'''"""
 自动生成的构建信息文件
 请勿手动修改
 """
 BUILD_VERSION = "{version}"
-BUILD_NUMBER = {build_count}
+BUILD_NUMBER = {build_number}
+BUILD_GIT_HASH = {repr(git_hash)}
+BUILD_SOURCE = "{source}"
 BUILD_TIME = "{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"
 '''
     with open("src/build_info.py", "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"构建信息模块已生成: src/build_info.py (Build {build_count})")
+    print(f"构建信息模块已生成: src/build_info.py (Build {build_number}, source={source})")
 
 
-def parse_version(version_str, build_count=0):
+def parse_version(version_str, build_number=0):
     """解析版本字符串为四位数字元组"""
     parts = version_str.split(".")
     # 确保有3位数字 (Major.Minor.Patch)
@@ -76,7 +112,7 @@ def parse_version(version_str, build_count=0):
     parts = parts[:3]
 
     # 第4位使用构建次数
-    parts.append(str(build_count))
+    parts.append(str(build_number))
 
     try:
         return tuple(int(part) for part in parts)
@@ -84,10 +120,10 @@ def parse_version(version_str, build_count=0):
         raise ValueError(f"无效的版本号格式: {version_str}")
 
 
-def generate_version_info(version_str, build_count):
+def generate_version_info(version_str, build_number):
     """生成版本信息文件内容"""
-    version_tuple = parse_version(version_str, build_count)
-    full_version_str = f"{version_str}.{build_count}"
+    version_tuple = parse_version(version_str, build_number)
+    full_version_str = f"{version_str}.{build_number}"
 
     template = f"""# UTF-8
 #
@@ -143,14 +179,14 @@ def main():
         version = get_version_from_config()
         print(f"检测到版本号: {version}")
 
-        # 获取并更新构建次数
-        build_count = get_build_count(version)
+        # 获取构建号（优先 git 派生；否则本机自增）
+        build_number, git_hash, source = get_build_number(version)
 
         # 生成Python模块
-        write_build_info_module(version, build_count)
+        write_build_info_module(version, build_number, git_hash, source)
 
         # 生成版本信息文件
-        version_info_content = generate_version_info(version, build_count)
+        version_info_content = generate_version_info(version, build_number)
 
         # 写入文件
         version_info_path = Path("version_info.txt")

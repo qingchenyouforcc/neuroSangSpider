@@ -11,6 +11,11 @@ __pycache__/
 /data/
 /logs
 
+# Build/version metadata (generated locally; do not commit)
+/version_info.txt
+/src/build_info.py
+/build_stats.json
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml

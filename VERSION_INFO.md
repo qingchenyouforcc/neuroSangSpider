@@ -67,6 +67,12 @@ build.bat
 3. 自动打包脚本会自动处理版本信息生成，推荐使用
 4. 如果手动修改 `version_info.txt`，下次运行生成脚本时会被覆盖
 
+## 构建号（Build）规则
+
+- 默认：优先使用当前 git 提交数作为 build 号（不同机器/PR 不会产生冲突）。
+- 无 git / 非仓库环境：使用本机 `LocalAppData` 下的计数文件自增，不会修改仓库文件。
+- 需要手动指定：可设置环境变量 `NEUROSONGSPIDER_BUILD_NUMBER` 覆盖 build 号。
+
 ## 自定义版本信息
 
 如果需要修改版本信息中的其他字段（如公司名称、描述等），请编辑 `generate_version_info.py` 文件中的相应部分。
