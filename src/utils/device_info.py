@@ -4,15 +4,22 @@ import json
 import platform
 import subprocess
 import sys
+import threading
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from loguru import logger
 
-from src.config import IS_WINDOWS, subprocess_options
+from src.config import CACHE_DIR, IS_WINDOWS, subprocess_options
 
 
 _DEVICE_INFO_LOGGED = False
+_DEVICE_INFO_THREAD_STARTED = False
+
+
+def _cache_path() -> Path:
+    return CACHE_DIR / "device_info.json"
 
 
 def _safe_one_line(text: str, max_len: int = 260) -> str:
@@ -78,47 +85,39 @@ def collect_device_info() -> dict[str, Any]:
     # 避免写入过多隐私信息：不记录用户名/主机名/序列号
 
     if IS_WINDOWS:
-        os_info = _ps_first(
-            _run_powershell_json(
-                "Get-CimInstance Win32_OperatingSystem | "
-                "Select-Object Caption,Version,BuildNumber,OSArchitecture | "
-                "ConvertTo-Json -Compress"
-            )
+        # 合并为一次 PowerShell 调用，避免多次启动 powershell.exe 带来的启动卡顿
+        combined = _run_powershell_json(
+            """
+$os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber,OSArchitecture
+$cpu = Get-CimInstance Win32_Processor | Select-Object Name,Manufacturer,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed
+$mem = Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory
+$gpu = Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,DriverVersion,Status
+$sound = Get-CimInstance Win32_SoundDevice | Select-Object Name,Manufacturer,Status
+[pscustomobject]@{ os=$os; cpu=$cpu; memory=$mem; gpu=$gpu; sound=$sound } | ConvertTo-Json -Compress
+""",
+            timeout_s=6.0,
         )
-        if os_info is not None:
-            info["windows.os"] = os_info
 
-        cpu_info = _ps_first(
-            _run_powershell_json(
-                "Get-CimInstance Win32_Processor | "
-                "Select-Object Name,Manufacturer,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed | "
-                "ConvertTo-Json -Compress"
-            )
-        )
-        if cpu_info is not None:
-            info["cpu"] = cpu_info
+        if isinstance(combined, dict):
+            os_info = _ps_first(combined.get("os"))
+            if os_info is not None:
+                info["windows.os"] = os_info
 
-        mem_info = _ps_first(
-            _run_powershell_json(
-                "Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory | ConvertTo-Json -Compress"
-            )
-        )
-        if isinstance(mem_info, dict) and "TotalPhysicalMemory" in mem_info:
-            info["memory"] = mem_info
+            cpu_info = _ps_first(combined.get("cpu"))
+            if cpu_info is not None:
+                info["cpu"] = cpu_info
 
-        gpu_info = _run_powershell_json(
-            "Get-CimInstance Win32_VideoController | "
-            "Select-Object Name,AdapterRAM,DriverVersion,Status | "
-            "ConvertTo-Json -Compress"
-        )
-        if gpu_info is not None:
-            info["gpu"] = gpu_info
+            mem_info = _ps_first(combined.get("memory"))
+            if isinstance(mem_info, dict) and "TotalPhysicalMemory" in mem_info:
+                info["memory"] = mem_info
 
-        sound_info = _run_powershell_json(
-            "Get-CimInstance Win32_SoundDevice | Select-Object Name,Manufacturer,Status | ConvertTo-Json -Compress"
-        )
-        if sound_info is not None:
-            info["sound"] = sound_info
+            gpu_info = combined.get("gpu")
+            if gpu_info is not None:
+                info["gpu"] = gpu_info
+
+            sound_info = combined.get("sound")
+            if sound_info is not None:
+                info["sound"] = sound_info
 
     else:
         # 跨平台兜底：仅记录基础信息
@@ -187,3 +186,109 @@ def log_device_info_once() -> None:
         logger.debug(f"[device] details={info}")
     except Exception:
         logger.opt(exception=True).debug("[device] failed to collect device info")
+
+
+def _read_cache() -> dict[str, Any] | None:
+    try:
+        fp = _cache_path()
+        if not fp.exists():
+            return None
+        raw = fp.read_text(encoding="utf-8")
+        obj = json.loads(raw)
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        return None
+
+
+def _write_cache(info: dict[str, Any]) -> None:
+    try:
+        fp = _cache_path()
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        tmp = fp.with_suffix(".tmp")
+        tmp.write_text(json.dumps(info, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(fp)
+    except Exception:
+        # 缓存失败不影响主流程
+        logger.opt(exception=True).debug("[device] failed to write cache")
+
+
+def _summarize_and_log(info: dict[str, Any], *, source: str) -> None:
+    cpu_name = None
+    if isinstance(info.get("cpu"), dict):
+        cpu_name = info["cpu"].get("Name")
+
+    os_caption = None
+    if isinstance(info.get("windows.os"), dict):
+        os_caption = info["windows.os"].get("Caption")
+
+    mem_total = None
+    if isinstance(info.get("memory"), dict):
+        mem_total = info["memory"].get("TotalPhysicalMemory")
+
+    sound = info.get("sound")
+    sound_count = len(sound) if isinstance(sound, list) else (1 if isinstance(sound, dict) else 0)
+
+    gpu = info.get("gpu")
+    gpu_name = None
+    if isinstance(gpu, list) and gpu:
+        gpu_name = gpu[0].get("Name") if isinstance(gpu[0], dict) else None
+    elif isinstance(gpu, dict):
+        gpu_name = gpu.get("Name")
+
+    logger.info(
+        "设备信息({}): OS={} | CPU={} | 内存={} | GPU={} | 声卡设备数={}".format(
+            source,
+            _safe_one_line(os_caption or info.get("platform", "<unknown>")),
+            _safe_one_line(cpu_name or "<unknown>"),
+            _format_bytes(mem_total),
+            _safe_one_line(gpu_name or "<unknown>"),
+            sound_count,
+        )
+    )
+    logger.debug(f"[device] details({source})={info}")
+
+
+def log_device_info_async(*, max_cache_age_s: int = 7 * 24 * 3600) -> None:
+    """非阻塞写入设备信息。
+
+    - 启动时优先读取缓存并立即输出（几乎零开销）
+    - 后台线程异步刷新采集结果，完成后再补一条日志
+    """
+    global _DEVICE_INFO_LOGGED, _DEVICE_INFO_THREAD_STARTED
+
+    if _DEVICE_INFO_LOGGED:
+        return
+    _DEVICE_INFO_LOGGED = True
+
+    cached = _read_cache()
+    if isinstance(cached, dict):
+        # 不严格依赖时间字段（可能缺失/旧版本缓存）
+        try:
+            ts = cached.get("timestamp")
+            if isinstance(ts, str):
+                dt = datetime.fromisoformat(ts)
+                age = (datetime.now() - dt).total_seconds()
+            else:
+                age = 1e18
+        except Exception:
+            age = 1e18
+
+        if age <= float(max_cache_age_s):
+            _summarize_and_log(cached, source="缓存")
+        else:
+            _summarize_and_log(cached, source="缓存(过期)")
+
+    if _DEVICE_INFO_THREAD_STARTED:
+        return
+    _DEVICE_INFO_THREAD_STARTED = True
+
+    def _worker() -> None:
+        try:
+            info = collect_device_info()
+            _write_cache(info)
+            _summarize_and_log(info, source="实时")
+        except Exception:
+            logger.opt(exception=True).debug("[device] async collect failed")
+
+    t = threading.Thread(target=_worker, name="device-info", daemon=True)
+    t.start()

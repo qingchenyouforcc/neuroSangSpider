@@ -11,7 +11,7 @@ from src.config import ASSETS_DIR, I18N_DIR, cfg, VERSION
 from src.i18n.manager import I18nManager
 from src.app_context import app_context
 from src.ui import MainWindow
-from src.utils.device_info import log_device_info_once
+from src.utils.device_info import log_device_info_async
 from src.utils.audio_debug import log_audio_environment_once
 
 os.environ["QT_MEDIA_BACKEND"] = "ffmpeg"
@@ -56,9 +56,10 @@ if __name__ == "__main__":
     setup_logger()
 
     logger.info(f"当前版本: {VERSION}")
+    logger.info(f"当前使用音频后端: {os.environ['QT_MEDIA_BACKEND']}")
 
-    # 记录设备信息（CPU/GPU/声卡/系统等），便于用户反馈问题时定位环境差异
-    log_device_info_once()
+    # 记录设备信息（CPU/GPU/声卡/系统等），后台异步采集，避免阻塞启动
+    log_device_info_async()
 
     # 应用代理设置
     if cfg.enable_proxy.value:
