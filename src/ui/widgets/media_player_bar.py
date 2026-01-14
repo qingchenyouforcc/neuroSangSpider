@@ -2,7 +2,7 @@ from typing import cast
 
 from loguru import logger
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtMultimedia import QMediaPlayer
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PyQt6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import CaptionLabel, FluentIcon
 from qfluentwidgets.multimedia import MediaPlayBarButton, MediaPlayer, MediaPlayerBase
@@ -42,6 +42,8 @@ class CustomMediaPlayBar(MediaPlayBarBase):
 
         self.currentTimeLabel = CaptionLabel("0:00:00", self)
         self.remainTimeLabel = CaptionLabel("0:00:00", self)
+
+        self.audio = QAudioOutput()
 
         self.__initWidgets()
 
@@ -86,6 +88,8 @@ class CustomMediaPlayBar(MediaPlayBarBase):
         #     pass
 
         cast(QMediaPlayer, self.player).playbackStateChanged.connect(self._onPlayStateChanged)
+
+        self.player.setVideoOutput(self.audio)
 
         self.volumeButton.clicked.connect(lambda: self.setVolume(cfg.volume.value))
         self.volumeButton.volumeView.volumeSlider.valueChanged.connect(self.volumeChanged)
