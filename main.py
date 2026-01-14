@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QDialog
 from bilibili_api import request_settings
 
-from src.config import ASSETS_DIR, I18N_DIR, cfg
+from src.config import ASSETS_DIR, I18N_DIR, cfg, VERSION
 from src.i18n.manager import I18nManager
 from src.app_context import app_context
 from src.ui import MainWindow
@@ -50,6 +50,8 @@ if __name__ == "__main__":
             QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     setup_logger()
+
+    logger.info(f"当前版本: {VERSION}")
 
     # 应用代理设置
     if cfg.enable_proxy.value:
