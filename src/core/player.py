@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Protocol
 
 from loguru import logger
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import Qt, QUrl, QTimer
 from qfluentwidgets import InfoBar, InfoBarPosition
 
 from src.app_context import app_context
@@ -124,10 +124,27 @@ def playSongByIndex():
     logger.debug(f"[audio] playSongByIndex: setSource -> {file_path} url={url.toString()}")
     log_player_snapshot(player, label="player", reason="before_setSource")
     try:
+        # 部分机器/后端在“正在播放时直接切歌”容易卡在 Loading 状态
+        # 先 stop 再 setSource 更稳；并且下面会用延迟快照捕获异步加载后的真实状态
+        try:
+            player.stop()
+        except Exception:
+            pass
+
         player.setSource(url)
         log_player_snapshot(player, label="player", reason="after_setSource")
         player.play()
         log_player_snapshot(player, label="player", reason="after_play")
+
+        # QtMultimedia 加载媒体是异步的；立即读取 duration/position 常为 0。
+        # 延迟打印几次快照，便于远程判断：
+        # - mediaStatus 是否一直停在 Loading/Invalid
+        # - playbackState 是否进入 Playing
+        for ms in (200, 800, 2000):
+            QTimer.singleShot(
+                ms,
+                lambda _ms=ms: log_player_snapshot(player, label="player", reason=f"after_play+{_ms}ms"),
+            )
     except Exception:
         logger.exception(f"[audio] playSongByIndex: failed to play {file_path}")
         return
