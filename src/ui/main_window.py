@@ -41,11 +41,13 @@ class CloseActionDialog(MessageBoxBase):
         self.setWindowTitle(t("dialog.close_choice.title"))
 
         self.setMinimumWidth(300)
-        self.viewLayout.setContentsMargins(55, 40, 0, 20)
+        self.viewLayout.setContentsMargins(55, 35, 0, 20)
         self.viewLayout.setSpacing(12)
 
         self.titleLabel = SubtitleLabel(t("dialog.close_choice.title"), self)
         self.viewLayout.addWidget(self.titleLabel)
+
+        self.viewLayout.addSpacing(6)
 
         # 选项：最小化/退出（单选）
         self._buttonGroup = QButtonGroup(self)
@@ -63,7 +65,6 @@ class CloseActionDialog(MessageBoxBase):
         self.viewLayout.addWidget(self.minimizeRadio)
         self.viewLayout.addWidget(self.exitRadio)
 
-        # 不再提示复选框
         self.viewLayout.addSpacing(12)
 
         self.checkBox = CheckBox(t("dialog.close_choice.always_minimize"), self)
