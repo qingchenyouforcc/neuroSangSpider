@@ -88,13 +88,13 @@ def collect_device_info() -> dict[str, Any]:
         # 合并为一次 PowerShell 调用，避免多次启动 powershell.exe 带来的启动卡顿
         combined = _run_powershell_json(
             """
-$os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber,OSArchitecture
-$cpu = Get-CimInstance Win32_Processor | Select-Object Name,Manufacturer,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed
-$mem = Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory
-$gpu = Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,DriverVersion,Status
-$sound = Get-CimInstance Win32_SoundDevice | Select-Object Name,Manufacturer,Status
-[pscustomobject]@{ os=$os; cpu=$cpu; memory=$mem; gpu=$gpu; sound=$sound } | ConvertTo-Json -Compress
-""",
+            $os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber,OSArchitecture
+            $cpu = Get-CimInstance Win32_Processor | Select-Object Name,Manufacturer,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed
+            $mem = Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory
+            $gpu = Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,DriverVersion,Status
+            $sound = Get-CimInstance Win32_SoundDevice | Select-Object Name,Manufacturer,Status
+            [pscustomobject]@{ os=$os; cpu=$cpu; memory=$mem; gpu=$gpu; sound=$sound } | ConvertTo-Json -Compress
+            """,
             timeout_s=6.0,
         )
 
