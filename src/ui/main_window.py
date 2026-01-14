@@ -38,6 +38,12 @@ class CloseActionDialog(MessageBoxBase):
         super().__init__(parent)
 
         # 标题
+        self.setWindowTitle(t("dialog.close_choice.title"))
+
+        self.setMinimumWidth(300)
+        self.viewLayout.setContentsMargins(55, 40, 0, 20)
+        self.viewLayout.setSpacing(12)
+
         self.titleLabel = SubtitleLabel(t("dialog.close_choice.title"), self)
         self.viewLayout.addWidget(self.titleLabel)
 
@@ -58,12 +64,18 @@ class CloseActionDialog(MessageBoxBase):
         self.viewLayout.addWidget(self.exitRadio)
 
         # 不再提示复选框
+        self.viewLayout.addSpacing(12)
+
         self.checkBox = CheckBox(t("dialog.close_choice.always_minimize"), self)
         self.viewLayout.addWidget(self.checkBox)
 
         # 按钮文案
         self.yesButton.setText(t("common.ok"))
         self.cancelButton.setText(t("common.cancel"))
+        self.yesButton.setFixedWidth(135)
+        self.yesButton.setFixedHeight(34)
+        self.cancelButton.setFixedWidth(135)
+        self.cancelButton.setFixedHeight(34)
 
         self.action = None
 
