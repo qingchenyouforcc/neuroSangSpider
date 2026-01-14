@@ -11,6 +11,8 @@ from src.config import ASSETS_DIR, I18N_DIR, cfg, VERSION
 from src.i18n.manager import I18nManager
 from src.app_context import app_context
 from src.ui import MainWindow
+from src.utils.device_info import log_device_info_once
+from src.utils.audio_debug import log_audio_environment_once
 
 LOG_FORMAT = "<g>{time:HH:mm:ss}</g> [<lvl>{level:<7}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
 
@@ -53,6 +55,9 @@ if __name__ == "__main__":
 
     logger.info(f"当前版本: {VERSION}")
 
+    # 记录设备信息（CPU/GPU/声卡/系统等），便于用户反馈问题时定位环境差异
+    log_device_info_once()
+
     # 应用代理设置
     if cfg.enable_proxy.value:
         request_settings.set_proxy(cfg.proxy_url.value)
@@ -75,6 +80,9 @@ if __name__ == "__main__":
 
     app_context.i18n_manager = I18nManager(language_file_dir)
     app = QApplication(sys.argv)
+
+    # Qt 多媒体层的音频输出枚举（比系统层更贴近“无声/设备选择”问题）
+    log_audio_environment_once()
 
     # 检查是否为首次运行
     from src.ui import WelcomeDialog
