@@ -14,7 +14,7 @@ from src.ui import MainWindow
 from src.utils.device_info import log_device_info_async
 from src.utils.audio_debug import log_audio_environment_once
 
-os.environ["QT_MEDIA_BACKEND"] = "windows"
+os.environ["QT_MEDIA_BACKEND"] = "ffmpeg"
 
 LOG_FORMAT = "<g>{time:HH:mm:ss}</g> [<lvl>{level:<7}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
 
