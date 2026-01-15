@@ -14,7 +14,23 @@ from src.ui import MainWindow
 from src.utils.device_info import log_device_info_async
 from src.utils.audio_debug import log_audio_environment_once
 
-os.environ["QT_MEDIA_BACKEND"] = "ffmpeg"
+
+def choose_backend():
+    # 允许用户用环境变量覆盖（便于现场自救/排障）
+    if os.getenv("QT_MEDIA_BACKEND"):
+        return
+
+    if sys.platform.startswith("win"):
+        os.environ["QT_MEDIA_BACKEND"] = "windows"
+    elif sys.platform == "darwin":
+        os.environ["QT_MEDIA_BACKEND"] = "darwin"
+    elif sys.platform.startswith("linux"):
+        os.environ["QT_MEDIA_BACKEND"] = "ffmpeg"  # 也可以给设置项切到 gstreamer
+    else:
+        os.environ["QT_MEDIA_BACKEND"] = "ffmpeg"
+
+
+choose_backend()
 
 LOG_FORMAT = "<g>{time:HH:mm:ss}</g> [<lvl>{level:<7}</lvl>] <c><u>{name}</u></c>:<c>{function}:{line}</c> | {message}"
 
