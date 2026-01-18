@@ -15,6 +15,48 @@ from bilibili_api import video, sync
 from src.config import CACHE_DIR, VIDEO_DIR, ASSETS_DIR, USER_AGENT, cfg
 from src.core.data_io import load_from_all_data
 from src.bili_api.common import get_credential
+from src.utils.memory_cache import MemoryCache
+
+
+_PIXMAP_MEM_CACHE: MemoryCache[QPixmap] = MemoryCache(maxsize=1024, default_ttl_s=10 * 60)
+_VIDEO_SONGLIST_MEM_CACHE: MemoryCache[object] = MemoryCache(maxsize=4, default_ttl_s=60)
+
+
+def _cover_mem_cache_key(audio_path: Path, size: int) -> tuple:
+    """构造封面缓存 key。
+
+    关键点：优先把“可能变化的封面来源文件”的 mtime 纳入 key，避免
+    - 初次从内嵌/网络提取并写入 covers 缓存后，后续还拿到旧的兜底图。
+    """
+    try:
+        covers_dir = CACHE_DIR / "covers"
+        candidates = [
+            covers_dir / f"{audio_path.stem}.jpg",
+            covers_dir / f"{audio_path.stem}.png",
+            covers_dir / f"{audio_path.stem}.jpeg",
+            audio_path.with_suffix(".jpg"),
+            audio_path.with_suffix(".png"),
+            audio_path.with_suffix(".jpeg"),
+        ]
+        latest_mtime_ns = 0
+        for fp in candidates:
+            try:
+                if fp.exists():
+                    st = fp.stat()
+                    latest_mtime_ns = max(latest_mtime_ns, int(getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9))))
+            except OSError:
+                continue
+
+        # 音频本体变化也会影响内嵌封面
+        try:
+            st = audio_path.stat()
+            audio_mtime_ns = int(getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9)))
+        except OSError:
+            audio_mtime_ns = 0
+
+        return (str(audio_path.resolve()).lower(), int(size), int(latest_mtime_ns), int(audio_mtime_ns))
+    except Exception:
+        return (str(audio_path), int(size))
 
 
 def _load_pixmap_from_file(fp: Path, size: int) -> QPixmap | None:
@@ -80,6 +122,12 @@ def get_cover_pixmap(audio_path: Path, size: int = 48) -> QPixmap:
     3) 内嵌封面（提取并缓存为 jpg）
     4) 默认相册图标
     """
+    # 进程内缓存：避免同一首歌反复读取图片/缩放/解析标签
+    key = _cover_mem_cache_key(audio_path, size)
+    cached = _PIXMAP_MEM_CACHE.get(key)
+    if cached is not None and not cached.isNull():
+        return cached
+
     try:
         covers_dir = CACHE_DIR / "covers"
         covers_dir.mkdir(parents=True, exist_ok=True)
@@ -96,6 +144,7 @@ def get_cover_pixmap(audio_path: Path, size: int = 48) -> QPixmap:
         for fp in candidates:
             pix = _load_pixmap_from_file(fp, size)
             if pix:
+                _PIXMAP_MEM_CACHE.set(key, pix)
                 return pix
 
         # 尝试从标签中提取
@@ -110,7 +159,9 @@ def get_cover_pixmap(audio_path: Path, size: int = 48) -> QPixmap:
                         pix.save(str(cache_fp), "JPG")
                     except Exception:
                         logger.warning(f"封面缓存写入失败: {cache_fp}")
-                    return pix.scaled(size, size)
+                    pix = pix.scaled(size, size)
+                    _PIXMAP_MEM_CACHE.set(key, pix)
+                    return pix
             except Exception:
                 logger.exception(f"从标签构建图片失败: {audio_path}")
 
@@ -127,14 +178,18 @@ def get_cover_pixmap(audio_path: Path, size: int = 48) -> QPixmap:
                             pix.save(str(cache_fp), "JPG")
                         except Exception:
                             logger.warning(f"封面缓存写入失败: {cache_fp}")
-                        return pix.scaled(size, size)
+                        pix = pix.scaled(size, size)
+                        _PIXMAP_MEM_CACHE.set(key, pix)
+                        return pix
         except Exception:
             logger.exception(f"B 站封面获取失败: {audio_path}")
     except Exception:
         logger.exception(f"获取封面失败: {audio_path}")
 
     # 兜底默认图标：将应用主图标等比缩放并居中绘制到 size×size 画布
-    return _fallback_app_icon(size)
+    pix = _fallback_app_icon(size)
+    _PIXMAP_MEM_CACHE.set(key, pix, ttl_s=60)
+    return pix
 
 
 def _fallback_app_icon(size: int) -> QPixmap:
@@ -188,7 +243,12 @@ def _match_bvid_by_audio(audio_path: Path) -> Optional[str]:
     策略：归一化文件名与标题，互相包含则认为匹配，取最优（最长匹配）。
     """
     try:
-        total = load_from_all_data(VIDEO_DIR)
+        # 避免在大量歌曲“无封面/首次运行”场景下反复聚合本地 data.json
+        total = _VIDEO_SONGLIST_MEM_CACHE.get_or_set(
+            ("video_songlist", str(VIDEO_DIR.resolve()).lower()),
+            lambda: load_from_all_data(VIDEO_DIR),
+            ttl_s=60,
+        )
         if not total:
             return None
         stem_norm = _normalize_text(audio_path.stem)

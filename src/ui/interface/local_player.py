@@ -1,15 +1,25 @@
 from pathlib import Path
 from loguru import logger
 from typing import TYPE_CHECKING, Any
+import hashlib
+import json
 from PyQt6.QtCore import Qt, QUrl, QSize
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QAbstractItemView, QHBoxLayout, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QSizePolicy
+from PyQt6.QtWidgets import (
+    QAbstractItemView,
+    QHBoxLayout,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+    QHeaderView,
+    QSizePolicy,
+)
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import InfoBar, InfoBarPosition, TableWidget, TitleLabel, TransparentToolButton
 
 from src.i18n import t
 from src.app_context import app_context
-from src.config import MUSIC_DIR, cfg
+from src.config import CACHE_DIR, MUSIC_DIR, cfg
 from src.utils.file import read_all_audio_info
 from src.core.player import getMusicLocalStr, open_player
 from src.utils.text import escape_tag
@@ -58,6 +68,9 @@ class NumericTableWidgetItem(QTableWidgetItem):
 
 class LocalPlayerInterface(QWidget):
     """本地播放器GUI"""
+
+    _LOCAL_SONGS_CACHE_VERSION = 1
+    _LOCAL_SONGS_CACHE_FILENAME = "local_songs_cache.json"
 
     def __init__(self, parent, main_window: "MainWindow"):
         super().__init__(parent=parent)
@@ -149,6 +162,7 @@ class LocalPlayerInterface(QWidget):
             # 始终将排序重定向到文件名列，而不是封面列
             header.setSortIndicator(sort_col, current_order)
             self.tableView.sortItems(sort_col, current_order)
+
     def _setup_table_resize_policy(self):
         """设置表格的列宽策略"""
         header = self.tableView.horizontalHeader()
@@ -192,16 +206,112 @@ class LocalPlayerInterface(QWidget):
         show_cover = bool(cfg.enable_cover.value)
         return 3 if show_cover else 2
 
+    def _audio_extensions_for_scan(self) -> list[str]:
+        """本地歌曲扫描扩展名（保持与 read_all_audio_info 行为一致）"""
+        return [".mp3", ".ogg", ".wav"]
+
+    def _local_songs_cache_path(self) -> Path:
+        return CACHE_DIR / self._LOCAL_SONGS_CACHE_FILENAME
+
+    def _compute_music_dir_signature(self, directory: Path, extensions: list[str]) -> str:
+        """基于文件名/大小/mtime 计算目录指纹，用于判断是否需要重新扫描"""
+        directory.mkdir(parents=True, exist_ok=True)
+
+        parts: list[tuple[str, int, int]] = []
+        for fp in directory.rglob("*"):
+            if not fp.is_file() or fp.suffix.lower() not in extensions:
+                continue
+            try:
+                st = fp.stat()
+            except OSError:
+                continue
+
+            rel = str(fp.relative_to(directory)).replace("\\", "/")
+            parts.append((rel, int(st.st_size), int(getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9)))))
+
+        parts.sort()
+
+        h = hashlib.sha256()
+        h.update(f"v={self._LOCAL_SONGS_CACHE_VERSION};dir={str(directory.resolve()).lower()}\n".encode("utf-8"))
+        for rel, size, mtime_ns in parts:
+            h.update(f"{rel}|{size}|{mtime_ns}\n".encode("utf-8"))
+        return h.hexdigest()
+
+    def _read_local_songs_cache(self, signature: str) -> list[tuple[str, float]] | None:
+        """读取缓存：命中则返回 songs 列表，否则返回 None"""
+        if getattr(self, "_local_songs_cache_sig", None) == signature:
+            cached = getattr(self, "_local_songs_cache_songs", None)
+            if isinstance(cached, list):
+                return cached
+
+        fp = self._local_songs_cache_path()
+        if not fp.exists():
+            return None
+
+        try:
+            data = json.loads(fp.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                return None
+            if int(data.get("version", -1)) != self._LOCAL_SONGS_CACHE_VERSION:
+                return None
+            if data.get("signature") != signature:
+                return None
+            songs_raw = data.get("songs")
+            if not isinstance(songs_raw, list):
+                return None
+
+            songs: list[tuple[str, float]] = []
+            for item in songs_raw:
+                if not (isinstance(item, list) or isinstance(item, tuple)) or len(item) != 2:
+                    continue
+                filename, duration = item
+                if not isinstance(filename, str):
+                    continue
+                try:
+                    songs.append((filename, float(duration)))
+                except Exception:
+                    continue
+
+            self._local_songs_cache_sig = signature
+            self._local_songs_cache_songs = songs
+            return songs
+        except Exception:
+            logger.opt(exception=True).debug("本地歌曲缓存读取失败，将重新扫描")
+            return None
+
+    def _write_local_songs_cache(self, signature: str, songs: list[tuple[str, float]]) -> None:
+        """写入 songs 缓存（落盘 + 内存）"""
+        fp = self._local_songs_cache_path()
+        fp.parent.mkdir(parents=True, exist_ok=True)
+
+        payload = {
+            "version": self._LOCAL_SONGS_CACHE_VERSION,
+            "signature": signature,
+            "music_dir": str(MUSIC_DIR.resolve()),
+            "songs": [[name, float(duration)] for name, duration in songs],
+            "timestamp": int(time.time()),
+        }
+
+        try:
+            tmp = fp.with_suffix(fp.suffix + ".tmp")
+            tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(fp)
+        except Exception:
+            logger.opt(exception=True).debug("本地歌曲缓存写入失败")
+
+        self._local_songs_cache_sig = signature
+        self._local_songs_cache_songs = songs
+
     def load_local_songs(self):
         try:
             # 清理无效文件
             self._clean_invalid_files()
-    
+
             # 记录当前排序状态
             header = self.tableView.horizontalHeader()
             sort_column = -1
             sort_order = Qt.SortOrder.AscendingOrder
-    
+
             try:
                 # 尝试获取当前排序状态
                 if header:
@@ -209,12 +319,23 @@ class LocalPlayerInterface(QWidget):
                     sort_order = header.sortIndicatorOrder()
             except Exception:
                 logger.debug("无法获取当前排序状态")
-    
+
             # 临时关闭排序功能，防止添加数据时自动排序
             self.tableView.setSortingEnabled(False)
-    
+
             self.tableView.clear()
-            songs = read_all_audio_info(MUSIC_DIR)
+
+            # 优先使用缓存：当音乐目录未发生变化时，跳过 mutagen 扫描以加速加载
+            extensions = self._audio_extensions_for_scan()
+            signature = self._compute_music_dir_signature(MUSIC_DIR, extensions)
+            songs = self._read_local_songs_cache(signature)
+            if songs is not None:
+                logger.debug(f"本地歌曲缓存命中：{len(songs)} 首")
+            else:
+                songs = read_all_audio_info(MUSIC_DIR, extensions=extensions)
+                self._write_local_songs_cache(signature, songs)
+                logger.debug(f"本地歌曲缓存更新：{len(songs)} 首")
+
             self.tableView.setRowCount(len(songs))
             show_cover = bool(cfg.enable_cover.value)
             if show_cover:
@@ -236,18 +357,18 @@ class LocalPlayerInterface(QWidget):
                         t("local_player.header_play_count"),
                     ]
                 )
-    
+
             # 设置列宽策略
             self._setup_table_resize_policy()
-    
+
             for i, (filename, duration) in enumerate(songs):
                 # 用于排序与数据存储的表格项（始终设置在文件名列）
                 name_col = self._name_col()
-    
+
                 # 为文件名列添加支持排序的表格项
                 name_item = SongTableWidgetItem(filename)
                 self.tableView.setItem(i, name_col, name_item)
-                
+
                 # 视觉展示采用可复用的歌曲单元格控件（解析标签显示副标题）
                 song_cell = build_song_cell(filename, parent=self.tableView, parse_brackets=True, compact=False)
                 song_cell.layout().setContentsMargins(30, 0, 0, 5)  # 让文件名向右上偏移
@@ -285,17 +406,17 @@ class LocalPlayerInterface(QWidget):
                 # 创建一个特殊的表格项，确保按照数字大小排序
                 count_item = NumericTableWidgetItem(play_count)
                 self.tableView.setItem(i, self._count_col(), count_item)
-    
+
             # 重新启用排序并应用之前的排序设置
             self.tableView.setSortingEnabled(True)
-    
+
             try:
                 # 尝试恢复排序状态
                 if sort_column >= 0 and header:
                     header.setSortIndicator(sort_column, sort_order)
             except Exception:
                 logger.debug("无法恢复之前的排序状态")
-    
+
         except Exception:
             logger.exception("加载本地歌曲失败")
 
