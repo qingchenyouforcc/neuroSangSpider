@@ -2,6 +2,11 @@
 
 ![image-20260109162010403](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/image-20260109162010403.png)
 
+> [!important] 
+由 Soul 开发，众多社群成员共同打造的非官方牛曲在线播放网站 Neuro & Evil Karaoke Web Player 已正式上线，网站承担v1至今的歌回、已授权封面二创、直播切片、语音的存档，兼备社区像素画布功能。具备功能完备的播放界面，支持同步歌词、自建及共享歌单。未来还将更新其他功能。网站可直连。相关非官方开源项目支持将在后续上线（也许吧）。
+https://www.neurokaraoke.com
+https://www.evilkaraoke.com
+
 ## 项目简介
 
 这是一个基于 `Python 3.13` 开发的歌回软件
