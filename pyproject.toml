@@ -1,6 +1,6 @@
 [project]
 name = "neurosangspider"
-version = "1.2.2"
+version = "1.3.0"
 requires-python = ">=3.13"
 dependencies = [
     "aiohttp>=3.12.13",
