@@ -1,5 +1,7 @@
 # ![](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/this_32.png)NeuroSangSpider
 
+**本项目已不限期暂停功能性更新及ISSUE**
+
 ![image-20260109162010403](https://qingchenyou-1301914189.cos.ap-beijing.myqcloud.com/image-20260109162010403.png)
 
 > [!important] 
