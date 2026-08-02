@@ -3,7 +3,7 @@ import sys
 import subprocess
 from loguru import logger
 from PyQt6 import QtGui
-from PyQt6.QtCore import QSize, QProcess
+from PyQt6.QtCore import QSize, QProcess, QEvent
 from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QButtonGroup
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import (
@@ -15,6 +15,7 @@ from qfluentwidgets import (
     SubtitleLabel,
     CheckBox,
     RadioButton,
+    isDarkTheme,
 )
 
 from src.i18n import t
@@ -237,6 +238,22 @@ class MainWindow(MSFluentWindow):
 
         # 启动画面会在动画播放完成后自动关闭并显示主窗口
         # 不需要手动调用 finish()
+        self._apply_content_background()
+
+    def _apply_content_background(self):
+        """在主题/调色板变化时，为内容区提供稳定背景，避免透明层出现白屏。"""
+        color = "#202020" if isDarkTheme() else "#f3f3f3"
+        self.stackedWidget.setStyleSheet(f"QStackedWidget {{ background-color: {color}; }}")
+
+    def changeEvent(self, event):  # type: ignore[override]
+        if event and event.type() in (
+            QEvent.Type.PaletteChange,
+            QEvent.Type.ApplicationPaletteChange,
+            QEvent.Type.ThemeChange,
+            QEvent.Type.StyleChange,
+        ):
+            self._apply_content_background()
+        super().changeEvent(event)
 
     def on_tray_icon_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
