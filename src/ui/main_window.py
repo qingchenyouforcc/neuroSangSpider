@@ -15,6 +15,8 @@ from qfluentwidgets import (
     SubtitleLabel,
     CheckBox,
     RadioButton,
+    setTheme,
+    Theme as QTheme,
 )
 
 from src.i18n import t
@@ -94,6 +96,8 @@ class MainWindow(MSFluentWindow):
 
         # 系统主题监听器
         self.themeListener = SystemThemeListener(self)
+        self.themeListener.systemThemeChanged.connect(self._on_system_theme_changed)
+        self.themeListener.start()
 
         self.setObjectName("demoWindow")
         icon = QtGui.QIcon(str(ASSETS_DIR / "main.ico"))
@@ -237,6 +241,10 @@ class MainWindow(MSFluentWindow):
 
         # 启动画面会在动画播放完成后自动关闭并显示主窗口
         # 不需要手动调用 finish()
+
+    def _on_system_theme_changed(self):
+        if cfg.theme_mode.value == Theme.AUTO:
+            setTheme(QTheme.AUTO)
 
     def on_tray_icon_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
